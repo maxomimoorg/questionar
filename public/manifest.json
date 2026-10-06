@@ -1,0 +1,19 @@
+{
+  "name": "QuestionAR",
+  "short_name": "QuestionAR",
+  "description": "Compatibilità tra profili tramite questionari a slider, salvati solo sul tuo dispositivo.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#34C8C4",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

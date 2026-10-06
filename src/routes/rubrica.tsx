@@ -1,0 +1,550 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  Check,
+  Copy,
+  Download,
+  Search,
+  Star,
+  Trash2,
+  Upload,
+  UserPlus,
+  X,
+} from "lucide-react";
+import QRCode from "qrcode";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Avatar } from "@/components/Avatar";
+import { EmojiCollection } from "@/components/EmojiCollection";
+import { percentColor } from "@/lib/color";
+import { averageCompat } from "@/lib/compat";
+import { usePeer } from "@/lib/peer";
+import { exportBackupPng, importBackupPng } from "@/lib/stego";
+import { useStore } from "@/lib/store";
+import { emojisFromHandle, isValidHandle } from "@/lib/handle";
+import { handleOf } from "@/lib/types";
+
+const searchSchema = z.object({ handle: z.string().optional() });
+
+export const Route = createFileRoute("/rubrica")({
+  validateSearch: searchSchema,
+  head: () => ({
+    meta: [
+      { title: "Rubrica connessioni — QuestionAR" },
+      {
+        name: "description",
+        content:
+          "Cerca handle, gestisci richieste e connessioni, condividi il tuo QR e salva il backup del questionario.",
+      },
+      { property: "og:title", content: "Rubrica connessioni — QuestionAR" },
+      {
+        property: "og:description",
+        content:
+          "Gestisci le tue connessioni QuestionAR, il QR del tuo handle e i backup locali.",
+      },
+      { property: "og:type", content: "website" },
+      {
+        property: "og:image",
+        content: "https://questionar.lovable.app/questionar-social.jpg",
+      },
+      { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:image",
+        content: "https://questionar.lovable.app/questionar-social.jpg",
+      },
+    ],
+  }),
+  component: RubricaPage,
+});
+
+function HandleDisplay({ handle }: { handle: string }) {
+  const emojis = emojisFromHandle(handle);
+  const emojiStr = emojis.join("");
+  const username = emojiStr ? handle.slice(0, handle.length - emojiStr.length) : handle;
+  return (
+    <div className="flex min-w-0 items-center text-[12px] text-muted-foreground">
+      <span className="truncate">@{username}</span>
+      {emojiStr && <span className="shrink-0">{emojiStr}</span>}
+    </div>
+  );
+}
+
+function RubricaPage() {
+  const { state, questions, resetProfile, removeContact, applyBackup, mySnapshot } = useStore();
+  const { sendRequest, accept, reject, cancel, linkFromBackup, connected } = usePeer();
+  const navigate = useNavigate();
+  const { handle: prefill } = Route.useSearch();
+  const [searchOpen, setSearchOpen] = useState(Boolean(prefill));
+  const [query, setQuery] = useState(prefill ?? "");
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmWipe, setConfirmWipe] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+  const linkRef = useRef<HTMLInputElement>(null);
+
+  const myHandle = handleOf(state.identity);
+  const qrLink = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/rubrica?handle=${encodeURIComponent(myHandle)}`;
+  }, [myHandle]);
+
+  useEffect(() => {
+    if (!canvasRef.current || !qrLink) return;
+    const dark = state.theme.mode === "dark";
+    const accent = getComputedStyle(document.documentElement)
+      .getPropertyValue("--accent")
+      .trim();
+    void QRCode.toCanvas(canvasRef.current, qrLink, {
+      width: 220,
+      margin: 1,
+      color: {
+        dark: dark ? oklchToHex(accent) : "#000000",
+        light: "#00000000",
+      },
+    });
+  }, [qrLink, state.theme]);
+
+  const incoming = state.requests.filter((r) => r.direction === "incoming");
+  const outgoing = state.requests.filter((r) => r.direction === "outgoing");
+
+  const copy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Handle copiato");
+    } catch {
+      toast.error("Impossibile copiare");
+    }
+  };
+
+  const compatOf = (handle: string) => {
+    const contact = state.contacts.find((c) => c.handle === handle);
+    if (!contact?.snapshot) return null;
+    const ids = new Set(questions.map((q) => q.id));
+    for (const q of contact.snapshot.customQuestions ?? []) ids.add(q.id);
+    return averageCompat([...ids], [
+      { answers: state.answers },
+      { answers: contact.snapshot.answers },
+    ]);
+  };
+
+  const doExport = async () => {
+    setBusy(true);
+    try {
+      const snap = mySnapshot();
+      const blob = await exportBackupPng({
+        v: 1,
+        name: snap.name,
+        handle: myHandle,
+        bio: snap.bio,
+        ...(snap.tags ? { tags: snap.tags } : {}),
+        answers: snap.answers,
+        customQuestions: snap.customQuestions,
+        savedAt: Date.now(),
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `questionar-${myHandle}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Immagine della tua creatura salvata con il questionario dentro");
+    } catch {
+      toast.error("Non è stato possibile creare il backup");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doImport = async (file: File) => {
+    setBusy(true);
+    try {
+      const payload = await importBackupPng(file);
+      applyBackup(payload);
+      toast.success("Backup aggiunto al tuo questionario");
+    } catch {
+      toast.error("Nessun backup leggibile: serve il file PNG originale");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doLinkFromBackup = async (file: File) => {
+    setBusy(true);
+    try {
+      const payload = await importBackupPng(file);
+      if (payload.handle === myHandle) {
+        toast.error("Questo è il tuo stesso backup");
+        return;
+      }
+      await linkFromBackup(payload.handle, payload.name || payload.handle, {
+        name: payload.name,
+        bio: payload.bio,
+        ...(payload.tags ? { tags: payload.tags } : {}),
+        answers: payload.answers,
+        customQuestions: payload.customQuestions,
+        recommends: [],
+        updatedAt: payload.savedAt,
+      });
+      toast.success(`Confronto disponibile con @${payload.handle}`);
+      void navigate({ to: "/confronto", search: { b: payload.handle } });
+    } catch {
+      toast.error("Nessun backup leggibile: serve il file PNG originale");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="app-shell safe-bottom space-y-4 pt-4">
+      {/* Ricerca */}
+      <section className="section-card">
+        <h2 className="text-[16px]">Aggiungi connessione</h2>
+        {searchOpen ? (
+          <div className="mt-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="handle online, es. luna🦊🌊⭐"
+                className="flex-1 rounded-xl bg-background px-3 py-2 text-[14px] outline-none ring-1 ring-input focus:ring-accent"
+              />
+              <button
+                onClick={() => {
+                  const h = query.trim();
+                  if (!h) return;
+                  if (h === myHandle) {
+                    toast.error("Questo è il tuo handle", { id: "handle-self" });
+                    return;
+                  }
+                  if (!isValidHandle(h)) {
+                    toast.error("Handle non valido", {
+                      id: "handle-invalid",
+                      description:
+                        "Serve un handle completo: da 4 a 16 lettere o numeri seguiti dalle sue 3 emoji.",
+                    });
+                    return;
+                  }
+                  void sendRequest(h);
+                  setQuery("");
+                }}
+                className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground"
+                aria-label="Cerca utente online e invia richiesta"
+              >
+                <UserPlus size={18} />
+              </button>
+            </div>
+
+            <div className="relative flex items-center justify-center">
+              <span className="absolute w-full border-t border-input" />
+              <span className="relative bg-card px-2 text-[12px] text-muted-foreground">oppure</span>
+            </div>
+
+            <button
+              disabled={busy}
+              onClick={() => linkRef.current?.click()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface-2 px-4 py-3 text-foreground disabled:opacity-60"
+            >
+              <Upload size={18} /> Confronta con un backup PNG
+            </button>
+            <input
+              ref={linkRef}
+              type="file"
+              accept="image/png"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void doLinkFromBackup(file);
+                e.target.value = "";
+              }}
+            />
+
+            <button
+              onClick={() => {
+                setSearchOpen(false);
+                setQuery("");
+              }}
+              className="w-full rounded-xl bg-background px-4 py-2 text-[14px] text-muted-foreground"
+            >
+              Annulla
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-accent-foreground"
+          >
+            <Search size={18} /> Cerca e confronta
+          </button>
+        )}
+        <p className="mt-2 text-[12px] text-muted-foreground">
+          {connected
+            ? "Puoi cercare un utente online tramite handle o caricare il backup PNG che ti ha inviato per confrontare subito i profili."
+            : "Collegamento in corso…"}
+        </p>
+      </section>
+
+      {/* Richieste */}
+      <section className="section-card">
+        <h2 className="text-[16px]">Richieste</h2>
+        {incoming.length === 0 && outgoing.length === 0 && (
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            Nessuna richiesta in sospeso.
+          </p>
+        )}
+        <div className="mt-2 space-y-2">
+          {incoming.map((r) => (
+            <div
+              key={r.handle}
+              className="flex items-center gap-3 rounded-2xl bg-background p-2"
+            >
+              <Avatar handle={r.handle} size={40} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[14px] font-semibold">{r.name}</div>
+                <div className="truncate text-[12px] text-muted-foreground">@{r.handle}</div>
+              </div>
+              <button
+                aria-label="Accetta"
+                onClick={() => void accept(r.handle)}
+                className="grid size-9 place-items-center rounded-full bg-accent text-accent-foreground"
+              >
+                <Check size={16} />
+              </button>
+              <button
+                aria-label="Rifiuta"
+                onClick={() => void reject(r.handle)}
+                className="grid size-9 place-items-center rounded-full bg-destructive text-destructive-foreground"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ))}
+          {outgoing.map((r) => (
+            <div
+              key={r.handle}
+              className="flex items-center gap-3 rounded-2xl bg-background p-2"
+            >
+              <Avatar handle={r.handle} size={40} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[14px] font-semibold">{r.name}</div>
+                <div className="truncate text-[12px] text-muted-foreground">@{r.handle}</div>
+              </div>
+              <button
+                onClick={() => void cancel(r.handle)}
+                className="rounded-xl bg-destructive px-3 py-1.5 text-[14px] text-destructive-foreground"
+              >
+                Annulla
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Connessioni */}
+      <section className="section-card">
+        <h2 className="text-[16px]">Connessioni</h2>
+        {state.contacts.length === 0 ? (
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            Ancora nessuna connessione: cerca un handle o condividi il tuo QR.
+          </p>
+        ) : (
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {state.contacts.map((c) => {
+              const compat = compatOf(c.handle);
+              return (
+                <div key={c.handle} className="relative rounded-2xl bg-background p-2">
+                  <div
+                    onClick={() => navigate({ to: "/confronto", search: { b: c.handle } })}
+                    className="cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate({ to: "/confronto", search: { b: c.handle } });
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Avatar handle={c.handle} size={38} />
+                        <span
+                          className={`shrink-0 size-2 rounded-full ${
+                            c.online ? "bg-accent" : "bg-muted-foreground/40"
+                          }`}
+                        />
+                        <span
+                          className="shrink-0 text-[14px] font-bold"
+                          style={{
+                            color:
+                              compat === null
+                                ? "var(--color-muted-foreground)"
+                                : percentColor(compat),
+                          }}
+                        >
+                          {compat === null ? "–" : `${compat}%`}
+                        </span>
+                        {c.recommended && (
+                          <Star size={12} className="shrink-0 text-accent" />
+                        )}
+                      </div>
+                      <button
+                        aria-label="Elimina connessione"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDelete(c.handle);
+                        }}
+                        className="grid size-8 shrink-0 place-items-center rounded-full text-destructive"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+
+                    <div className="mt-1 truncate text-[14px] font-semibold">
+                      {c.name}
+                    </div>
+                    <HandleDisplay handle={c.handle} />
+                  </div>
+
+                  {confirmDelete === c.handle && (
+                    <div className="absolute inset-0 grid place-items-center rounded-2xl bg-background/95 p-2 text-center">
+                      <div>
+                        <p className="text-[12px]">Eliminare questa connessione?</p>
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            onClick={() => setConfirmDelete(null)}
+                            className="rounded-xl bg-surface-2 px-3 py-1 text-[14px]"
+                          >
+                            No
+                          </button>
+                          <button
+                            onClick={() => {
+                              removeContact(c.handle);
+                              setConfirmDelete(null);
+                            }}
+                            className="rounded-xl bg-destructive px-3 py-1 text-[14px] text-destructive-foreground"
+                          >
+                            Sì
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* QR */}
+      <section className="section-card text-center">
+        <h2 className="text-[16px]">Il tuo QR</h2>
+        <canvas ref={canvasRef} className="mx-auto mt-2" />
+        <button
+          onClick={() => copy(myHandle)}
+          className="mx-auto mt-1 flex items-center gap-1 text-[14px] font-normal text-muted-foreground"
+        >
+          @{myHandle} <Copy size={14} />
+        </button>
+      </section>
+
+      {/* Backup */}
+      <section className="section-card">
+        <h2 className="text-[16px]">Backup</h2>
+        <p className="mt-1 text-[12px] text-muted-foreground">
+          Verrà scaricata un'immagine della tua creatura avatar che contiene al suo interno
+          le domande e le risposte del tuo questionario. Condividila solo come file PNG: le
+          immagini compresse in JPG delle chat perdono i dati.
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <button
+            disabled={busy}
+            onClick={() => void doExport()}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3 text-accent-foreground disabled:opacity-60"
+          >
+            <Download size={16} /> Esporta
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => importRef.current?.click()}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3 text-accent-foreground disabled:opacity-60"
+          >
+            <Upload size={16} /> Importa
+          </button>
+        </div>
+        <input
+          ref={importRef}
+          type="file"
+          accept="image/png"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void doImport(file);
+            e.target.value = "";
+          }}
+        />
+        {confirmWipe ? (
+          <div className="mt-2 rounded-2xl bg-background p-3 text-center">
+            <p className="text-[14px]">Eliminare del tutto il profilo e i dati?</p>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={() => setConfirmWipe(false)}
+                className="flex-1 rounded-xl bg-surface-2 px-3 py-2"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={async () => {
+                  await resetProfile();
+                  setConfirmWipe(false);
+                  void navigate({ to: "/" });
+                }}
+                className="flex-1 rounded-xl bg-destructive px-3 py-2 text-destructive-foreground"
+              >
+                Elimina
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmWipe(true)}
+            className="mt-2 w-full rounded-2xl bg-destructive px-4 py-3 text-destructive-foreground"
+          >
+            Elimina profilo
+          </button>
+        )}
+      </section>
+
+      <EmojiCollection />
+    </div>
+  );
+}
+
+/** Rough oklch() -> hex conversion, enough for the QR foreground. */
+function oklchToHex(value: string): string {
+  const nums = value.match(/[\d.]+/g);
+  if (!nums || nums.length < 3) return "#000000";
+  const [L, C, hDeg] = [Number(nums[0]), Number(nums[1]), Number(nums[2])];
+  const h = (hDeg * Math.PI) / 180;
+  const a = C * Math.cos(h);
+  const b = C * Math.sin(h);
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+  const l = l_ ** 3;
+  const m = m_ ** 3;
+  const s = s_ ** 3;
+  const lin = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+  const toSrgb = (u: number) => {
+    const v = u <= 0.0031308 ? 12.92 * u : 1.055 * Math.pow(Math.max(u, 0), 1 / 2.4) - 0.055;
+    return Math.round(Math.min(1, Math.max(0, v)) * 255);
+  };
+  return `#${lin.map((u) => toSrgb(u).toString(16).padStart(2, "0")).join("")}`;
+}
