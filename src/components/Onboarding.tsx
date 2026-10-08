@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import logo from "@/assets/questionar-logo.png.asset.json";
 
 import { InfoModal } from "./InfoModal";
 import { rollPickerEmojis } from "@/lib/emoji";
@@ -45,7 +44,7 @@ export function Onboarding() {
   return (
     <div className="app-shell safe-top safe-bottom flex min-h-screen flex-col justify-center gap-5 py-10">
       <div className="text-center">
-        <img src={logo.url} alt="Logo QuestionAR" width={88} height={88} className="mx-auto mb-3 size-[88px] rounded-lg object-contain" />
+        <img src="/logo.png" alt="Logo QuestionAR" width={88} height={88} className="mx-auto mb-3 size-[88px] rounded-lg object-contain" />
         <h1 className="text-2xl">QuestionAR</h1>
         <p className="mt-1 text-[12px] text-muted-foreground">
           Compatibilità tra profili, tutto salvato solo sul tuo dispositivo.
