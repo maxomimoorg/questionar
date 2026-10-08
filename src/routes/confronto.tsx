@@ -31,12 +31,12 @@ export const Route = createFileRoute("/confronto")({
       { property: "og:type", content: "website" },
       {
         property: "og:image",
-        content: "https://questionar.lovable.app/questionar-social.jpg",
+        content: "https://id-preview--6dc18ec2-6fa9-4fec-8780-2503529ee359.lovable.app/__l5e/assets-v1/57ca9cc6-b893-4d67-b6e8-34f5f2438f14/questionar-social.jpg",
       },
       { name: "twitter:card", content: "summary_large_image" },
       {
         name: "twitter:image",
-        content: "https://questionar.lovable.app/questionar-social.jpg",
+        content: "https://id-preview--6dc18ec2-6fa9-4fec-8780-2503529ee359.lovable.app/__l5e/assets-v1/57ca9cc6-b893-4d67-b6e8-34f5f2438f14/questionar-social.jpg",
       },
     ],
   }),
