@@ -91,10 +91,17 @@
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5"
   },
-  "scripts": {
-  "generate-icons": "node scripts/generate-icons.mjs",
-  "prebuild": "npm run generate-icons",
-  "build": "vite build"
+    "scripts": {
+    "dev": "vite dev",
+    "generate-icons": "node scripts/generate-icons.mjs",
+    "prebuild": "npm run generate-icons",
+    "build": "vite build",
+    "build:dev": "vite build --mode development",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+
 }
 
 }
