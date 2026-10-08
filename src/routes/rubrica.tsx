@@ -44,15 +44,7 @@ export const Route = createFileRoute("/rubrica")({
           "Gestisci le tue connessioni QuestionAR, il QR del tuo handle e i backup locali.",
       },
       { property: "og:type", content: "website" },
-      {
-        property: "og:image",
-        content: "https://questionar.lovable.app/questionar-social.jpg",
-      },
       { name: "twitter:card", content: "summary_large_image" },
-      {
-        name: "twitter:image",
-        content: "https://questionar.lovable.app/questionar-social.jpg",
-      },
     ],
   }),
   component: RubricaPage,

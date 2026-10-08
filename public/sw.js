@@ -1,6 +1,6 @@
 // QuestionAR service worker: offline shell + runtime caching of stable static assets.
-const CACHE = "questionar-v3";
-const PRECACHE = ["/", "/rubrica", "/manifest.json", "/icon.svg", "/favicon.ico"];
+const CACHE = "questionar-v4";
+const PRECACHE = ["/", "/rubrica", "/manifest.json", "/favicon.png", "/__l5e/assets-v1/b313fdb2-5b49-4086-bb24-272e2f621274/questionar-logo.png", "/__l5e/assets-v1/734ab10b-6c78-47b4-9649-13c65407974b/icon-192.png", "/__l5e/assets-v1/67c17213-2005-4353-9282-8331cfa7a700/icon-512.png", "/__l5e/assets-v1/e47c1219-f272-4798-9573-6a5269d256a5/apple-touch-icon.png"];
 
 const isDevAsset = (url) =>
   url.pathname.startsWith("/src/") ||

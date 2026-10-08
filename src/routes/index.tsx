@@ -29,15 +29,7 @@ export const Route = createFileRoute("/")({
           "Questionario a slider per misurare la compatibilità tra profili, salvato solo in locale.",
       },
       { property: "og:type", content: "website" },
-      {
-        property: "og:image",
-        content: "https://questionar.lovable.app/questionar-social.jpg",
-      },
       { name: "twitter:card", content: "summary_large_image" },
-      {
-        name: "twitter:image",
-        content: "https://questionar.lovable.app/questionar-social.jpg",
-      },
     ],
   }),
   component: ProfilePage,

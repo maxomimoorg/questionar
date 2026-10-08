@@ -29,15 +29,7 @@ export const Route = createFileRoute("/confronto")({
           "Compatibilità complessiva, per categoria e per domanda tra due o tre profili QuestionAR.",
       },
       { property: "og:type", content: "website" },
-      {
-        property: "og:image",
-        content: "https://questionar.lovable.app/questionar-social.jpg",
-      },
       { name: "twitter:card", content: "summary_large_image" },
-      {
-        name: "twitter:image",
-        content: "https://questionar.lovable.app/questionar-social.jpg",
-      },
     ],
   }),
   component: ComparePage,
