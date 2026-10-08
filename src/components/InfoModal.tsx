@@ -104,7 +104,7 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
         className="safe-bottom mt-6 max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-popover p-5 shadow-2xl ring-1 ring-border"
       >
         <div className="mb-3 flex items-start gap-3">
-          <img src={logo.png} alt="Logo QuestionAR" width={40} height={40} className="size-10 shrink-0 rounded-lg object-contain" />
+          <img src="/logo.png" alt="Logo QuestionAR" width={40} height={40} className="size-10 shrink-0 rounded-lg object-contain" />
           <h1 className="flex-1 text-2xl">QuestionAR</h1>
           <button
             aria-label="Chiudi le informazioni"
