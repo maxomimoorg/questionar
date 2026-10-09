@@ -19,7 +19,7 @@ export interface Transport {
   stop(): void;
 }
 
-export const RELAY_URL: string = (import.meta.env.VITE_RELAY_URL as string | undefined)?.trim() ?? "";
+export const RELAY_URL: string = (import.meta.env['VITE_RELAY_URL'] as string | undefined)?.trim() ?? "";
 
 export class RelayTransport implements Transport {
   readonly kind = "relay" as const;
@@ -58,7 +58,7 @@ export class RelayTransport implements Transport {
       ws.send('{"t":"ping"}');
     };
     ws.onmessage = (e) => {
-      let m: { t: string; [k: string]: unknown };
+      let m: { t: string; room?: unknown; online?: unknown; payload?: unknown; id?: unknown };
       try {
         m = JSON.parse(String(e.data));
       } catch {
