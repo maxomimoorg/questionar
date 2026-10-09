@@ -33,7 +33,7 @@ export class E2E {
       k = (async () => {
         const pub = await crypto.subtle.importKey(
           "jwk",
-          { kty: peer.kty, crv: peer.crv, x: peer.x, y: peer.y, ext: true },
+          publicOnly(peer) as JsonWebKey,
           { name: "ECDH", namedCurve: "P-256" },
           false,
           [],
@@ -72,5 +72,8 @@ export class E2E {
 }
 
 export function publicOnly(jwk: JsonWebKey): JsonWebKey {
-  return { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y };
+  const out: JsonWebKey = { kty: jwk.kty ?? "EC", crv: jwk.crv ?? "P-256" };
+  if (jwk.x) out.x = jwk.x;
+  if (jwk.y) out.y = jwk.y;
+  return out;
 }
