@@ -55,6 +55,7 @@ type Ctx = {
   addEmojisToCollection: (emojis: string[]) => void;
   addRequest: (r: ConnectionRequest) => void;
   removeRequest: (handle: string) => void;
+  updateRequest: (handle: string, patch: Partial<ConnectionRequest>) => void;
   acceptRequest: (handle: string) => void;
   upsertContact: (c: Contact) => void;
   updateContact: (handle: string, patch: Partial<Contact>) => void;
@@ -81,6 +82,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...EMPTY_STATE,
           ...saved,
           tags: { ...EMPTY_STATE.tags, ...(saved.tags ?? {}) },
+          network: { ...EMPTY_STATE.network, ...(saved.network ?? {}) },
         });
       }
       loaded.current = true;
@@ -205,6 +207,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           requests: s.requests.filter((r) => r.handle !== handle),
         })),
+      updateRequest: (handle, p) =>
+        setState((s) => ({
+          ...s,
+          requests: s.requests.map((r) => (r.handle === handle ? { ...r, ...p } : r)),
+        })),
       acceptRequest: (handle) =>
         setState((s) => {
           const req = s.requests.find((r) => r.handle === handle);
@@ -214,6 +221,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             name: req.name,
             emojis: req.emojis,
             ...(req.snapshot ? { snapshot: req.snapshot } : {}),
+            ...(req.publicKey ? { publicKey: req.publicKey } : {}),
             roomKey: handle,
             online: true,
           };

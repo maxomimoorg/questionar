@@ -42,6 +42,8 @@ export type Contact = {
   emojis: string[];
   snapshot?: ProfileSnapshot;
   roomKey?: string;
+  /** Peer public key pinned on first contact (end-to-end encryption). */
+  publicKey?: JsonWebKey;
 };
 
 export type ConnectionRequest = {
@@ -51,8 +53,13 @@ export type ConnectionRequest = {
   emojis: string[];
   createdAt: number;
   snapshot?: ProfileSnapshot;
+  publicKey?: JsonWebKey;
 };
 
+export type NetworkPrefs = {
+  /** Opt-in: use public MQTT brokers when the Cloudflare relay is missing or unavailable. */
+  mqttFallback: boolean;
+};
 
 export type AppState = {
   identity: Identity | null;
@@ -65,6 +72,7 @@ export type AppState = {
   contacts: Contact[];
   requests: ConnectionRequest[];
   tags: Record<string, boolean>;
+  network: NetworkPrefs;
 };
 
 export const EMPTY_STATE: AppState = {
@@ -77,6 +85,7 @@ export const EMPTY_STATE: AppState = {
   emojiCollection: [],
   contacts: [],
   requests: [],
+  network: { mqttFallback: false },
   tags: {
     vegan: false,
     animali: false,
