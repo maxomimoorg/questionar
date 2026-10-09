@@ -64,7 +64,18 @@ function HandleDisplay({ handle }: { handle: string }) {
 
 function RubricaPage() {
   const { state, questions, resetProfile, removeContact, applyBackup, mySnapshot } = useStore();
-  const { sendRequest, accept, reject, cancel, linkFromBackup, connected } = usePeer();
+  const {
+    sendRequest,
+    accept,
+    reject,
+    cancel,
+    linkFromBackup,
+    connected,
+    mode,
+    relayConfigured,
+    mqttFallback,
+    setMqttFallback,
+  } = usePeer();
   const navigate = useNavigate();
   const { handle: prefill } = Route.useSearch();
   const [searchOpen, setSearchOpen] = useState(Boolean(prefill));
@@ -272,10 +283,25 @@ function RubricaPage() {
           </button>
         )}
         <p className="mt-2 text-[12px] text-muted-foreground">
-          {connected
-            ? "Puoi cercare un utente online tramite handle o caricare il backup PNG che ti ha inviato per confrontare subito i profili."
-            : "Collegamento in corso…"}
+          {mode === "offline"
+            ? "Rete non disponibile: puoi comunque caricare il backup PNG che ti ha inviato un utente per confrontare i profili."
+            : connected
+              ? `Puoi cercare un utente online tramite handle o caricare il backup PNG che ti ha inviato per confrontare subito i profili.${mode === "mqtt" ? " (Rete pubblica di ripiego)" : ""}`
+              : "Collegamento in corso…"}
         </p>
+        <label className="mt-2 flex items-start gap-2 text-[12px] text-muted-foreground">
+          <input
+            type="checkbox"
+            className="mt-0.5 accent-[hsl(var(--accent))]"
+            checked={mqttFallback}
+            onChange={(e) => setMqttFallback(e.target.checked)}
+          />
+          <span>
+            Usa una rete pubblica di terze parti come ripiego
+            {relayConfigured ? " se il servizio principale non risponde" : ""}. I messaggi restano
+            cifrati, ma quei server vedono quando sei online.
+          </span>
+        </label>
       </section>
 
       {/* Richieste */}
