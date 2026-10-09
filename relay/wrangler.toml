@@ -1,0 +1,17 @@
+# QuestionAR relay: presence + encrypted rendezvous only. Free Workers plan compatible
+# (Durable Objects with SQLite storage are available on Workers Free).
+name = "questionar-relay"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# Comma separated list of origins allowed to open the WebSocket ("*" = any).
+[vars]
+ALLOWED_ORIGINS = "*"
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "RelayHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RelayHub"]
