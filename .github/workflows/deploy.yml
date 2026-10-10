@@ -30,7 +30,11 @@ jobs:
         run: npm install
 
       - name: Build
-        run: npm run build
+        env:
+          VITE_RELAY_URL: ${{ vars.VITE_RELAY_URL || secrets.VITE_RELAY_URL }}
+        run: |
+          if [ -z "$VITE_RELAY_URL" ]; then echo "::warning::VITE_RELAY_URL is not set: the published app will show the relay as not configured"; fi
+          npm run build
 
       - name: Duplicate index for SPA routing
         run: cp .output/public/index.html .output/public/404.html || cp dist/index.html dist/404.html || true

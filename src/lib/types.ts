@@ -44,6 +44,8 @@ export type Contact = {
   roomKey?: string;
   /** Peer public key pinned on first contact (end-to-end encryption). */
   publicKey?: JsonWebKey;
+  /** True only when the key came from the person's own backup or the user compared fingerprints. */
+  keyVerified?: boolean;
 };
 
 export type ConnectionRequest = {
@@ -54,12 +56,11 @@ export type ConnectionRequest = {
   createdAt: number;
   snapshot?: ProfileSnapshot;
   publicKey?: JsonWebKey;
+  keyVerified?: boolean;
 };
 
-export type NetworkPrefs = {
-  /** Opt-in: use public MQTT brokers when the Cloudflare relay is missing or unavailable. */
-  mqttFallback: boolean;
-};
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export type NetworkPrefs = {};
 
 export type AppState = {
   identity: Identity | null;
@@ -85,7 +86,7 @@ export const EMPTY_STATE: AppState = {
   emojiCollection: [],
   contacts: [],
   requests: [],
-  network: { mqttFallback: false },
+  network: {},
   tags: {
     vegan: false,
     animali: false,

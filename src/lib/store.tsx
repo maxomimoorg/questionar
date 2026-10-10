@@ -82,7 +82,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...EMPTY_STATE,
           ...saved,
           tags: { ...EMPTY_STATE.tags, ...(saved.tags ?? {}) },
-          network: { ...EMPTY_STATE.network, ...(saved.network ?? {}) },
+          network: {},
         });
       }
       loaded.current = true;
@@ -222,6 +222,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             emojis: req.emojis,
             ...(req.snapshot ? { snapshot: req.snapshot } : {}),
             ...(req.publicKey ? { publicKey: req.publicKey } : {}),
+            ...(req.keyVerified ? { keyVerified: true } : {}),
             roomKey: handle,
             online: true,
           };

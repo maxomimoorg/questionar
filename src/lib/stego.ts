@@ -11,6 +11,8 @@ export type BackupPayload = {
   answers: Record<string, Answer>;
   customQuestions: Question[];
   savedAt: number;
+  /** Optional (newer backups): the owner's public key, used to verify the first contact. */
+  pub?: JsonWebKey;
 };
 
 const MAGIC = "QAR1";
