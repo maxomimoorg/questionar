@@ -72,9 +72,7 @@ function RubricaPage() {
     linkFromBackup,
     connected,
     mode,
-    relayConfigured,
-    mqttFallback,
-    setMqttFallback,
+    issue,
   } = usePeer();
   const navigate = useNavigate();
   const { handle: prefill } = Route.useSearch();
@@ -283,25 +281,20 @@ function RubricaPage() {
           </button>
         )}
         <p className="mt-2 text-[12px] text-muted-foreground">
-          {mode === "offline"
-            ? "Rete non disponibile: puoi comunque caricare il backup PNG che ti ha inviato un utente per confrontare i profili."
-            : connected
-              ? `Puoi cercare un utente online tramite handle o caricare il backup PNG che ti ha inviato per confrontare subito i profili.${mode === "mqtt" ? " (Rete pubblica di ripiego)" : ""}`
+          {issue
+            ? `${
+                issue === "not_configured"
+                  ? "Il server relay non è configurato (VITE_RELAY_URL mancante)."
+                  : issue === "quota"
+                    ? "È stata superata la quota massima di messaggi del server relay."
+                    : "Il server relay è temporaneamente non raggiungibile o offline."
+              } Puoi comunque caricare il backup PNG che ti ha inviato un utente per confrontare i profili.`
+            : mode === "offline"
+              ? "Rete non disponibile."
+              : connected
+              ? "Puoi cercare un utente online tramite handle o caricare il backup PNG che ti ha inviato per confrontare subito i profili."
               : "Collegamento in corso…"}
         </p>
-        <label className="mt-2 flex items-start gap-2 text-[12px] text-muted-foreground">
-          <input
-            type="checkbox"
-            className="mt-0.5 accent-[hsl(var(--accent))]"
-            checked={mqttFallback}
-            onChange={(e) => setMqttFallback(e.target.checked)}
-          />
-          <span>
-            Usa una rete pubblica di terze parti come ripiego
-            {relayConfigured ? " se il servizio principale non risponde" : ""}. I messaggi restano
-            cifrati, ma quei server vedono quando sei online.
-          </span>
-        </label>
       </section>
 
       {/* Richieste */}

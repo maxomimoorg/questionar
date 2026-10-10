@@ -77,3 +77,18 @@ export function publicOnly(jwk: JsonWebKey): JsonWebKey {
   if (jwk.y) out.y = jwk.y;
   return out;
 }
+
+/** Human-comparable fingerprint (SHA-256 of the public point), e.g. "A1B2 C3D4 …". */
+export async function displayFingerprint(jwk: JsonWebKey | undefined | null): Promise<string> {
+  if (!jwk?.x || !jwk.y) return "";
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`${jwk.crv ?? "P-256"}|${jwk.x}|${jwk.y}`),
+  );
+  const hex = Array.from(new Uint8Array(digest).slice(0, 12), (b) =>
+    b.toString(16).padStart(2, "0"),
+  )
+    .join("")
+    .toUpperCase();
+  return hex.match(/.{4}/g)!.join(" ");
+}

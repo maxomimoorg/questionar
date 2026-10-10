@@ -1,9 +1,15 @@
-// Presence + rendezvous transports. Both only carry opaque, already-encrypted strings.
-//  - RelayTransport: the Cloudflare relay (relay/), configured with VITE_RELAY_URL.
-//  - MqttTransport: public MQTT brokers, used only if the user opts in as a fallback.
+// Presence + rendezvous transport: the Cloudflare relay (relay/), configured with VITE_RELAY_URL.
+// It only carries opaque strings; profile data is end-to-end encrypted before it leaves the device.
+
+/** Outcome of handling one inbound message; decides whether the relay may drop it. */
+export type DeliveryResult =
+  | "ok" // handled
+  | "duplicate" // already handled earlier: confirm, do not repeat actions
+  | "invalid" // permanently unusable (bad format, wrong key, undecryptable)
+  | "retry"; // transient failure: leave it queued so the relay redelivers it
 
 export type TransportEvents = {
-  onWire: (raw: string) => void;
+  onWire: (raw: string) => Promise<DeliveryResult>;
   onPresence: (room: string, online: boolean) => void;
   onStatus: (connected: boolean) => void;
   /** The transport cannot be used (not configured, quota reached, repeated failures). */
@@ -11,7 +17,7 @@ export type TransportEvents = {
 };
 
 export interface Transport {
-  readonly kind: "relay" | "mqtt";
+  readonly kind: "relay";
   start(myRoom: string, watch: string[]): void;
   watch(room: string): void;
   send(toRoom: string, id: string, raw: string, ttlSec: number): Promise<boolean>;
@@ -19,7 +25,24 @@ export interface Transport {
   stop(): void;
 }
 
-export const RELAY_URL: string = (import.meta.env['VITE_RELAY_URL'] as string | undefined)?.trim() ?? "";
+export const RELAY_URL: string =
+  (import.meta.env["VITE_RELAY_URL"] as string | undefined)?.trim() ?? "";
+
+/** Only ws(s)/http(s) URLs are accepted; anything else counts as "not configured". */
+export function relayWsUrl(url: string): string | null {
+  const u = url.trim();
+  if (!/^(https?|wss?):\/\/[^\s/]+/i.test(u)) return null;
+  return `${u.replace(/^http/i, "ws").replace(/\/+$/, "")}/ws`;
+}
+
+type RelayOptions = {
+  WebSocketImpl?: typeof WebSocket;
+  connectTimeoutMs?: number;
+  sendTimeoutMs?: number;
+  maxFailures?: number;
+};
+
+type Waiter = { resolve: (ok: boolean) => void; timer: ReturnType<typeof setTimeout> };
 
 export class RelayTransport implements Transport {
   readonly kind = "relay" as const;
@@ -31,33 +54,80 @@ export class RelayTransport implements Transport {
   private ready = false;
   private ping: ReturnType<typeof setInterval> | null = null;
   private retry: ReturnType<typeof setTimeout> | null = null;
-  private waiters = new Map<string, (ok: boolean) => void>();
+  private connectTimer: ReturnType<typeof setTimeout> | null = null;
+  private waiters = new Map<string, Waiter>();
+  private WS: typeof WebSocket;
+  private connectTimeoutMs: number;
+  private sendTimeoutMs: number;
+  private maxFailures: number;
 
-  constructor(private url: string, private ev: TransportEvents) {}
+  constructor(
+    private url: string,
+    private ev: TransportEvents,
+    opts: RelayOptions = {},
+  ) {
+    this.WS = opts.WebSocketImpl ?? globalThis.WebSocket;
+    this.connectTimeoutMs = opts.connectTimeoutMs ?? 10_000;
+    this.sendTimeoutMs = opts.sendTimeoutMs ?? 8000;
+    this.maxFailures = opts.maxFailures ?? 4;
+  }
 
   start(myRoom: string, watch: string[]) {
     this.room = myRoom;
     watch.forEach((r) => this.watched.add(r));
     this.stopped = false;
+    this.failures = 0;
+    if (!relayWsUrl(this.url)) {
+      this.stopped = true;
+      this.ev.onUnavailable("not_configured");
+      return;
+    }
     this.open();
+  }
+
+  private raw(ws: WebSocket, data: unknown): boolean {
+    if (ws.readyState !== 1) return false;
+    try {
+      ws.send(typeof data === "string" ? data : JSON.stringify(data));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private clearTimers() {
+    if (this.ping) clearInterval(this.ping);
+    if (this.connectTimer) clearTimeout(this.connectTimer);
+    this.ping = null;
+    this.connectTimer = null;
   }
 
   private open() {
     if (this.stopped) return;
-    const base = this.url.replace(/^http/, "ws").replace(/\/$/, "");
+    const target = relayWsUrl(this.url)!;
     let ws: WebSocket;
     try {
-      ws = new WebSocket(`${base}/ws`);
+      ws = new this.WS(target);
     } catch {
       return this.fail("invalid relay url");
     }
     this.ws = ws;
+    // A relay that accepts the socket but never says "ready" is treated as unreachable.
+    this.connectTimer = setTimeout(() => {
+      if (!this.ready && this.ws === ws) {
+        try {
+          ws.close(4000, "timeout");
+        } catch {
+          /* ignore */
+        }
+      }
+    }, this.connectTimeoutMs);
     ws.onopen = () => {
-      ws.send(JSON.stringify({ t: "hello", room: this.room, watch: [...this.watched] }));
-      this.ping = setInterval(() => ws.readyState === 1 && ws.send('{"t":"ping"}'), 30_000);
-      ws.send('{"t":"ping"}');
+      this.raw(ws, { t: "hello", room: this.room, watch: [...this.watched] });
+      this.ping = setInterval(() => this.raw(ws, '{"t":"ping"}'), 30_000);
     };
     ws.onmessage = (e) => {
+      if (this.ws !== ws) return;
       let m: { t: string; room?: unknown; online?: unknown; payload?: unknown; id?: unknown };
       try {
         m = JSON.parse(String(e.data));
@@ -67,57 +137,90 @@ export class RelayTransport implements Transport {
       if (m.t === "ready") {
         this.ready = true;
         this.failures = 0;
+        if (this.connectTimer) clearTimeout(this.connectTimer);
+        this.connectTimer = null;
         this.ev.onStatus(true);
       } else if (m.t === "presence") this.ev.onPresence(String(m.room), Boolean(m.online));
-      else if (m.t === "msg") {
-        this.ev.onWire(String(m.payload));
-        // Application-level receipt: the relay deletes the envelope only after this.
-        ws.send(JSON.stringify({ t: "ack", id: m.id }));
-      } else if (m.t === "stored") this.resolve(String(m.id), true);
+      else if (m.t === "msg" && typeof m.id === "string") this.receive(ws, m.id, String(m.payload));
+      else if (m.t === "stored") this.resolve(String(m.id), true);
       else if (m.t === "error") this.resolve(String(m.id), false);
     };
+    ws.onerror = () => {
+      /* onclose follows */
+    };
     ws.onclose = (e) => {
-      if (this.ping) clearInterval(this.ping);
+      if (this.ws !== ws) return;
+      this.ws = null;
+      this.clearTimers();
+      const wasReady = this.ready;
       this.ready = false;
       this.ev.onStatus(false);
-      for (const id of [...this.waiters.keys()]) this.resolve(id, false);
+      this.failAllWaiters();
       if (this.stopped) return;
       // Cloudflare answers with errors/closes once the free daily quota is exhausted.
       if (e.code === 1013 || e.code === 4029) return this.fail("quota");
+      if (wasReady) this.failures = 0; // a working link that dropped: retry quickly
       this.fail("closed");
     };
   }
 
+  /** The relay deletes an envelope only after the ack, so we ack only once it is handled. */
+  private receive(ws: WebSocket, id: string, payload: string) {
+    let result: Promise<DeliveryResult>;
+    try {
+      result = this.ev.onWire(payload);
+    } catch {
+      return; // not acked: redelivered at the next connection
+    }
+    void result
+      .then((r) => {
+        if (r === "retry") return;
+        if (r === "invalid") console.warn(`[relay] message ${id} rejected as invalid`);
+        this.raw(ws, r === "invalid" ? { t: "ack", id, rejected: true } : { t: "ack", id });
+      })
+      .catch(() => {
+        /* not acked: redelivered at the next connection */
+      });
+  }
+
   private fail(reason: string) {
     this.failures++;
-    if (this.failures >= 4) {
+    if (this.failures >= this.maxFailures) {
       this.stopped = true;
       this.ev.onUnavailable(reason === "closed" ? "unreachable" : reason);
       return;
     }
-    this.retry = setTimeout(() => this.open(), Math.min(30_000, 2000 * 2 ** this.failures));
+    this.retry = setTimeout(() => this.open(), Math.min(30_000, 1000 * 2 ** this.failures));
   }
 
   private resolve(id: string, ok: boolean) {
     const w = this.waiters.get(id);
-    if (w) {
-      this.waiters.delete(id);
-      w(ok);
-    }
+    if (!w) return;
+    this.waiters.delete(id);
+    clearTimeout(w.timer);
+    w.resolve(ok);
+  }
+
+  private failAllWaiters() {
+    for (const id of [...this.waiters.keys()]) this.resolve(id, false);
   }
 
   watch(room: string) {
     if (this.watched.has(room)) return;
     this.watched.add(room);
-    if (this.ready) this.ws?.send(JSON.stringify({ t: "watch", rooms: [room] }));
+    if (this.ready && this.ws) this.raw(this.ws, { t: "watch", rooms: [room] });
   }
 
   send(toRoom: string, id: string, raw: string, ttlSec: number) {
-    if (!this.ready || !this.ws) return Promise.resolve(false);
+    const ws = this.ws;
+    if (!this.ready || !ws) return Promise.resolve(false);
+    // Same id already in flight: share the outcome instead of leaking a second waiter.
+    const prev = this.waiters.get(id);
+    if (prev) this.resolve(id, false);
     return new Promise<boolean>((res) => {
-      this.waiters.set(id, res);
-      setTimeout(() => this.resolve(id, false), 8000);
-      this.ws!.send(JSON.stringify({ t: "send", id, to: toRoom, payload: raw, ttl: ttlSec }));
+      const timer = setTimeout(() => this.resolve(id, false), this.sendTimeoutMs);
+      this.waiters.set(id, { resolve: res, timer });
+      if (!this.raw(ws, { t: "send", id, to: toRoom, payload: raw, ttl: ttlSec })) this.resolve(id, false);
     });
   }
 
@@ -125,88 +228,23 @@ export class RelayTransport implements Transport {
     return this.ready;
   }
 
+  pendingSends() {
+    return this.waiters.size;
+  }
+
   stop() {
     this.stopped = true;
     if (this.retry) clearTimeout(this.retry);
-    if (this.ping) clearInterval(this.ping);
-    this.ws?.close(1000);
+    this.retry = null;
+    this.clearTimers();
+    const ws = this.ws;
     this.ws = null;
-  }
-}
-
-const BROKERS = [
-  "wss://broker.emqx.io:8084/mqtt",
-  "wss://test.mosquitto.org:8081/mqtt",
-  "wss://broker.hivemq.com:8884/mqtt",
-];
-const ROOT = "questionar/v2";
-
-/** Opt-in fallback: public brokers (third parties). Payloads stay end-to-end encrypted. */
-export class MqttTransport implements Transport {
-  readonly kind = "mqtt" as const;
-  private client: import("mqtt").MqttClient | null = null;
-  private brokerIndex = 0;
-  private room = "";
-  private watched = new Set<string>();
-
-  constructor(private ev: TransportEvents) {}
-
-  start(myRoom: string, watch: string[]) {
-    this.room = myRoom;
-    watch.forEach((r) => this.watched.add(r));
-    void this.connect();
-  }
-
-  private async connect() {
-    const { default: mqtt } = await import("mqtt");
-    const url = BROKERS[this.brokerIndex % BROKERS.length]!;
-    const client = mqtt.connect(url, {
-      clientId: `qar_${Math.random().toString(16).slice(2)}`,
-      reconnectPeriod: 4000,
-      connectTimeout: 6000,
-      keepalive: 30,
-      clean: true,
-      will: { topic: `${ROOT}/presence/${this.room}`, payload: "0", qos: 0, retain: true },
-    });
-    this.client = client;
-    client.on("connect", () => {
-      this.ev.onStatus(true);
-      client.subscribe([`${ROOT}/inbox/${this.room}`, `${ROOT}/presence/+`]);
-      client.publish(`${ROOT}/presence/${this.room}`, "1", { retain: true });
-    });
-    client.on("message", (topic, payload) => {
-      if (topic.startsWith(`${ROOT}/presence/`)) {
-        const room = topic.split("/").pop()!;
-        if (this.watched.has(room)) this.ev.onPresence(room, payload.toString() === "1");
-        return;
-      }
-      this.ev.onWire(payload.toString());
-    });
-    client.on("error", () => {
-      this.ev.onStatus(false);
-      this.brokerIndex++;
-      client.end(true, () => void this.connect());
-    });
-    client.on("close", () => this.ev.onStatus(false));
-  }
-
-  watch(room: string) {
-    this.watched.add(room);
-  }
-
-  async send(toRoom: string, _id: string, raw: string) {
-    if (!this.client?.connected) return false;
-    this.client.publish(`${ROOT}/inbox/${toRoom}`, raw);
-    return true;
-  }
-
-  isConnected() {
-    return Boolean(this.client?.connected);
-  }
-
-  stop() {
-    this.client?.publish(`${ROOT}/presence/${this.room}`, "0", { retain: true });
-    this.client?.end(true);
-    this.client = null;
+    this.ready = false;
+    this.failAllWaiters();
+    try {
+      ws?.close(1000);
+    } catch {
+      /* ignore */
+    }
   }
 }
