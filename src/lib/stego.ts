@@ -1,13 +1,15 @@
 // Backup hidden inside the avatar PNG with LSB steganography.
 
 import type { Answer, Question } from "./types";
+import { createBackupCard } from "./backup-card";
+import type { ProfileTags } from "./profile-tags";
 
 export type BackupPayload = {
   v: 1;
   name: string;
   handle: string;
   bio: string;
-  tags?: Record<string, boolean>;
+  tags?: ProfileTags;
   answers: Record<string, Answer>;
   customQuestions: Question[];
   savedAt: number;
@@ -25,23 +27,11 @@ function toBits(bytes: Uint8Array): number[] {
   return bits;
 }
 
-async function loadAvatarCanvas(handle: string): Promise<HTMLCanvasElement> {
-  const url = `https://api.dicebear.com/10.x/critters/png?size=512&seed=${encodeURIComponent(handle)}`;
-  const res = await fetch(url);
-  const blob = await res.blob();
-  const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bitmap, 0, 0);
-  return canvas;
-}
-
-/** Writes the payload into the avatar image and returns a PNG blob. */
+/** Writes the legacy-compatible JSON payload into the full opaque backup card. */
 export async function exportBackupPng(payload: BackupPayload): Promise<Blob> {
-  const canvas = await loadAvatarCanvas(payload.handle);
-  const ctx = canvas.getContext("2d")!;
+  const canvas = await createBackupCard(payload);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas non disponibile");
   const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = image.data;
 
@@ -59,7 +49,7 @@ export async function exportBackupPng(payload: BackupPayload): Promise<Blob> {
     // keep the image fully opaque so the alpha channel never hides data
     data[i + 3] = 255;
     for (let c = 0; c < 3 && bit < bits.length; c++) {
-      data[i + c] = (data[i + c]! & 0xfe) | bits[bit]!;
+      data[i + c] = ((data[i + c] ?? 0) & 0xfe) | (bits[bit] ?? 0);
       bit++;
     }
   }
@@ -76,13 +66,15 @@ export async function importBackupPng(file: File): Promise<BackupPayload> {
   const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) { bitmap.close(); throw new Error("Canvas non disponibile"); }
   ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
   const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
   const bits: number[] = [];
   for (let i = 0; i < data.length; i += 4) {
-    for (let c = 0; c < 3; c++) bits.push(data[i + c]! & 1);
+    for (let c = 0; c < 3; c++) bits.push((data[i + c] ?? 0) & 1);
   }
 
   const byteAt = (index: number) => {
@@ -93,9 +85,8 @@ export async function importBackupPng(file: File): Promise<BackupPayload> {
 
   const magic = String.fromCharCode(byteAt(0), byteAt(1), byteAt(2), byteAt(3));
   if (magic !== MAGIC) throw new Error("Nessun backup trovato in questa immagine");
-  const length =
-    (byteAt(4) << 24) | (byteAt(5) << 16) | (byteAt(6) << 8) | byteAt(7);
-  if (length <= 0 || length > 5_000_000) throw new Error("Backup illeggibile");
+  const length = new DataView(Uint8Array.from([byteAt(4), byteAt(5), byteAt(6), byteAt(7)]).buffer).getUint32(0);
+  if (length <= 0 || length > 5_000_000 || (length + 8) * 8 > bits.length) throw new Error("Backup illeggibile");
   const bytes = new Uint8Array(length);
   for (let i = 0; i < length; i++) bytes[i] = byteAt(8 + i);
   return JSON.parse(new TextDecoder().decode(bytes)) as BackupPayload;

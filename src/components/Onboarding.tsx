@@ -4,6 +4,7 @@ import { InfoModal } from "./InfoModal";
 import { rollPickerEmojis } from "@/lib/emoji";
 import { generateKeyPair } from "@/lib/keys";
 import { useStore } from "@/lib/store";
+import { Button } from "@/components/ui/button";
 
 export function Onboarding() {
   const { patch, addEmojisToCollection } = useStore();
@@ -108,19 +109,19 @@ export function Onboarding() {
       </div>
 
       <div className="flex gap-2">
-        <button
+        <Button variant="secondary"
           onClick={() => setInfoOpen(true)}
-          className="rounded-2xl bg-surface-2 px-5 py-3 text-muted-foreground"
+          className="h-auto rounded-2xl px-5 py-3"
         >
           Info
-        </button>
-        <button
+        </Button>
+        <Button
           disabled={!canGo}
           onClick={create}
-          className="flex-1 rounded-2xl bg-accent px-4 py-3 text-accent-foreground disabled:opacity-40"
+          className="h-auto flex-1 rounded-2xl px-4 py-3 disabled:opacity-40"
         >
           Crea il profilo
-        </button>
+        </Button>
       </div>
 
       {infoOpen && <InfoModal onClose={() => setInfoOpen(false)} />}

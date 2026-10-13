@@ -1,7 +1,9 @@
+import { X } from "lucide-react";
+
 import { COLLECTION, COLLECTION_SIZE } from "@/lib/emoji";
 import { useStore } from "@/lib/store";
 
-/** 15x10 fixed grid: owned emoji replace the accent dots. */
+/** 15x10 fixed grid: owned emoji replace the faint x placeholders. */
 export function EmojiCollection() {
   const { state } = useStore();
   const owned = new Set(state.emojiCollection);
@@ -30,7 +32,12 @@ export function EmojiCollection() {
               {has ? (
                 <span className="emoji-glow text-[15px] leading-none">{char}</span>
               ) : (
-                <span className="block size-1.5 rounded-full bg-accent/70" />
+                <X
+                  size={9}
+                  strokeWidth={1.5}
+                  className="text-muted-foreground/30"
+                  aria-hidden="true"
+                />
               )}
             </div>
           );

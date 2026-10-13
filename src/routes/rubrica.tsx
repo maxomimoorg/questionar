@@ -24,6 +24,7 @@ import { exportBackupPng, importBackupPng } from "@/lib/stego";
 import { useStore } from "@/lib/store";
 import { emojisFromHandle, isValidHandle } from "@/lib/handle";
 import { handleOf } from "@/lib/types";
+import { Button } from "@/components/ui/button";
 
 const searchSchema = z.object({ handle: z.string().optional() });
 
@@ -93,19 +94,16 @@ function RubricaPage() {
 
   useEffect(() => {
     if (!canvasRef.current || !qrLink) return;
-    const dark = state.theme.mode === "dark";
-    const accent = getComputedStyle(document.documentElement)
-      .getPropertyValue("--accent")
-      .trim();
+    const isDark = state.theme.mode === "dark";
     void QRCode.toCanvas(canvasRef.current, qrLink, {
       width: 220,
-      margin: 1,
+      margin: 2,
       color: {
-        dark: dark ? oklchToHex(accent) : "#000000",
-        light: "#00000000",
+        dark: isDark ? "#F8FAFC" : "#2F5257",
+        light: isDark ? "#16272B" : "#FFFFFF",
       },
     });
-  }, [qrLink, state.theme]);
+  }, [qrLink, state.theme.mode]);
 
   const incoming = state.requests.filter((r) => r.direction === "incoming");
   const outgoing = state.requests.filter((r) => r.direction === "outgoing");
@@ -143,6 +141,7 @@ function RubricaPage() {
         answers: snap.answers,
         customQuestions: snap.customQuestions,
         savedAt: Date.now(),
+        ...(state.identity?.keys?.publicKey ? { pub: state.identity.keys.publicKey } : {}),
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -187,7 +186,7 @@ function RubricaPage() {
         customQuestions: payload.customQuestions,
         recommends: [],
         updatedAt: payload.savedAt,
-      });
+      }, payload.pub);
       toast.success(`Confronto disponibile con @${payload.handle}`);
       void navigate({ to: "/confronto", search: { b: payload.handle } });
     } catch {
@@ -212,7 +211,7 @@ function RubricaPage() {
                 placeholder="handle online, es. luna🦊🌊⭐"
                 className="flex-1 rounded-xl bg-background px-3 py-2 text-[14px] outline-none ring-1 ring-input focus:ring-accent"
               />
-              <button
+              <Button
                 onClick={() => {
                   const h = query.trim();
                   if (!h) return;
@@ -231,11 +230,11 @@ function RubricaPage() {
                   void sendRequest(h);
                   setQuery("");
                 }}
-                className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground"
+                size="icon" className="size-10 rounded-xl"
                 aria-label="Cerca utente online e invia richiesta"
               >
                 <UserPlus size={18} />
-              </button>
+              </Button>
             </div>
 
             <div className="relative flex items-center justify-center">
@@ -273,12 +272,12 @@ function RubricaPage() {
             </button>
           </div>
         ) : (
-          <button
+          <Button
             onClick={() => setSearchOpen(true)}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-accent-foreground"
+            className="mt-3 h-auto w-full rounded-xl px-4 py-3"
           >
             <Search size={18} /> Cerca e confronta
-          </button>
+          </Button>
         )}
         <p className="mt-2 text-[12px] text-muted-foreground">
           {issue
@@ -316,13 +315,13 @@ function RubricaPage() {
                 <div className="truncate text-[14px] font-semibold">{r.name}</div>
                 <div className="truncate text-[12px] text-muted-foreground">@{r.handle}</div>
               </div>
-              <button
+              <Button
                 aria-label="Accetta"
                 onClick={() => void accept(r.handle)}
-                className="grid size-9 place-items-center rounded-full bg-accent text-accent-foreground"
+                size="icon" className="rounded-full"
               >
                 <Check size={16} />
-              </button>
+              </Button>
               <button
                 aria-label="Rifiuta"
                 onClick={() => void reject(r.handle)}
@@ -453,7 +452,7 @@ function RubricaPage() {
       {/* QR */}
       <section className="section-card text-center">
         <h2 className="text-[16px]">Il tuo QR</h2>
-        <canvas ref={canvasRef} className="mx-auto mt-2" />
+        <div className="mx-auto mt-2 inline-block rounded-2xl border border-border bg-surface p-3"><canvas ref={canvasRef} className="block" /></div>
         <button
           onClick={() => copy(myHandle)}
           className="mx-auto mt-1 flex items-center gap-1 text-[14px] font-normal text-muted-foreground"
@@ -471,20 +470,20 @@ function RubricaPage() {
           immagini compresse in JPG delle chat perdono i dati.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <button
+          <Button
             disabled={busy}
             onClick={() => void doExport()}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3 text-accent-foreground disabled:opacity-60"
+            className="h-auto rounded-2xl px-4 py-3 disabled:opacity-60"
           >
             <Download size={16} /> Esporta
-          </button>
-          <button
+          </Button>
+          <Button
             disabled={busy}
             onClick={() => importRef.current?.click()}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3 text-accent-foreground disabled:opacity-60"
+            className="h-auto rounded-2xl px-4 py-3 disabled:opacity-60"
           >
             <Upload size={16} /> Importa
-          </button>
+          </Button>
         </div>
         <input
           ref={importRef}
@@ -535,27 +534,3 @@ function RubricaPage() {
 }
 
 /** Rough oklch() -> hex conversion, enough for the QR foreground. */
-function oklchToHex(value: string): string {
-  const nums = value.match(/[\d.]+/g);
-  if (!nums || nums.length < 3) return "#000000";
-  const [L, C, hDeg] = [Number(nums[0]), Number(nums[1]), Number(nums[2])];
-  const h = (hDeg * Math.PI) / 180;
-  const a = C * Math.cos(h);
-  const b = C * Math.sin(h);
-  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
-  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
-  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
-  const l = l_ ** 3;
-  const m = m_ ** 3;
-  const s = s_ ** 3;
-  const lin = [
-    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
-  ];
-  const toSrgb = (u: number) => {
-    const v = u <= 0.0031308 ? 12.92 * u : 1.055 * Math.pow(Math.max(u, 0), 1 / 2.4) - 0.055;
-    return Math.round(Math.min(1, Math.max(0, v)) * 255);
-  };
-  return `#${lin.map((u) => toSrgb(u).toString(16).padStart(2, "0")).join("")}`;
-}

@@ -1,4 +1,8 @@
-import { Check, Eye, EyeOff, MessageSquare, QrCode, Sparkles, X, Zap } from "lucide-react";
+import { Check, Eye, EyeOff, MessageSquare, Plus, QrCode, ShieldCheck, Sparkles, Users, X, Zap } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { PROFILE_TAGS, ProfileTagChip } from "./ProfileTags";
+import { nextTagState, type ProfileTags } from "@/lib/profile-tags";
 
 import { Avatar } from "./Avatar";
 
@@ -93,26 +97,71 @@ function DemoConnect() {
   );
 }
 
+export function DemoProfileTags() {
+  const [tags, setTags] = useState<ProfileTags>({ vegan: true, tabacco: "cross" });
+  return (
+    <div className="rounded-2xl bg-surface-2 p-3">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Prova i tag del profilo">
+        {PROFILE_TAGS.filter((tag) => tag.id === "vegan" || tag.id === "tabacco").map((tag) => (
+          <ProfileTagChip key={tag.id} tag={tag} value={tags[tag.id]} onClick={() => setTags((current) => ({ ...current, [tag.id]: nextTagState(current[tag.id]) }))} />
+        ))}
+      </div>
+      <p className="mt-2 text-[12px] text-muted-foreground">Spunta → divieto → senza risposta. Nessuna etichetta è definitiva.</p>
+    </div>
+  );
+}
+
 export function InfoModal({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.focus();
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key !== "Tab") return;
+      const controls = dialogRef.current?.querySelectorAll<HTMLElement>('button, a[href], input, [tabindex="0"]');
+      const first = controls?.[0];
+      const last = controls?.[controls.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialogRef.current)) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKey);
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+    };
+  }, [onClose]);
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-start justify-center bg-black/50 p-3 backdrop-blur-sm"
+      className="fixed inset-0 z-[70] flex items-start justify-center bg-overlay p-3 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="questionar-info-title"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="safe-bottom mt-6 max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-popover p-5 shadow-2xl ring-1 ring-border"
+        className="info-scroll safe-bottom mt-6 max-h-[88dvh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-surface p-5 shadow-2xl outline-none ring-1 ring-border"
       >
         <div className="mb-3 flex items-start gap-3">
           <img src="/logo.png" alt="Logo QuestionAR" width={40} height={40} className="size-10 shrink-0 rounded-lg object-contain" />
-          <h1 className="flex-1 text-2xl">QuestionAR</h1>
-          <button
+          <h1 id="questionar-info-title" className="flex-1 text-2xl">QuestionAR</h1>
+          <Button variant="secondary" size="icon"
             aria-label="Chiudi le informazioni"
             onClick={onClose}
             className="grid size-9 place-items-center rounded-full bg-surface-2 text-accent"
           >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <h2 className="text-[16px]">L’anti-dating app per connessioni reali</h2>
@@ -158,15 +207,40 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <p className="mt-3 text-[14px]">
-          <strong>Bio e Commenti:</strong> Usa i campi testo a tua disposizione nei commenti
-          delle singole risposte e nella bio per contestualizzare le tue preferenze e
-          raccontare le motivazioni dietro le tue scelte.
+          <strong>Commenti alle risposte:</strong> Un numero non racconta tutto. Aggiungi un
+          commento per dare contesto alle tue preferenze e alle motivazioni dietro le tue scelte.
         </p>
         <div className="mt-2">
           <DemoComment />
         </div>
 
-        <h3 className="mt-5 text-[16px]">2. Modalità di Connessione e Confronto</h3>
+        <h3 className="mt-5 text-[16px]">2. Tag del profilo: stili di vita e preferenze rapide</h3>
+        <p className="mt-2 text-[14px]">
+          Vegan, tabacco, non-monogamia, prole, queer e gli altri tag raccontano a colpo
+          d’occhio cosa ti caratterizza. Un tocco conferma con la <strong>spunta</strong>;
+          un secondo indica disinteresse o rifiuto con il <strong>simbolo di divieto</strong>;
+          un terzo rimuove la scelta e torna a <strong>senza risposta</strong>.
+          Non rispondere non significa dire no.
+        </p>
+        <div className="mt-2"><DemoProfileTags /></div>
+        <p className="mt-2 text-[14px]">
+          I tag scelti sono visibili nel tuo profilo, nei confronti diretti e impressi
+          nella scheda avatar PNG: piccoli segnali, non scatole in cui rinchiuderti.
+        </p>
+
+        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><Plus size={18} className="shrink-0" />3. Domande personalizzate e Bio</h3>
+        <p className="mt-2 text-[14px]">
+          Le domande standard non ti bastano? Con il tasto <strong>+</strong> puoi creare
+          un quesito tutto tuo e scegliere la categoria appropriata. Porta nel confronto
+          quello che conta davvero per te, anche quando non rientra nei copioni abituali.
+        </p>
+        <p className="mt-2 text-[14px]">
+          La <strong>Bio</strong> non è un semplice blocco di testo: hai fino a
+          <strong> 666 caratteri</strong> e un editor con titoli, stili, link e colori.
+          Dai forma alla tua identità, senza ridurla a uno slogan.
+        </p>
+
+        <h3 className="mt-5 text-[16px]">4. Modalità di Connessione e Confronto</h3>
         <p className="mt-2 text-[14px]">
           Per aggiungere un nuovo profilo ed effettuare la comparazione dei dati, puoi
           utilizzare tre modalità:
@@ -201,9 +275,45 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
           </p>
         </div>
 
-        <p className="mt-4 flex items-center gap-2 text-[14px] font-semibold text-accent">
-          <Sparkles size={16} /> Ogni nuova connessione arricchisce la tua collezione esclusiva
-          di emoji!
+        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><Users size={18} className="shrink-0" />5. Confronto a tre e compatibilità per categoria</h3>
+        <p className="mt-2 text-[14px]">
+          Non tutte le connessioni sono a due. Puoi aggiungere un <strong>terzo profilo</strong>{" "}
+          contemporaneamente e confrontare le risposte di tre persone: spazio anche alle
+          dinamiche di gruppo e alle relazioni poliamorose, senza dare per scontato un unico modello.
+        </p>
+        <p className="mt-2 text-[14px]">
+          La percentuale di compatibilità non è solo globale: trovi un indice per
+          <strong> ogni categoria tematica</strong>. Puoi cliccare su qualsiasi quesito per
+          approfondire le risposte dell’altra persona. Il numero apre una conversazione,
+          non decide al posto vostro.
+        </p>
+
+        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><ShieldCheck size={18} className="shrink-0" />6. Zero-server e scheda steganografica</h3>
+        <p className="mt-2 text-[14px]">
+          Nessun server centrale raccoglie le tue risposte intime: i dati restano nel tuo
+          <strong> browser e dispositivo, in IndexedDB</strong>. Sei tu a decidere con chi
+          condividerli. Scegli persone fidate e non far girare il tuo profilo incontrollatamente sul web:
+          chi riceve la scheda può leggerne i dati e inoltrarla.
+        </p>
+        <p className="mt-2 text-[14px]">
+          La scheda PNG è una sorta di <strong>“carta d’identità crittografica”</strong> del
+          profilo, con la tua chiave pubblica e le risposte nascoste nei pixel tramite
+          <strong> steganografia</strong>. Nascondere non significa cifrare: tratta il file
+          con la stessa cura che riservi alle tue risposte.
+        </p>
+        <p className="mt-2 text-[14px]">
+          Scambiala come file originale via chat, email o trasferimento diretto, senza
+          comprimerla o modificarla: le alterazioni dei pixel possono rovinare i dati.
+          Una volta ricevuta, puoi caricarla e vedere la compatibilità anche
+          <strong> completamente offline</strong>, senza aspettare che l’altra persona sia online.
+        </p>
+
+        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><Sparkles size={18} className="shrink-0" />7. La tua collezione emoji</h3>
+        <p className="mt-2 text-[14px]">
+          Parti dalle <strong>tre emoji del tuo handle</strong>. Ogni connessione scambiata
+          ti permette di collezionare anche le emoji dei profili collegati, visibili nella
+          tua <strong>Rubrica</strong>. Una piccola costellazione delle persone incontrate,
+          non una classifica di conquiste.
         </p>
 
         <footer className="mt-8 rounded-2xl bg-surface p-4 text-[12px] text-muted-foreground">
@@ -246,20 +356,19 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
         </footer>
 
         <div className="mt-6 flex gap-3">
-          <a
+          <Button asChild variant="secondary" className="flex-1 rounded-2xl px-4 py-3 text-[16px] h-auto"><a
             href="https://t.me/maxomimo"
             target="_blank"
             rel="noreferrer"
-            className="flex-1 rounded-2xl bg-surface-2 px-4 py-3 text-center text-[16px] text-foreground"
           >
             Feedback
-          </a>
-          <button
+          </a></Button>
+          <Button
             onClick={onClose}
-            className="flex-1 rounded-2xl bg-accent px-4 py-3 text-[16px] text-accent-foreground"
+            className="h-auto flex-1 rounded-2xl px-4 py-3 text-[16px]"
           >
             Chiudi
-          </button>
+          </Button>
         </div>
       </div>
     </div>

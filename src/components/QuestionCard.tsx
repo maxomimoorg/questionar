@@ -66,7 +66,8 @@ export function QuestionCard({ question }: Props) {
       id={`q-${question.id}`}
       className={`rounded-2xl px-3 py-3 transition-colors ${
         answer.hidden ? "opacity-50 grayscale" : ""
-      } ${answer.critical ? "bg-surface-2 ring-2 ring-accent" : "bg-surface"}`}
+      } ${answer.critical ? "bg-surface-2 ring-2" : "bg-surface"}`}
+      style={answer.critical ? ({ "--tw-ring-color": color } as import("react").CSSProperties) : undefined}
     >
       <div className="flex items-start gap-2">
         <p className="flex-1 text-[14px] leading-snug text-foreground">{question.text}</p>
@@ -107,8 +108,9 @@ export function QuestionCard({ question }: Props) {
               });
             }}
             className={`grid size-8 place-items-center rounded-full ${
-              answer.critical ? "bg-accent text-accent-foreground" : "bg-background text-muted-foreground"
+              answer.critical ? "text-background" : "bg-background text-muted-foreground"
             }`}
+            style={answer.critical ? { backgroundColor: color } : undefined}
           >
             <Zap size={15} />
           </button>

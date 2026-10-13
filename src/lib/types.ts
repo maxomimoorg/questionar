@@ -1,5 +1,6 @@
 import type { CategoryKey, Question } from "./questions";
 import type { KeyPairJwk } from "./keys";
+import type { ProfileTags } from "./profile-tags";
 
 export type Answer = {
   value: number;
@@ -19,14 +20,12 @@ export type Identity = {
 
 export type ThemeState = {
   mode: "light" | "dark";
-  accentH: number;
-  tintH: number;
 };
 
 export type ProfileSnapshot = {
   name: string;
   bio: string;
-  tags?: Record<string, boolean>;
+  tags?: ProfileTags;
   answers: Record<string, Answer>;
   customQuestions: Question[];
   recommends: string[];
@@ -72,7 +71,7 @@ export type AppState = {
   emojiCollection: string[];
   contacts: Contact[];
   requests: ConnectionRequest[];
-  tags: Record<string, boolean>;
+  tags: ProfileTags;
   network: NetworkPrefs;
 };
 
@@ -82,7 +81,7 @@ export const EMPTY_STATE: AppState = {
   answers: {},
   customQuestions: [],
   openDrawers: {},
-  theme: { mode: "light", accentH: 184, tintH: 184 },
+  theme: { mode: "dark" },
   emojiCollection: [],
   contacts: [],
   requests: [],
