@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { BioEditor } from "@/components/BioEditor";
 import { CompactProfileTags } from "@/components/ProfileTags";
 import { EMPTY_STATE } from "@/lib/types";
-import { isActiveTag, nextTagState } from "@/lib/profile-tags";
+import { isActiveTag, nextTagState, type ProfileTags } from "@/lib/profile-tags";
 import { layoutBackupTags } from "@/lib/backup-card";
 
 const patch = vi.fn();
@@ -48,8 +48,8 @@ describe("profile tags", () => {
     expect(layoutBackupTags(ctx, ["vegan", "animali", "tabacco", "alcol", "droghe", "sport", "non-monogamia", "prole", "queer", "spirituale", "attivista"]).rows).toHaveLength(2);
   });
   it("dims only the other profile's active tags that do not match mine, in both themes", () => {
-    const mine = { vegan: true, alcol: true, tabacco: "cross" };
-    const theirs = { vegan: true, alcol: "cross", sport: true, tabacco: "cross" };
+    const mine: ProfileTags = { vegan: true, alcol: true, tabacco: "cross" };
+    const theirs: ProfileTags = { vegan: true, alcol: "cross", sport: true, tabacco: "cross" };
     for (const dark of [false, true]) {
       render(
         <div className={dark ? "dark" : ""}>
