@@ -1,22 +1,19 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { BookUser, Info, Moon, Sun, UserRound } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Avatar } from "./Avatar";
 import { InfoModal } from "./InfoModal";
-import { PALETTE, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import { handleOf } from "@/lib/types";
+import { Button } from "@/components/ui/button";
 
 export function Header() {
-  const { state, toggleMode, setAccent, setTint } = useStore();
-  const navigate = useNavigate();
+  const { state, toggleMode } = useStore();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [shrunk, setShrunk] = useState(false);
-  const [paletteOpen, setPaletteOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressed = useRef(false);
 
   const identity = state.identity;
   const handle = handleOf(identity);
@@ -37,18 +34,6 @@ export function Header() {
     } catch {
       toast.error("Impossibile copiare l'handle");
     }
-  };
-
-  const startPress = () => {
-    longPressed.current = false;
-    pressTimer.current = setTimeout(() => {
-      longPressed.current = true;
-      setPaletteOpen(true);
-    }, 450);
-  };
-  const endPress = () => {
-    if (pressTimer.current) clearTimeout(pressTimer.current);
-    if (!longPressed.current) toggleMode();
   };
 
   return (
@@ -73,97 +58,36 @@ export function Header() {
             {identity?.name ?? "QuestionAR"}
           </div>
           {handle && (
-            <button
+            <Button variant="link"
               onClick={copyHandle}
-              className="max-w-full truncate text-left text-[12px] font-normal text-muted-foreground"
+              className="h-auto max-w-full justify-start truncate p-0 text-left text-[12px] font-normal text-muted-foreground"
             >
               @{handle}
-            </button>
+            </Button>
           )}
         </div>
 
         <div className="relative flex items-center gap-1">
-          <Link
+          <Button asChild variant="secondary" size="icon" className="header-action"><Link
             to={onRubrica ? "/" : "/rubrica"}
             onClick={(e) => e.stopPropagation()}
             aria-label={onRubrica ? "Vai al profilo" : "Apri la rubrica"}
-            className="grid size-9 place-items-center rounded-full bg-surface-2 text-accent"
           >
             {onRubrica ? <UserRound size={18} /> : <BookUser size={18} />}
-          </Link>
-          <button
+          </Link></Button>
+          <Button
+            variant="secondary" size="icon" title="Informazioni sull'app"
             aria-label="Informazioni sull'app"
-            onClick={(e) => {
-              e.stopPropagation();
-              setInfoOpen(true);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="grid size-9 place-items-center rounded-full bg-surface-2 text-accent"
+            onClick={(e) => { e.stopPropagation(); setInfoOpen(true); }}
+            className="header-action"
           >
             <Info size={18} />
-          </button>
-          <button
-            aria-label="Cambia tema"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              startPress();
-            }}
-            onPointerUp={(e) => {
-              e.stopPropagation();
-              endPress();
-            }}
-            onPointerLeave={() => pressTimer.current && clearTimeout(pressTimer.current)}
-            className="grid size-9 place-items-center rounded-full bg-surface-2 text-accent"
-          >
+          </Button>
+          <Button variant="secondary" size="icon" className="header-action"
+            aria-label="Cambia tema" title={state.theme.mode === "dark" ? "Modalità chiara" : "Modalità scura"}
+            onClick={(e) => { e.stopPropagation(); toggleMode(); }}>
             {state.theme.mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-
-          {paletteOpen && (
-            <div
-              className="absolute right-0 top-11 z-50 w-64 rounded-2xl bg-popover p-3 shadow-xl ring-1 ring-border"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mb-2 text-[12px] text-muted-foreground">
-                Tinta dello sfondo
-              </div>
-              <div className="grid grid-cols-8 gap-1.5">
-                {PALETTE.map((p, i) => (
-                  <button
-                    key={`tint-${p.label}`}
-                    aria-label={`Sfondo ${p.label}`}
-                    onClick={() => setTint(i)}
-                    className={`size-6 rounded-full ring-2 ${
-                      state.theme.tintH === p.h ? "ring-accent" : "ring-border"
-                    }`}
-                    style={{ backgroundColor: `oklch(0.88 0.06 ${p.h})` }}
-                  />
-                ))}
-              </div>
-              <div className="mb-2 mt-3 text-[12px] text-muted-foreground">
-                Elementi in risalto
-              </div>
-              <div className="grid grid-cols-8 gap-1.5">
-                {PALETTE.map((p, i) => (
-                  <button
-                    key={`accent-${p.label}`}
-                    aria-label={`Accento ${p.label}`}
-                    onClick={() => setAccent(i)}
-                    className={`size-6 rounded-full ring-2 ${
-                      state.theme.accentH === p.h ? "ring-accent" : "ring-border"
-                    }`}
-                    style={{ backgroundColor: `oklch(0.7 0.15 ${p.h})` }}
-                  />
-                ))}
-              </div>
-              <button
-                onClick={() => setPaletteOpen(false)}
-                className="mt-3 w-full rounded-xl bg-surface-2 px-3 py-2 text-[14px]"
-              >
-                Chiudi
-              </button>
-            </div>
-          )}
+          </Button>
 
         </div>
       </div>

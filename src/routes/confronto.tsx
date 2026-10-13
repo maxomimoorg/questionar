@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Plus, Star, Zap, ArrowRightCircle, X } from "lucide-react";
+import { ChevronDown, Plus, Star, Zap, ArrowRightCircle, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Avatar } from "@/components/Avatar";
-import { PROFILE_TAGS } from "@/components/ProfileTags";
+import { CompactProfileTags } from "@/components/ProfileTags";
 import { percentColor } from "@/lib/color";
 import { averageCompat, multiCompat } from "@/lib/compat";
 import { CATEGORIES } from "@/lib/questions";
@@ -49,6 +49,7 @@ function ComparePage() {
   const { b, c } = Route.useSearch();
   const [addOpen, setAddOpen] = useState(false);
   const [expandedProfile, setExpandedProfile] = useState<ExpandedProfile | null>(null);
+  const [closedCats, setClosedCats] = useState<Record<string, boolean>>({});
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const me = state.identity;
@@ -109,18 +110,6 @@ function ComparePage() {
   const others = people.filter((p) => !p.mine);
   const recommended = (contactB.snapshot?.recommends ?? [])
     .filter((h) => h !== handleOf(me));
-  const tagSets = [
-    state.tags,
-    contactB.snapshot?.tags ?? {},
-    ...(contactC ? [contactC.snapshot?.tags ?? {}] : []),
-  ];
-  const visibleTags = PROFILE_TAGS.filter((tag) =>
-    tagSets.some((tags) => Boolean(tags[tag.id])),
-  );
-
-  const editTag = (tagId: string) => {
-    void navigate({ to: "/", search: { tag: tagId } });
-  };
 
   const stopLongPress = () => {
     if (longPressTimer.current !== null) {
@@ -354,6 +343,7 @@ function ComparePage() {
         ) : (
           <p className="mt-1 text-[12px] text-muted-foreground">Nessuna bio.</p>
         )}
+        <CompactProfileTags tags={contactB.snapshot?.tags} className="mt-2" />
         {contactC && (
           <>
             <hr className="my-3 border-border" />
@@ -366,76 +356,74 @@ function ComparePage() {
             ) : (
               <p className="mt-1 text-[12px] text-muted-foreground">Nessuna bio.</p>
             )}
+            <CompactProfileTags tags={contactC.snapshot?.tags} className="mt-2" />
           </>
-        )}
-        {visibleTags.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
-            {visibleTags.map(({ id, label, icon: Icon }) => {
-              const mine = Boolean(tagSets[0]?.[id]);
-              const otherCount = tagSets.slice(1).filter((tags) => tags[id]).length;
-              const shared = mine && otherCount > 0;
-              const otherOnlyTone = otherCount === tagSets.length - 1 ? "red" : "yellow";
-
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  disabled={mine}
-                  onClick={() => editTag(id)}
-                  aria-label={mine ? label : `Attiva il tag ${label} nel tuo profilo`}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[12px] transition-colors ${
-                    shared
-                      ? "border-tag-match bg-tag-match text-tag-match-foreground"
-                      : mine
-                        ? "border-input bg-background text-muted-foreground"
-                        : otherOnlyTone === "red"
-                          ? "border-destructive bg-background text-foreground"
-                          : "border-warning bg-background text-foreground"
-                  }`}
-                >
-                  <Icon size={12} aria-hidden="true" />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
         )}
       </section>
 
       {/* questions by category */}
       {CATEGORIES.map((cat) => {
-        const items = allQuestions.filter((q) => q.category === cat.key);
+        const items = allQuestions
+          .filter((q) => q.category === cat.key)
+          .map((q, i) => ({ q, i, c: multiCompat(q.id, participants) }))
+          .sort((x, y) => {
+            if (x.c === null && y.c === null) return x.i - y.i;
+            if (x.c === null) return 1;
+            if (y.c === null) return -1;
+            return y.c - x.c || x.i - y.i;
+          })
+          .map((x) => x.q);
         if (items.length === 0) return null;
         const catCompat = averageCompat(
           items.map((q) => q.id),
           participants,
         );
+        const closed = Boolean(closedCats[cat.key]);
         return (
           <section key={cat.key} className="rounded-3xl bg-surface-2/60 p-2">
-            <div className="flex items-center justify-between px-2 py-2">
-              <span className="text-[16px] font-bold text-accent">{cat.label}</span>
-              <span
-                className="text-[14px] font-bold"
-                style={{
-                  color:
-                    catCompat === null
-                      ? "var(--color-muted-foreground)"
-                      : percentColor(catCompat),
-                }}
-              >
-                {catCompat === null ? "–" : `${catCompat}%`}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {items.map((q) => (
-                <CompareRow
-                  key={q.id}
-                  question={q}
-                  people={people}
-                  known={questions.some((x) => x.id === q.id)}
+            <button
+              type="button"
+              aria-expanded={!closed}
+              aria-label={closed ? `Apri la categoria ${cat.label}` : `Chiudi la categoria ${cat.label}`}
+              onClick={() =>
+                setClosedCats((current) => ({ ...current, [cat.key]: !current[cat.key] }))
+              }
+              className="flex w-full items-center justify-between gap-2 rounded-2xl px-2 py-2 text-left"
+            >
+              <span className="text-[16px] font-bold text-brand">{cat.label}</span>
+              <span className="flex items-center gap-2">
+                <span
+                  className="text-[14px] font-bold"
+                  style={{
+                    color:
+                      catCompat === null
+                        ? "var(--color-muted-foreground)"
+                        : percentColor(catCompat),
+                  }}
+                >
+                  {catCompat === null ? "–" : `${catCompat}%`}
+                </span>
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  className={`shrink-0 text-muted-foreground transition-transform duration-300 ease-out ${
+                    closed ? "" : "rotate-180"
+                  }`}
                 />
-              ))}
-            </div>
+              </span>
+            </button>
+            {closed ? null : (
+              <div className="space-y-2">
+                {items.map((q) => (
+                  <CompareRow
+                    key={q.id}
+                    question={q}
+                    people={people}
+                    known={questions.some((x) => x.id === q.id)}
+                  />
+                ))}
+              </div>
+            )}
           </section>
         );
       })}
@@ -500,6 +488,9 @@ function CompareRow({
     people.map((p) => ({ answers: p.answers })),
   );
   const criticalBy = rows.filter((r) => r.answer?.critical).map((r) => r.person);
+  // Same rule as the profile: critical questions use the percentage colour, not the theme.
+  const criticalColor =
+    compat !== null ? percentColor(compat) : "var(--color-muted-foreground)";
   const needsMyAnswer = !mine.answer?.answered;
   const allAnswered = rows.every((r) => r.answer?.answered);
   const noneAnswered = rows.every((r) => !r.answer?.answered);
@@ -538,13 +529,21 @@ function CompareRow({
   return (
     <div
       className={`rounded-2xl px-3 py-3 ${
-        criticalBy.length > 0 ? "bg-surface-2 ring-2 ring-accent" : "bg-surface"
+        criticalBy.length > 0 ? "bg-surface-2 ring-2" : "bg-surface"
       }`}
+      style={
+        criticalBy.length > 0
+          ? ({ "--tw-ring-color": criticalColor } as import("react").CSSProperties)
+          : undefined
+      }
     >
       <div className="flex items-start gap-2">
         <p className="flex-1 text-[14px] leading-snug">{question.text}</p>
         {criticalBy.length > 0 && (
-          <span className="flex shrink-0 items-center gap-1 text-[12px] text-accent">
+          <span
+            className="flex shrink-0 items-center gap-1 text-[12px]"
+            style={{ color: criticalColor }}
+          >
             <Zap size={14} />
             {criticalBy.map((p) => (p.mine ? "io" : p.name)).join(", ")}
           </span>

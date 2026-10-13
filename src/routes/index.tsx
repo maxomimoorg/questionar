@@ -8,6 +8,7 @@ import { CompactProfileTags, PROFILE_TAGS } from "@/components/ProfileTags";
 import { QuestionCard } from "@/components/QuestionCard";
 import { CATEGORIES, type CategoryKey } from "@/lib/questions";
 import { useStore } from "@/lib/store";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   validateSearch: z.object({
@@ -110,7 +111,7 @@ function ProfilePage() {
               onClick={() => toggleDrawer(cat.key)}
               className="flex w-full items-center justify-between gap-2 px-2 py-2"
             >
-              <span className="text-[16px] font-bold text-accent">{cat.label}</span>
+              <span className="text-[16px] font-bold text-brand">{cat.label}</span>
               <span className="flex items-center gap-2 text-[12px] font-normal text-muted-foreground">
                 {items.length}
                 <ChevronDown
@@ -155,16 +156,16 @@ function ProfilePage() {
             placeholder="Scrivi la tua domanda"
             className="flex-1 rounded-xl bg-background px-3 py-2 text-[14px] outline-none ring-1 ring-input focus:ring-accent"
           />
-          <button
+          <Button
             onClick={() => {
               if (!newText.trim()) return;
               addCustomQuestion(newCat, newText.trim());
               setNewText("");
             }}
-            className="flex items-center justify-center gap-1 rounded-xl bg-accent px-4 py-2 text-accent-foreground"
+            className="h-auto rounded-xl px-4 py-2"
           >
             <Plus size={16} /> Aggiungi
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -173,7 +174,7 @@ function ProfilePage() {
           onClick={() => toggleDrawer("hidden")}
           className="flex w-full items-center justify-between gap-2 px-2 py-2"
         >
-          <span className="text-[16px] font-bold text-accent">Domande nascoste</span>
+          <span className="text-[16px] font-bold text-brand">Domande nascoste</span>
           <span className="flex items-center gap-2 text-[12px] font-normal text-muted-foreground">
             {hidden.length}
             <ChevronDown

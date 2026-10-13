@@ -11,18 +11,12 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import { useStore } from "@/lib/store";
-import { PROFILE_TAGS } from "@/components/ProfileTags";
+import { PALETTE } from "@/lib/palette";
+import { PROFILE_TAGS, ProfileTagChip } from "@/components/ProfileTags";
+import { isActiveTag, nextTagState, type ProfileTags } from "@/lib/profile-tags";
+import { Button } from "@/components/ui/button";
 
-const TEXT_COLORS = [
-  "#e23e3e",
-  "#eb8d34",
-  "#e7c83c",
-  "#68c560",
-  "#34c8c4",
-  "#4a8ff0",
-  "#a06ce0",
-  "#8b8b8b",
-];
+const TEXT_COLORS = PALETTE.map((p) => p.hex);
 
 const MAX = 666;
 
@@ -39,10 +33,10 @@ export function BioEditor({
   const [username, setUsername] = useState(state.identity?.username ?? "");
   const [colorsOpen, setColorsOpen] = useState(false);
   const [count, setCount] = useState(0);
-  const [tags, setTags] = useState<Record<string, boolean>>(() => ({
+  const [tags, setTags] = useState<ProfileTags>(() => ({
     ...PROFILE_TAGS.reduce(
       (acc, tag) => ({ ...acc, [tag.id]: false }),
-      {} as Record<string, boolean>,
+      {} as ProfileTags,
     ),
     ...state.tags,
     ...(initialTag ? { [initialTag]: true } : {}),
@@ -208,28 +202,16 @@ export function BioEditor({
         </div>
 
         <div className="mt-3 rounded-2xl bg-surface p-2.5">
-          <h3 className="text-[12px] font-semibold text-foreground">Tag</h3>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {PROFILE_TAGS.map(({ id, label, icon: Icon }) => {
-              const active = tags[id] ?? false;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setTags((t) => ({ ...t, [id]: !t[id] }))}
-                  aria-pressed={active}
-                  className={`flex items-center gap-1 rounded-full px-2 py-1 text-[12px] ring-1 transition-colors ${
-                    active
-                      ? "bg-accent text-accent-foreground ring-accent"
-                      : "bg-background text-muted-foreground ring-input hover:text-foreground"
-                  }`}
-                >
-                  <Icon size={12} aria-hidden="true" />
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {[{ title: "Cosa mi caratterizza", active: true }, { title: "Senza risposta", active: false }].map((section) => (
+            <section key={section.title} aria-label={section.title} className="mb-3 last:mb-0">
+              <h3 className="text-[12px] font-semibold text-foreground">{section.title}</h3>
+              <div className="mt-1.5 flex min-h-7 flex-wrap gap-1.5">
+                {PROFILE_TAGS.filter((tag) => isActiveTag(tags[tag.id]) === section.active).map((tag) => (
+                  <ProfileTagChip key={tag.id} tag={tag} value={tags[tag.id]} onClick={() => setTags((current) => ({ ...current, [tag.id]: nextTagState(current[tag.id]) }))} />
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
 
         <div className="mt-4 flex gap-2">
@@ -239,12 +221,12 @@ export function BioEditor({
           >
             Annulla
           </button>
-          <button
+          <Button
             onClick={save}
-            className="flex-1 rounded-2xl bg-accent px-4 py-3 text-accent-foreground"
+            className="h-auto flex-1 rounded-2xl px-4 py-3"
           >
             Salva
-          </button>
+          </Button>
         </div>
       </div>
     </div>

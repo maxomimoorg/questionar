@@ -23,18 +23,7 @@ import {
 import { DEFAULT_QUESTIONS, CATEGORIES, type CategoryKey, type Question } from "./questions";
 import type { BackupPayload } from "./stego";
 import { emojisFromHandle } from "./handle";
-
-/** 8 hues, used both for the background tint and for the highlighted elements. */
-export const PALETTE: { label: string; h: number }[] = [
-  { label: "Turchese", h: 184 },
-  { label: "Menta", h: 155 },
-  { label: "Cielo", h: 240 },
-  { label: "Lavanda", h: 295 },
-  { label: "Rosa", h: 350 },
-  { label: "Pesca", h: 40 },
-  { label: "Sole", h: 85 },
-  { label: "Corallo", h: 20 },
-];
+import { normalizeTheme } from "./theme";
 
 
 
@@ -50,8 +39,6 @@ type Ctx = {
   removeCustomQuestion: (id: string) => void;
   toggleDrawer: (key: string) => void;
   toggleMode: () => void;
-  setAccent: (index: number) => void;
-  setTint: (index: number) => void;
   addEmojisToCollection: (emojis: string[]) => void;
   addRequest: (r: ConnectionRequest) => void;
   removeRequest: (handle: string) => void;
@@ -82,6 +69,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...EMPTY_STATE,
           ...saved,
           tags: { ...EMPTY_STATE.tags, ...(saved.tags ?? {}) },
+          theme: normalizeTheme(saved.theme),
           network: {},
         });
       }
@@ -103,8 +91,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
     root.classList.toggle("dark", state.theme.mode === "dark");
-    root.style.setProperty("--accent-h", String(state.theme.accentH));
-    root.style.setProperty("--tint-h", String(state.theme.tintH));
   }, [state.theme]);
 
   const patch = useCallback((p: Partial<AppState>) => {
@@ -177,16 +163,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState((s) => ({
           ...s,
           theme: { ...s.theme, mode: s.theme.mode === "dark" ? "light" : "dark" },
-        })),
-      setAccent: (index) =>
-        setState((s) => ({
-          ...s,
-          theme: { ...s.theme, accentH: (PALETTE[index] ?? PALETTE[0]!).h },
-        })),
-      setTint: (index) =>
-        setState((s) => ({
-          ...s,
-          theme: { ...s.theme, tintH: (PALETTE[index] ?? PALETTE[0]!).h },
         })),
       addEmojisToCollection: (emojis) =>
         setState((s) => ({

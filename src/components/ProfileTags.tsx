@@ -1,5 +1,7 @@
 import {
   Baby,
+  Check,
+  Ban,
   Cigarette,
   Dumbbell,
   Leaf,
@@ -12,6 +14,8 @@ import {
   Wine,
   type LucideIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { isActiveTag, type ProfileTags, type ProfileTagState } from "@/lib/profile-tags";
 
 export type ProfileTag = {
   id: string;
@@ -37,23 +41,33 @@ export function CompactProfileTags({
   tags,
   className = "",
 }: {
-  tags: Record<string, boolean> | undefined;
+  tags: ProfileTags | undefined;
   className?: string;
 }) {
-  const active = PROFILE_TAGS.filter((tag) => tags?.[tag.id]);
+  const active = PROFILE_TAGS.filter((tag) => isActiveTag(tags?.[tag.id]));
   if (active.length === 0) return null;
 
   return (
     <div className={`flex flex-wrap gap-1.5 ${className}`}>
-      {active.map(({ id, label, icon: Icon }) => (
-        <span
-          key={id}
-          className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-1 text-[12px] text-accent-foreground ring-1 ring-accent"
-        >
-          <Icon size={12} aria-hidden="true" />
-          {label}
-        </span>
+      {active.map((tag) => (
+        <ProfileTagChip key={tag.id} tag={tag} value={tags?.[tag.id]} />
       ))}
     </div>
   );
+}
+
+export function ProfileTagChip({ tag, value, onClick }: {
+  tag: ProfileTag;
+  value: ProfileTagState | undefined;
+  onClick?: () => void;
+}) {
+  const active = isActiveTag(value);
+  const cross = value === "cross";
+  const Icon = tag.icon;
+  const label = `${tag.label}: ${cross ? "divieto" : active ? "spunta" : "senza risposta"}`;
+  const className = `profile-tag ${active ? "profile-tag-active" : "profile-tag-inactive"} ${cross ? "profile-tag-cross" : ""}`;
+  const content = <><Icon size={12} aria-hidden="true" /><span>{tag.label}</span>{active && (cross ? <Ban size={12} aria-hidden="true" /> : <Check size={12} aria-hidden="true" />)}</>;
+  return onClick ? (
+    <Button type="button" variant="ghost" size="sm" aria-label={label} aria-pressed={active} onClick={onClick} className={className}>{content}</Button>
+  ) : <span aria-label={label} className={className}>{content}</span>;
 }

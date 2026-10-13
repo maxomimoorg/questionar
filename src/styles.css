@@ -6,8 +6,9 @@
 
 /*
  * QuestionAR design system.
- * Soft pastel, minimal sections, rounded corners.
- * Accent + background tint are driven by --accent-h / --tint-h (set at runtime).
+ * Neon Fuchsia actions and Deep Sea Teal structure.
+ * Dark-first 60/30/10 hierarchy with a complementary ice-teal day theme.
+ * Only the light/dark mode is switchable; colors are fixed.
  */
 
 @theme inline {
@@ -41,6 +42,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -49,68 +52,87 @@
   --color-warning: var(--warning);
   --color-tag-match: var(--tag-match);
   --color-tag-match-foreground: var(--tag-match-foreground);
+  --color-overlay: var(--overlay);
+  --shadow-action-glow: var(--action-glow);
 }
 
 :root {
   --radius: 1rem;
-  --accent-h: 184;
-  --tint-h: 184;
+  --overlay: oklch(0 0 0 / 50%);
+  --backup-background: oklch(0 0 0);
+  --backup-surface: oklch(0.2 0.008 285);
+  --backup-name: oklch(0.874 0.151 204);
+  --backup-handle: oklch(0.645 0.26 2);
+  --backup-text: oklch(1 0 0);
+  --backup-display-font: "Quicksand", system-ui, sans-serif;
+  --backup-body-font: "Nunito", system-ui, sans-serif;
 
-  --background: oklch(0.985 0.004 var(--tint-h));
-  --foreground: oklch(0.24 0.02 var(--tint-h));
-  --surface: oklch(0.955 0.026 var(--tint-h));
-  --surface-2: oklch(0.925 0.04 var(--tint-h));
-  --card: oklch(0.968 0.018 var(--tint-h));
+  /* Day: ice canvas, white sheets, structural teal and calibrated fuchsia links. */
+  --background: #F4F8F8;
+  --foreground: #0F171E;
+  --surface: #FFFFFF;
+  --surface-2: #E6EFF0;
+  --card: var(--surface);
   --card-foreground: var(--foreground);
-  --popover: oklch(0.99 0.006 var(--tint-h));
+  --popover: var(--surface);
   --popover-foreground: var(--foreground);
-  --primary: oklch(0.62 0.13 var(--accent-h));
-  --primary-foreground: oklch(0.995 0.005 var(--accent-h));
-  --secondary: oklch(0.93 0.035 var(--tint-h));
-  --secondary-foreground: oklch(0.3 0.03 var(--tint-h));
-  --muted: oklch(0.94 0.02 var(--tint-h));
-  --muted-foreground: oklch(0.53 0.03 var(--tint-h));
-  --accent: oklch(0.66 0.15 var(--accent-h));
-  --accent-foreground: oklch(0.99 0.005 var(--accent-h));
-  --destructive: oklch(0.56 0.21 25);
-  --destructive-foreground: oklch(0.99 0.01 25);
-  --border: oklch(0.89 0.02 var(--tint-h));
-  --input: oklch(0.91 0.02 var(--tint-h));
-  --ring: oklch(0.7 0.12 var(--accent-h));
-  --warning: oklch(0.76 0.16 85);
-  --tag-match: oklch(0.69 0.15 170);
-  --tag-match-foreground: oklch(0.18 0.03 170);
-
-  --glass: oklch(0.985 0.006 var(--tint-h) / 0.72);
+  --primary: #007C91;
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-2);
+  --muted-foreground: #526467;
+  --accent: #007083;
+  --accent-foreground: #FFFFFF;
+  --brand: #2F5257;
+  --brand-foreground: oklch(1 0 0);
+  --destructive: oklch(0.57709882 0.21515673 27.325049);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.89192853 0.01721673 201.372609);
+  --input: oklch(0.92905416 0.01183487 203.466821);
+  --ring: #007C91;
+  --warning: oklch(0.76859035 0.16465943 70.080390);
+  --tag-match: oklch(0.60022421 0.10383739 184.703992);
+  --tag-match-foreground: oklch(1 0 0);
+  --action-glow: 0 0 12px rgba(0, 124, 145, 0.28);
+  --focus-glow: 0 0 12px rgba(0, 124, 145, 0.35);
+  --emoji-shadow: rgba(0, 124, 145, 0.45);
+  --qr-ink: var(--brand);
+  --glass: color-mix(in srgb, var(--surface-2) 90%, transparent);
 }
 
 .dark {
-  --background: oklch(0.16 0.014 var(--tint-h));
-  --foreground: oklch(0.94 0.012 var(--tint-h));
-  --surface: oklch(0.215 0.024 var(--tint-h));
-  --surface-2: oklch(0.26 0.032 var(--tint-h));
-  --card: oklch(0.21 0.022 var(--tint-h));
+  /* Night: deep desaturated canvas, layered teal surfaces and restrained neon actions. */
+  --background: oklch(0.20008133 0.01851195 245.317790);
+  --foreground: oklch(0.98415186 0.00341267 247.857544);
+  --surface: oklch(0.25965113 0.02379589 214.184511);
+  --surface-2: oklch(0.41416752 0.04132571 207.323109);
+  --card: var(--surface);
   --card-foreground: var(--foreground);
-  --popover: oklch(0.22 0.024 var(--tint-h));
+  --popover: var(--surface-2);
   --popover-foreground: var(--foreground);
-  --primary: oklch(0.76 0.14 var(--accent-h));
-  --primary-foreground: oklch(0.18 0.03 var(--accent-h));
-  --secondary: oklch(0.27 0.03 var(--tint-h));
-  --secondary-foreground: oklch(0.93 0.015 var(--tint-h));
-  --muted: oklch(0.26 0.025 var(--tint-h));
-  --muted-foreground: oklch(0.72 0.025 var(--tint-h));
-  --accent: oklch(0.78 0.15 var(--accent-h));
-  --accent-foreground: oklch(0.17 0.03 var(--accent-h));
-  --destructive: oklch(0.62 0.2 25);
-  --destructive-foreground: oklch(0.99 0.01 25);
-  --border: oklch(0.32 0.025 var(--tint-h));
-  --input: oklch(0.32 0.025 var(--tint-h));
-  --ring: oklch(0.68 0.12 var(--accent-h));
-  --warning: oklch(0.8 0.14 85);
-  --tag-match: oklch(0.73 0.14 175);
-  --tag-match-foreground: oklch(0.16 0.025 175);
-
-  --glass: oklch(0.17 0.02 var(--tint-h) / 0.7);
+  --primary: oklch(0.66450081 0.22293940 15.691869);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-2);
+  --muted-foreground: oklch(0.71067159 0.03511439 256.787816);
+  --accent: var(--primary);
+  --accent-foreground: oklch(1 0 0);
+  --brand: var(--primary);
+  --brand-foreground: oklch(1 0 0);
+  --destructive: oklch(0.63683371 0.20784885 25.331328);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.34081309 0.03261798 208.135219);
+  --input: oklch(0.31068814 0.03040427 205.883688);
+  --ring: var(--primary);
+  --warning: oklch(0.83686057 0.16442159 84.428628);
+  --tag-match: oklch(0.78451984 0.13252856 181.911977);
+  --tag-match-foreground: var(--background);
+  --action-glow: 0 0 12px oklch(0.66450081 0.22293940 15.691869 / 35%);
+  --focus-glow: 0 0 12px oklch(0.66450081 0.22293940 15.691869 / 35%);
+  --qr-ink: var(--foreground);
+  --glass: color-mix(in srgb, var(--surface-2) 88%, transparent);
 }
 
 @layer base {
@@ -136,7 +158,7 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    color: var(--color-accent);
+    color: var(--color-brand);
     font-weight: 700;
   }
 
@@ -144,6 +166,12 @@
     font-size: var(--text-title);
     font-family: var(--font-display);
     font-weight: 600;
+  }
+
+  :where(button, a, input, textarea, select, [contenteditable="true"]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+    box-shadow: var(--focus-glow);
   }
 }
 
@@ -184,7 +212,7 @@
 }
 
 .emoji-glow {
-  filter: drop-shadow(0 0 4px var(--color-accent));
+  filter: drop-shadow(0 0 4px var(--emoji-shadow));
 }
 
 .rte-content h2 {
@@ -409,4 +437,40 @@
   .demo-pop {
     animation: none;
   }
+}
+
+/* Round header action buttons. */
+.profile-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--input);
+  padding: 0.25rem 0.5rem;
+  height: 28px;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.profile-tag svg { width: 12px; height: 12px; flex-shrink: 0; }
+.profile-tag-inactive { background: var(--background); color: var(--muted-foreground); }
+.profile-tag-active { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); box-shadow: var(--action-glow); }
+.profile-tag-cross {
+  background: linear-gradient(115deg, var(--destructive) 0 50%, var(--surface-2) 50% 100%);
+  border-color: var(--destructive);
+  color: var(--foreground);
+}
+.profile-tag-cross svg:first-child { color: var(--destructive-foreground); }
+.profile-tag:hover { filter: brightness(1.1); }
+
+.header-action {
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--accent);
+  box-shadow: none;
+}
+
+.info-scroll { scroll-behavior: smooth; overscroll-behavior: contain; }
+@media (prefers-reduced-motion: reduce) {
+  .info-scroll { scroll-behavior: auto; }
 }
