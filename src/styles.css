@@ -463,6 +463,21 @@
 .profile-tag-cross svg:first-child { color: var(--destructive-foreground); }
 .profile-tag:hover { filter: brightness(1.1); }
 
+/* Dimmed comparison chips in /confronto: same shape, softened token colours. */
+.profile-tag.profile-tag-muted {
+  background: color-mix(in srgb, var(--primary) 30%, var(--muted));
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  color: var(--muted-foreground);
+  box-shadow: none;
+}
+.profile-tag.profile-tag-cross.profile-tag-muted {
+  background: color-mix(in srgb, var(--destructive) 30%, var(--muted));
+  border-color: color-mix(in srgb, var(--destructive) 40%, var(--border));
+}
+.profile-tag.profile-tag-muted svg {
+  color: inherit;
+}
+
 .header-action {
   border-radius: 50%;
   background: var(--surface-2);
