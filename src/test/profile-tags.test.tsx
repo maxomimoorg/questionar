@@ -47,4 +47,21 @@ describe("profile tags", () => {
     expect(layoutBackupTags(ctx, ["vegan", "sport"]).rows).toHaveLength(1);
     expect(layoutBackupTags(ctx, ["vegan", "animali", "tabacco", "alcol", "droghe", "sport", "non-monogamia", "prole", "queer", "spirituale", "attivista"]).rows).toHaveLength(2);
   });
+  it("dims only the other profile's active tags that do not match mine, in both themes", () => {
+    const mine = { vegan: true, alcol: true, tabacco: "cross" };
+    const theirs = { vegan: true, alcol: "cross", sport: true, tabacco: "cross" };
+    for (const dark of [false, true]) {
+      render(
+        <div className={dark ? "dark" : ""}>
+          <CompactProfileTags tags={theirs} compareWith={mine} />
+        </div>,
+      );
+      expect(screen.getByLabelText("vegan: spunta")).toHaveClass("profile-tag-active");
+      expect(screen.getByLabelText("vegan: spunta")).not.toHaveClass("profile-tag-muted");
+      expect(screen.getByLabelText("tabacco: divieto")).not.toHaveClass("profile-tag-muted");
+      expect(screen.getByLabelText("alcol: divieto")).toHaveClass("profile-tag-muted");
+      expect(screen.getByLabelText("sport: spunta")).toHaveClass("profile-tag-muted");
+      cleanup();
+    }
+  });
 });

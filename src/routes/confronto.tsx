@@ -343,7 +343,7 @@ function ComparePage() {
         ) : (
           <p className="mt-1 text-[12px] text-muted-foreground">Nessuna bio.</p>
         )}
-        <CompactProfileTags tags={contactB.snapshot?.tags} className="mt-2" />
+        <CompactProfileTags tags={contactB.snapshot?.tags} compareWith={state.tags} className="mt-2" />
         {contactC && (
           <>
             <hr className="my-3 border-border" />
@@ -356,7 +356,7 @@ function ComparePage() {
             ) : (
               <p className="mt-1 text-[12px] text-muted-foreground">Nessuna bio.</p>
             )}
-            <CompactProfileTags tags={contactC.snapshot?.tags} className="mt-2" />
+            <CompactProfileTags tags={contactC.snapshot?.tags} compareWith={state.tags} className="mt-2" />
           </>
         )}
       </section>
