@@ -23,6 +23,8 @@ export interface Transport {
   watch(room: string): void;
   send(toRoom: string, id: string, raw: string, ttlSec: number): Promise<boolean>;
   isConnected(): boolean;
+  /** Extra keep-alive heartbeat (the relay answers "pong" without waking its storage). */
+  heartbeat?(): boolean;
   stop(): void;
 }
 
@@ -234,6 +236,11 @@ export class RelayTransport implements Transport {
 
   isConnected() {
     return this.ready;
+  }
+
+  heartbeat() {
+    const ws = this.ws;
+    return Boolean(ws && this.ready && this.raw(ws, '{"t":"ping"}'));
   }
 
   pendingSends() {

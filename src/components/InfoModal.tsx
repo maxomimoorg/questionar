@@ -1,4 +1,4 @@
-import { Check, Eye, EyeOff, MessageSquare, Plus, QrCode, ShieldCheck, Sparkles, Users, X, Zap } from "lucide-react";
+import { BellRing, Check, Eye, EyeOff, MessageSquare, MoonStar, Plus, QrCode, ShieldCheck, Sparkles, Star, Users, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PROFILE_TAGS, ProfileTagChip } from "./ProfileTags";
@@ -95,6 +95,44 @@ function DemoConnect() {
       <span className="demo-pop demo-delay-2">
         <Avatar handle="questionar" size={44} />
       </span>
+    </div>
+  );
+}
+
+export function DemoFavorite() {
+  const [favorite, setFavorite] = useState(false);
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-background p-3">
+      <Avatar handle="luna" size={36} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[14px] font-semibold">Luna</p>
+        <p className="text-[12px] text-muted-foreground">{favorite ? "Tra i tuoi preferiti" : "Contatto"}</p>
+      </div>
+      <button
+        type="button"
+        aria-pressed={favorite}
+        aria-label={favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+        onClick={() => setFavorite((v) => !v)}
+        className={`grid size-9 place-items-center rounded-full ${favorite ? "bg-accent text-accent-foreground" : "bg-surface-2 text-accent"}`}
+      >
+        <Star size={16} fill={favorite ? "currentColor" : "none"} />
+      </button>
+    </div>
+  );
+}
+
+function DemoStandby() {
+  return (
+    <div className="rounded-2xl bg-sentinel p-4 text-center">
+      <p className="flex items-center justify-center gap-2 text-[12px] uppercase tracking-[0.2em] text-sentinel-dim">
+        <MoonStar size={13} aria-hidden /> In ascolto
+      </p>
+      <p className="mt-1 font-display text-3xl tabular-nums text-sentinel-foreground">12:04</p>
+      <p className="mt-1 flex items-center justify-center gap-2 text-[12px] text-sentinel-foreground">
+        <span aria-hidden className="sentinel-breathe size-2 rounded-full bg-sentinel-live" /> Relay collegato
+        <span aria-hidden>·</span>
+        <BellRing size={12} aria-hidden /> 1 richiesta in arrivo
+      </p>
     </div>
   );
 }
@@ -328,6 +366,39 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
           ti permette di collezionare anche le emoji dei profili collegati, visibili nella
           tua <strong>Rubrica</strong>. Una piccola costellazione delle persone incontrate,
           non una classifica di conquiste.
+        </p>
+        <p className="mt-2 text-[14px]">
+          Le <strong>9 emoji proposte</strong> alla creazione del profilo restano le stesse
+          anche se ricarichi la pagina o riapri il browser: niente “rilanci” a caso per pescare
+          quelle rare. Vengono sostituite solo dopo che il profilo è stato creato.
+        </p>
+
+        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><Star size={18} className="shrink-0" />8. Preferiti: solo per te</h3>
+        <p className="mt-2 text-[14px]">
+          Nella pagina di confronto la stella serve ad <strong>aggiungere o rimuovere dai
+          preferiti</strong> un contatto. In Rubrica i preferiti compaiono per primi, con una
+          piccola stella accanto alla compatibilità, così trovi subito le persone chiave.
+        </p>
+        <div className="mt-2"><DemoFavorite /></div>
+        <p className="mt-2 text-[14px]">
+          È un’etichetta <strong>locale e riservata</strong>: resta solo sul tuo dispositivo, non
+          viene inviata ai contatti né inserita nei backup PNG.
+        </p>
+
+        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><MoonStar size={18} className="shrink-0" />9. Standby: resta in ascolto</h3>
+        <p className="mt-2 text-[14px]">
+          Aspetti che qualcuno ti scriva il tuo handle? In <strong>Rubrica</strong>, sotto le
+          richieste, tocca <strong>Resta in ascolto</strong>. L’app ti chiede il permesso per le
+          notifiche, tiene lo schermo acceso e mantiene viva la connessione al relay con un
+          battito regolare.
+        </p>
+        <div className="mt-2"><DemoStandby /></div>
+        <p className="mt-2 text-[14px]">
+          La vista scura a risparmio energetico mostra da quanto sei in ascolto, lo stato del
+          relay e quante richieste sono arrivate; se il browser lo permette puoi aprirla in una
+          <strong> mini finestra</strong> sopra le altre app. Quando arriva una richiesta ricevi
+          una notifica anche se stai guardando altro. Tocca <strong>Termina standby</strong> quando
+          vuoi: lo schermo torna a spegnersi normalmente.
         </p>
 
         <footer className="mt-8 rounded-2xl bg-surface p-4 text-[12px] text-muted-foreground">

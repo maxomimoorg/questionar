@@ -8,3 +8,11 @@
 - [x] Run relevant tests and verify tag editing and the tutorial in the browser (26 tests passed; saved negative tags restored after reload; desktop/mobile tutorial verified without overflow or runtime errors).
 - [x] Add the local diagnostic mode (5 taps on the Info title): automatic checks, manual checklist, explicit JSON export, privacy-safe buffer; 43 tests pass, flow verified in Chromium dev preview.
 - [ ] Manual verification on real devices/installed PWA, offline and relay scenarios (developer to run via the checklist).
+- [x] Diagnostic report shows the real app version from package.json (1.0.0 verified).
+- [x] Onboarding keeps the same 9 emoji across reloads until the profile is created (verified in browser).
+- [x] Replace public "recommended profiles" with local-only favorites (confronto, rubrica, snapshot, backups).
+- [x] Add the "Resta in ascolto" standby sentinel in Rubrica (notifications, wake lock, dimmed view/PiP, keep-alive, manual stop).
+- [x] Update tutorial and docs; add tests for emoji persistence and removal of recommendations (57 tests pass).
+- [ ] Real-device check of standby: wake lock, notifications with the screen locked, PiP and a live relay (needs a phone and the deployed relay).
+- [x] Bundle Nunito/Quicksand inside the app and make repeat launches fast (page fallback after 2.5 s, cached build files), with preview-safe registration (62 tests pass).
+- [ ] Real-device check of the faster repeat launch and offline opening (works only in the published app).

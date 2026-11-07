@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Avatar } from "@/components/Avatar";
+import { ConnectionSentinel } from "@/components/ConnectionSentinel";
 import { EmojiCollection } from "@/components/EmojiCollection";
 import { percentColor } from "@/lib/color";
 import { averageCompat } from "@/lib/compat";
@@ -23,7 +24,7 @@ import { usePeer } from "@/lib/peer";
 import { exportBackupPng, importBackupPng } from "@/lib/stego";
 import { useStore } from "@/lib/store";
 import { emojisFromHandle, isValidHandle } from "@/lib/handle";
-import { handleOf } from "@/lib/types";
+import { handleOf, sortFavoritesFirst } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
 const searchSchema = z.object({ handle: z.string().optional() });
@@ -184,7 +185,6 @@ function RubricaPage() {
         ...(payload.tags ? { tags: payload.tags } : {}),
         answers: payload.answers,
         customQuestions: payload.customQuestions,
-        recommends: [],
         updatedAt: payload.savedAt,
       }, payload.pub);
       toast.success(`Confronto disponibile con @${payload.handle}`);
@@ -304,6 +304,7 @@ function RubricaPage() {
             Nessuna richiesta in sospeso.
           </p>
         )}
+        <ConnectionSentinel />
         <div className="mt-2 space-y-2">
           {incoming.map((r) => (
             <div
@@ -361,7 +362,8 @@ function RubricaPage() {
           </p>
         ) : (
           <div className="mt-2 grid grid-cols-2 gap-2">
-            {state.contacts.map((c) => {
+            {/* Local favorites first, so key contacts are found at a glance. */}
+            {sortFavoritesFirst(state.contacts).map((c) => {
               const compat = compatOf(c.handle);
               return (
                 <div key={c.handle} className="relative rounded-2xl bg-background p-2">
@@ -396,8 +398,14 @@ function RubricaPage() {
                         >
                           {compat === null ? "–" : `${compat}%`}
                         </span>
-                        {c.recommended && (
-                          <Star size={12} className="shrink-0 text-accent" />
+                        {c.favorite && (
+                          <Star
+                            size={12}
+                            fill="currentColor"
+                            className="shrink-0 text-accent"
+                            role="img"
+                            aria-label="Preferito"
+                          />
                         )}
                       </div>
                       <button

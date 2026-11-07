@@ -12,7 +12,7 @@ database di prova `questionar-diagnostics`. Nulla viene inviato in rete; i dati 
 | Campo | Significato |
 |---|---|
 | `session` | id effimero (non persistente), inizio/fine ISO |
-| `app` | versione (`VITE_APP_VERSION` o `unknown`) e modalità di build |
+| `app` | `version`: versione reale dell'app letta da `package.json` al build (`vite.config.ts` la inietta come `VITE_APP_VERSION`; `unknown` solo se manca); `build`: modalità di build |
 | `platform` | famiglia browser, versione principale, sistema operativo (niente user agent completo) |
 | `checks[]` | `id` stabile, `status` (`pass`/`fail`/`skip`/`not_applicable`), `durationMs`, `code` normalizzato, `facts` tecnici; `source: automatic` |
 | `scenarios[]` | esito dichiarato (`passed`/`failed`/`not_run`/`not_applicable`), atteso, passaggi svolti, nota filtrata; `source: manual_declared` |

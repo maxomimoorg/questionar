@@ -21,4 +21,20 @@ describe("Self-contained PWA assets", () => {
     ]);
     for (const resource of resources.slice(2)) expect(existsSync(`public${resource}`)).toBe(true);
   });
+
+  it("loads Nunito and Quicksand from the app, not from Google Fonts", () => {
+    const root = readFileSync("src/routes/__root.tsx", "utf8");
+    expect(root).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
+    const css = readFileSync("src/styles.css", "utf8");
+    for (const weight of [400, 600, 700]) expect(css).toContain(`@fontsource/nunito/latin-${weight}.css`);
+    for (const weight of [500, 600, 700]) expect(css).toContain(`@fontsource/quicksand/latin-${weight}.css`);
+  });
+
+  it("shows the saved page after a short wait and serves build files from the cache", () => {
+    const worker = readFileSync("public/sw.js", "utf8");
+    expect(worker).toMatch(/const NAV_TIMEOUT_MS = 2500;/);
+    expect(worker).toMatch(/req\.mode === "navigate"[\s\S]*networkFirstWithTimeout/);
+    expect(worker).toMatch(/isHashedAsset\(url\)[\s\S]*cacheFirst/);
+    expect(worker).toContain("notificationclick");
+  });
 });

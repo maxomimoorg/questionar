@@ -22,22 +22,45 @@ export type ThemeState = {
   mode: "light" | "dark";
 };
 
+/**
+ * What leaves the device (P2P preview/profile, PNG backup). It never carries the address book
+ * or the "favorite" marks: those stay strictly local.
+ */
 export type ProfileSnapshot = {
   name: string;
   bio: string;
   tags?: ProfileTags;
   answers: Record<string, Answer>;
   customQuestions: Question[];
-  recommends: string[];
   updatedAt: number;
 };
+
+/**
+ * Keeps only the shareable fields of a snapshot. Older app versions also sent a public
+ * "recommends" list of other handles: it is dropped on send, on receive and on load.
+ */
+export function sanitizeSnapshot(snap: ProfileSnapshot): ProfileSnapshot {
+  const raw = snap as ProfileSnapshot & Record<string, unknown>;
+  return {
+    name: typeof raw.name === "string" ? raw.name : "",
+    bio: typeof raw.bio === "string" ? raw.bio : "",
+    ...(raw.tags ? { tags: raw.tags } : {}),
+    answers: raw.answers && typeof raw.answers === "object" ? raw.answers : {},
+    customQuestions: Array.isArray(raw.customQuestions) ? raw.customQuestions : [],
+    updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : 0,
+  };
+}
 
 export type Contact = {
   handle: string;
   name: string;
   compatibility?: number;
   online?: boolean;
-  recommended?: boolean;
+  /**
+   * Local, private "favorite" star used to spot key contacts in the address book.
+   * Never shared: it is not part of ProfileSnapshot, P2P messages or backups.
+   */
+  favorite?: boolean;
   emojis: string[];
   snapshot?: ProfileSnapshot;
   roomKey?: string;
@@ -100,6 +123,28 @@ export const EMPTY_STATE: AppState = {
     attivista: false,
   },
 };
+
+type LegacyContact = Contact & { recommended?: boolean };
+
+/** Migrates saved contacts: old "recommended" becomes the local favorite; snapshots are cleaned. */
+export function migrateContact(c: Contact): Contact {
+  const { recommended, ...rest } = c as LegacyContact;
+  const favorite = Boolean(rest.favorite ?? recommended);
+  return {
+    ...rest,
+    ...(favorite ? { favorite: true } : { favorite: false }),
+    ...(rest.snapshot ? { snapshot: sanitizeSnapshot(rest.snapshot) } : {}),
+  };
+}
+
+/** Stable order with favorites first; the rest keeps the address-book order. */
+export function sortFavoritesFirst(contacts: Contact[]): Contact[] {
+  return [...contacts.filter((c) => c.favorite), ...contacts.filter((c) => !c.favorite)];
+}
+
+export function migrateRequest(r: ConnectionRequest): ConnectionRequest {
+  return r.snapshot ? { ...r, snapshot: sanitizeSnapshot(r.snapshot) } : r;
+}
 
 export function handleOf(identity: Identity | null | undefined) {
   if (!identity) return "";

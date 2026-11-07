@@ -77,7 +77,6 @@ function memStore(name: string) {
     bio: "",
     answers: {},
     customQuestions: [],
-    recommends: [],
     updatedAt: 1,
   };
   const store: ConnStore = {

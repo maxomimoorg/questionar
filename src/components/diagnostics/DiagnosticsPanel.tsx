@@ -40,13 +40,19 @@ export function downloadJson(data: unknown, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
+/** Injected at build time from package.json (vite.config.ts). */
+export function appVersion(): string {
+  const v = import.meta.env["VITE_APP_VERSION"] as string | undefined;
+  return v && v.trim() ? v : "unknown";
+}
+
 export function exportReport() {
   const s = getDiagState();
   const report = buildReport({
     sessionId: s.sessionId,
     startedAt: s.startedAt,
     endedAt: Date.now(),
-    appVersion: import.meta.env["VITE_APP_VERSION"] ?? "unknown",
+    appVersion: appVersion(),
     buildMode: import.meta.env.MODE,
     userAgent: navigator.userAgent,
     checks: s.checks,

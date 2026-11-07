@@ -159,6 +159,14 @@ export class P2P {
     this.chooseNetwork();
   }
 
+  /** Standby heartbeat: pings the relay when connected, otherwise tries to reconnect. */
+  keepAlive(): boolean {
+    if (this.stopped) return false;
+    if (this.transport?.isConnected()) return this.transport.heartbeat?.() ?? true;
+    this.reconnect();
+    return false;
+  }
+
   /** After going back online / visible: retries the relay if it had given up. */
   reconnect() {
     if (this.stopped || !this.myRoom) return;

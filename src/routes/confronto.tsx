@@ -44,7 +44,7 @@ type ExpandedProfile = {
 
 function ComparePage() {
   const { state, questions } = useStore();
-  const { toggleRecommend } = useStore();
+  const { toggleFavorite } = useStore();
   const navigate = useNavigate();
   const { b, c } = Route.useSearch();
   const [addOpen, setAddOpen] = useState(false);
@@ -108,8 +108,6 @@ function ComparePage() {
   );
 
   const others = people.filter((p) => !p.mine);
-  const recommended = (contactB.snapshot?.recommends ?? [])
-    .filter((h) => h !== handleOf(me));
 
   const stopLongPress = () => {
     if (longPressTimer.current !== null) {
@@ -150,17 +148,23 @@ function ComparePage() {
             </div>
           </div>
           <button
-            onClick={() => toggleRecommend(contactB.handle)}
-            aria-label={
-              contactB.recommended ? "Non consigliare più" : "Consiglia ai tuoi contatti!"
-            }
+            onClick={() => {
+              const next = !contactB.favorite;
+              toggleFavorite(contactB.handle);
+              toast.success(next ? "Aggiunto ai preferiti" : "Rimosso dai preferiti", {
+                id: `fav-${contactB.handle}`,
+              });
+            }}
+            aria-pressed={Boolean(contactB.favorite)}
+            aria-label={contactB.favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+            title={contactB.favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
             className={`grid size-10 shrink-0 place-items-center rounded-full ${
-              contactB.recommended
+              contactB.favorite
                 ? "bg-accent text-accent-foreground"
                 : "bg-background text-accent"
             }`}
           >
-            <Star size={18} />
+            <Star size={18} fill={contactB.favorite ? "currentColor" : "none"} />
           </button>
           {contactC ? (
             <button
@@ -241,9 +245,9 @@ function ComparePage() {
         </div>
 
         <p className="mt-2 text-[12px] text-muted-foreground">
-          {contactB.recommended
-            ? "Stai consigliando questo profilo ai tuoi contatti."
-            : "Tocca la stellina per consigliare questo profilo ai tuoi contatti."}
+          {contactB.favorite
+            ? "Tra i tuoi preferiti: la stella è visibile solo a te, nella tua rubrica."
+            : "Tocca la stella per aggiungere questo profilo ai preferiti (solo sul tuo dispositivo)."}
         </p>
 
         {addOpen && !contactC && (
@@ -427,38 +431,6 @@ function ComparePage() {
           </section>
         );
       })}
-
-      {/* profiles recommended by this contact */}
-      {recommended.length > 0 && (
-        <section className="section-card">
-          <h2 className="text-[16px]">Profili consigliati da {contactB.name}</h2>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            {recommended.map((h) => (
-              <button
-                key={h}
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(h);
-                    toast.success("Handle copiato: incollalo nella ricerca connessioni");
-                  } catch {
-                    toast.error("Impossibile copiare");
-                  }
-                }}
-                className="flex items-center gap-2 rounded-2xl bg-background p-2 text-left"
-              >
-                <Avatar handle={h} size={36} />
-                <div className="min-w-0">
-                  <div className="truncate text-[14px] font-semibold">
-                    {h.replace(/[^a-z0-9]/gi, "")}
-                  </div>
-                  <div className="truncate text-[12px] text-muted-foreground">@{h}</div>
-                </div>
-                <Star size={14} className="ml-auto text-accent" />
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

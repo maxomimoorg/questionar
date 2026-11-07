@@ -13,6 +13,8 @@ import { loadState, saveState, clearState } from "./db";
 import {
   EMPTY_STATE,
   handleOf,
+  migrateContact,
+  migrateRequest,
   type AppState,
   type Answer,
   type Contact,
@@ -47,11 +49,24 @@ type Ctx = {
   upsertContact: (c: Contact) => void;
   updateContact: (handle: string, patch: Partial<Contact>) => void;
   removeContact: (handle: string) => void;
-  toggleRecommend: (handle: string) => void;
+  /** Local-only favorite star (never shared). */
+  toggleFavorite: (handle: string) => void;
   mySnapshot: () => ProfileSnapshot;
   applyBackup: (payload: BackupPayload) => void;
   resetProfile: () => Promise<void>;
 };
+
+/** The shareable profile: contacts and favorites are never included. */
+export function buildSnapshot(state: AppState, now = Date.now()): ProfileSnapshot {
+  return {
+    name: state.identity?.name ?? "",
+    bio: state.bio,
+    tags: state.tags,
+    answers: state.answers,
+    customQuestions: state.customQuestions,
+    updatedAt: now,
+  };
+}
 
 const StoreContext = createContext<Ctx | null>(null);
 
@@ -70,6 +85,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...saved,
           tags: { ...EMPTY_STATE.tags, ...(saved.tags ?? {}) },
           theme: normalizeTheme(saved.theme),
+          contacts: (saved.contacts ?? []).map(migrateContact),
+          requests: (saved.requests ?? []).map(migrateRequest),
           network: {},
         });
       }
@@ -232,22 +249,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           contacts: s.contacts.filter((c) => c.handle !== handle),
         })),
-      toggleRecommend: (handle) =>
+      toggleFavorite: (handle) =>
         setState((s) => ({
           ...s,
           contacts: s.contacts.map((c) =>
-            c.handle === handle ? { ...c, recommended: !c.recommended } : c,
+            c.handle === handle ? { ...c, favorite: !c.favorite } : c,
           ),
         })),
-      mySnapshot: () => ({
-        name: state.identity?.name ?? "",
-        bio: state.bio,
-        tags: state.tags,
-        answers: state.answers,
-        customQuestions: state.customQuestions,
-        recommends: state.contacts.filter((c) => c.recommended).map((c) => c.handle),
-        updatedAt: Date.now(),
-      }),
+      mySnapshot: () =>
+        buildSnapshot(state),
       applyBackup: (payload) =>
         setState((s) => {
           // Identity, emoji, avatar, keys, collection and contacts stay untouched.

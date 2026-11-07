@@ -3,7 +3,7 @@
 
 import { emojisFromHandle } from "./handle";
 import type { Envelope, MessageMeta, P2P, P2PHandlers } from "./p2p";
-import type { Contact, ConnectionRequest, ProfileSnapshot } from "./types";
+import { sanitizeSnapshot, type Contact, type ConnectionRequest, type ProfileSnapshot } from "./types";
 
 export type ConnStore = {
   contacts: () => Contact[];
@@ -53,7 +53,7 @@ export class Connections {
     this.contact(handle)?.publicKey ?? this.request(handle)?.publicKey ?? this.keyCache.get(handle);
 
   private profile(): Omit<Extract<Envelope, { type: "profile" }>, "type"> {
-    return { from: this.me, name: this.store.myName(), snapshot: this.store.mySnapshot() };
+    return { from: this.me, name: this.store.myName(), snapshot: sanitizeSnapshot(this.store.mySnapshot()) };
   }
 
   private send(h: string, msg: Envelope) {
@@ -144,7 +144,7 @@ export class Connections {
       }
       case "preview": {
         if (this.request(from, "incoming"))
-          s.updateRequest(from, { name: msg.name, snapshot: msg.snapshot });
+          s.updateRequest(from, { name: msg.name, snapshot: sanitizeSnapshot(msg.snapshot) });
         return;
       }
       case "accept": {
@@ -156,7 +156,7 @@ export class Connections {
           handle: from,
           name: msg.name,
           emojis: emojisFromHandle(from),
-          snapshot: msg.snapshot,
+          snapshot: sanitizeSnapshot(msg.snapshot),
           roomKey: from,
           online: this.p2p?.isOnline(from) ?? false,
           publicKey: existing?.publicKey ?? out?.publicKey ?? meta.pub,
@@ -176,7 +176,7 @@ export class Connections {
         if (!this.contact(from)) return;
         s.updateContact(from, {
           name: msg.name,
-          snapshot: msg.snapshot,
+          snapshot: sanitizeSnapshot(msg.snapshot),
           roomKey: from,
           ...(this.p2p?.isOnline(from) ? { online: true } : {}),
         });
@@ -237,7 +237,7 @@ export class Connections {
       handle,
       name,
       emojis: emojisFromHandle(handle),
-      snapshot,
+      snapshot: sanitizeSnapshot(snapshot),
       online: this.p2p?.isOnline(handle) ?? false,
       ...(pub ? { publicKey: pub, keyVerified: true } : {}),
     });

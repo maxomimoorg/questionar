@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { InfoModal } from "./InfoModal";
-import { rollPickerEmojis } from "@/lib/emoji";
 import { generateKeyPair } from "@/lib/keys";
+import { clearOnboardingGrid, loadOrRollGrid } from "@/lib/onboarding-grid";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 
@@ -13,7 +13,8 @@ export function Onboarding() {
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const grid = useMemo(() => rollPickerEmojis(), []);
+  // Rendered only after the local store has loaded (client side), so storage is available.
+  const [grid] = useState(() => loadOrRollGrid());
 
   const cleanUser = username.toLowerCase().replace(/[^a-z0-9]/g, "");
   const nameOk = name.trim().length >= 1 && name.trim().length <= 20;
@@ -28,18 +29,23 @@ export function Onboarding() {
 
   const create = async () => {
     setBusy(true);
-    const keys = await generateKeyPair();
-    patch({
-      identity: {
-        name: name.trim(),
-        username: cleanUser,
-        emojis: picked,
-        keys,
-        createdAt: Date.now(),
-      },
-    });
-    addEmojisToCollection(picked);
-    setBusy(false);
+    try {
+      const keys = await generateKeyPair();
+      patch({
+        identity: {
+          name: name.trim(),
+          username: cleanUser,
+          emojis: picked,
+          keys,
+          createdAt: Date.now(),
+        },
+      });
+      addEmojisToCollection(picked);
+      // Profile and identity exist: the frozen grid is no longer needed.
+      clearOnboardingGrid();
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

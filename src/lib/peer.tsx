@@ -13,6 +13,8 @@ type PeerCtx = {
   mode: NetMode;
   issue: NetIssue;
   relayConfigured: boolean;
+  /** Standby sentinel heartbeat: true when the relay link answered the ping. */
+  keepAlive: () => boolean;
   sendRequest: (handle: string) => Promise<void>;
   accept: (handle: string) => Promise<void>;
   reject: (handle: string) => Promise<void>;
@@ -113,6 +115,7 @@ export function PeerProvider({ children }: { children: ReactNode }) {
       mode,
       issue,
       relayConfigured: Boolean(relayWsUrl(RELAY_URL)),
+      keepAlive: () => peerRef.current?.keepAlive() ?? false,
       sendRequest: async (handle) => {
         const r = (await connRef.current?.sendRequest(handle)) ?? "offline";
         if (r === "offline")

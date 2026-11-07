@@ -20,6 +20,7 @@ import { DiagnosticsPanel } from "../components/diagnostics/DiagnosticsPanel";
 import { DiagnosticsBadge } from "../components/diagnostics/DiagnosticsBadge";
 import { PeerProvider } from "../lib/peer";
 import { StoreProvider, useStore } from "../lib/store";
+import { setupServiceWorker } from "../lib/sw-register";
 
 
 function NotFoundComponent() {
@@ -115,12 +116,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "manifest", href: "/manifest.json" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Quicksand:wght@500;600;700&display=swap",
-      },
     ],
   }),
   shellComponent: RootShell,
@@ -131,7 +126,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="it">
+    // Dark by default so the first paint (the "Carico i tuoi dati" screen) is dark before the saved
+    // theme is known; the store switches to the user's theme once local data has loaded.
+    <html lang="it" className="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -147,26 +144,12 @@ function AppFrame() {
   const { state, ready } = useStore();
 
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-    if (import.meta.env.PROD) {
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-      return;
-    }
-    // In sviluppo il service worker servirebbe moduli obsoleti: lo rimuoviamo.
-    navigator.serviceWorker
-      .getRegistrations()
-      .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-      .then(() =>
-        typeof caches !== "undefined"
-          ? caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-          : undefined,
-      )
-      .catch(() => undefined);
+    setupServiceWorker();
   }, []);
 
   if (!ready) {
     return (
-      <div className="grid min-h-screen place-items-center text-[14px] text-muted-foreground">
+      <div className="dark grid min-h-screen place-items-center bg-background text-[14px] text-muted-foreground">
         Carico i tuoi dati…
       </div>
     );

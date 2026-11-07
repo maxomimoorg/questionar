@@ -1,29 +1,23 @@
-# Welcome to your Lovable project
+# QuestionAR
 
-This project was built with [Lovable](https://lovable.dev).
+L'anti-dating app per connessioni reali: questionario di compatibilità, 100% zero-server
+(dati in IndexedDB, scambio P2P cifrato tramite il relay Cloudflare in `relay/`, backup PNG steganografici).
 
-## Build with Lovable
+## Documentazione
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+- [Modalità diagnostica](docs/diagnostics.md)
+- [Standby Sentinella Connessioni](docs/standby.md)
+- [Preferiti locali e griglia emoji dell'onboarding](docs/preferiti.md)
+- [Avvio rapido, caratteri inclusi e offline](docs/avvio-rapido.md)
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## Sviluppo
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+bun install
+bun run dev
+bun run test
 ```
 
-## Built with
+La versione mostrata nel report diagnostico è il campo `version` di `package.json`.
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+Costruito con TanStack Start, React, TypeScript e Tailwind CSS.
