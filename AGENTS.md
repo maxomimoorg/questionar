@@ -15,3 +15,4 @@
 - Keep heading/structural brand tokens separate from primary actions; use the shared Button default variant for solid CTAs so both theme modes retain consistent action colors and glow.
 - Resolve QR ink from semantic CSS tokens into a hex canvas color for the QR library; use high-contrast structural ink rather than decorative accents to preserve scanning.
 - Keep original graphics in public/ and the icon-generation master and script in src/logo.png and scripts/generate-icons.mjs; local static references keep GitHub/Cloudflare Pages deployments independent of Lovable asset hosting.
+- Diagnostic mode lives in src/lib/diagnostics and is a no-op unless activated; app code may only call recordEvent with allow-listed technical events, keeping user data out of reports.

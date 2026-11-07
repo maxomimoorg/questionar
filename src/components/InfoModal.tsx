@@ -5,6 +5,8 @@ import { PROFILE_TAGS, ProfileTagChip } from "./ProfileTags";
 import { nextTagState, type ProfileTags } from "@/lib/profile-tags";
 
 import { Avatar } from "./Avatar";
+import { createTapCounter } from "@/lib/diagnostics/activation";
+import { startDiagnostics } from "@/lib/diagnostics/session";
 
 function DemoSlider() {
   return (
@@ -113,6 +115,7 @@ export function DemoProfileTags() {
 
 export function InfoModal({ onClose }: { onClose: () => void }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const tapCounter = useRef(createTapCounter());
   useEffect(() => {
     const previousFocus = document.activeElement;
     const previousOverflow = document.body.style.overflow;
@@ -154,7 +157,18 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
       >
         <div className="mb-3 flex items-start gap-3">
           <img src="/logo.png" alt="Logo QuestionAR" width={40} height={40} className="size-10 shrink-0 rounded-lg object-contain" />
-          <h1 id="questionar-info-title" className="flex-1 text-2xl">QuestionAR</h1>
+          <h1
+            id="questionar-info-title"
+            className="flex-1 select-none text-2xl"
+            onClick={() => {
+              if (tapCounter.current.tap()) {
+                startDiagnostics();
+                onClose();
+              }
+            }}
+          >
+            QuestionAR
+          </h1>
           <Button variant="secondary" size="icon"
             aria-label="Chiudi le informazioni"
             onClick={onClose}

@@ -1,4 +1,5 @@
 // Presence + rendezvous transport: the Cloudflare relay (relay/), configured with VITE_RELAY_URL.
+import { recordEvent } from "./diagnostics/buffer";
 // It only carries opaque strings; profile data is end-to-end encrypted before it leaves the device.
 
 /** Outcome of handling one inbound message; decides whether the relay may drop it. */
@@ -79,6 +80,7 @@ export class RelayTransport implements Transport {
     this.failures = 0;
     if (!relayWsUrl(this.url)) {
       this.stopped = true;
+      recordEvent("relay.unavailable", { reason: "not_configured" });
       this.ev.onUnavailable("not_configured");
       return;
     }
@@ -112,6 +114,7 @@ export class RelayTransport implements Transport {
       return this.fail("invalid relay url");
     }
     this.ws = ws;
+    recordEvent("relay.connecting", { attempt: this.failures + 1 });
     // A relay that accepts the socket but never says "ready" is treated as unreachable.
     this.connectTimer = setTimeout(() => {
       if (!this.ready && this.ws === ws) {
@@ -139,6 +142,7 @@ export class RelayTransport implements Transport {
         this.failures = 0;
         if (this.connectTimer) clearTimeout(this.connectTimer);
         this.connectTimer = null;
+        recordEvent("relay.ready");
         this.ev.onStatus(true);
       } else if (m.t === "presence") this.ev.onPresence(String(m.room), Boolean(m.online));
       else if (m.t === "msg" && typeof m.id === "string") this.receive(ws, m.id, String(m.payload));
@@ -154,6 +158,7 @@ export class RelayTransport implements Transport {
       this.clearTimers();
       const wasReady = this.ready;
       this.ready = false;
+      recordEvent("relay.closed", { code: e.code, was_ready: wasReady });
       this.ev.onStatus(false);
       this.failAllWaiters();
       if (this.stopped) return;
@@ -187,10 +192,13 @@ export class RelayTransport implements Transport {
     this.failures++;
     if (this.failures >= this.maxFailures) {
       this.stopped = true;
+      recordEvent("relay.unavailable", { reason: reason === "closed" ? "unreachable" : reason.replace(/\s+/g, "_") });
       this.ev.onUnavailable(reason === "closed" ? "unreachable" : reason);
       return;
     }
-    this.retry = setTimeout(() => this.open(), Math.min(30_000, 1000 * 2 ** this.failures));
+    const delay = Math.min(30_000, 1000 * 2 ** this.failures);
+    recordEvent("relay.retry_scheduled", { attempt: this.failures, delay_ms: delay });
+    this.retry = setTimeout(() => this.open(), delay);
   }
 
   private resolve(id: string, ok: boolean) {

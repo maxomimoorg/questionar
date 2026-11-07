@@ -4,6 +4,7 @@
 
 import { E2E, keyFingerprint, publicOnly, type Sealed } from "./e2e";
 import type { KeyPairJwk } from "./keys";
+import { recordEvent } from "./diagnostics/buffer";
 import {
   RELAY_URL,
   RelayTransport,
@@ -386,6 +387,7 @@ export class P2P {
       timer: setTimeout(() => this.closeTunnel(handle, nonce), this.opts.tunnelTimeoutMs ?? 20_000),
     };
     pc.onconnectionstatechange = () => {
+      recordEvent("p2p.state", { state: pc.connectionState });
       if (pc.connectionState === "failed" || pc.connectionState === "closed")
         this.closeTunnel(handle, nonce);
     };

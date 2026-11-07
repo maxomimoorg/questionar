@@ -16,6 +16,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "../components/Header";
 import { Onboarding } from "../components/Onboarding";
 import { Toaster } from "../components/ui/sonner";
+import { DiagnosticsPanel } from "../components/diagnostics/DiagnosticsPanel";
+import { DiagnosticsBadge } from "../components/diagnostics/DiagnosticsBadge";
 import { PeerProvider } from "../lib/peer";
 import { StoreProvider, useStore } from "../lib/store";
 
@@ -190,6 +192,8 @@ function RootComponent() {
       <StoreProvider>
         <AppFrame />
         <Toaster position="top-center" />
+        <DiagnosticsPanel />
+        <DiagnosticsBadge />
       </StoreProvider>
     </QueryClientProvider>
   );
