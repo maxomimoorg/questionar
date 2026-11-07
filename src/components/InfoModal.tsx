@@ -1,10 +1,13 @@
-import { BellRing, Check, Eye, EyeOff, MessageSquare, MoonStar, Plus, QrCode, ShieldCheck, Sparkles, Star, Users, X, Zap } from "lucide-react";
+import { Check, Eye, EyeOff, Inbox, MessageSquare, Plus, QrCode, ShieldCheck, Sparkles, Star, Users, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PROFILE_TAGS, ProfileTagChip } from "./ProfileTags";
 import { nextTagState, type ProfileTags } from "@/lib/profile-tags";
 
 import { Avatar } from "./Avatar";
+import { MarginText } from "./MarginText";
+import { percentColor } from "@/lib/color";
+import { reciprocalFlows } from "@/lib/compat";
 import { createTapCounter } from "@/lib/diagnostics/activation";
 import { startDiagnostics } from "@/lib/diagnostics/session";
 
@@ -31,6 +34,107 @@ function DemoSlider() {
       <div className="mt-1 flex justify-between text-[12px] text-muted-foreground">
         <span>No · 0%</span>
         <span>Sì · 100%</span>
+      </div>
+    </div>
+  );
+}
+
+type DemoAnswer = { value: number; answered: true; giveValue?: number; receiveValue?: number };
+
+const RECIPROCAL_SCENARIOS: { label: string; me: DemoAnswer; other: DemoAnswer }[] = [
+  {
+    label: "Vi completate",
+    me: { value: 55, answered: true, giveValue: 90, receiveValue: 20 },
+    other: { value: 55, answered: true, giveValue: 20, receiveValue: 90 },
+  },
+  {
+    label: "Entrambi solo fare",
+    me: { value: 50, answered: true, giveValue: 100, receiveValue: 0 },
+    other: { value: 50, answered: true, giveValue: 100, receiveValue: 0 },
+  },
+  {
+    label: "Risposta a metà",
+    me: { value: 80, answered: true, giveValue: 80 },
+    other: { value: 45, answered: true, giveValue: 20, receiveValue: 70 },
+  },
+];
+
+/** Uses the real reciprocal maths so the tutorial shows the same numbers as the comparison. */
+export function DemoReciprocal() {
+  const [index, setIndex] = useState(0);
+  const scenario = RECIPROCAL_SCENARIOS[index]!;
+  const flows = reciprocalFlows(scenario.me, scenario.other, 0);
+  const bar = (label: string, value: number | undefined) => (
+    <div className="flex items-center gap-2 text-[12px]">
+      <span className="w-16 shrink-0 text-muted-foreground">{label}</span>
+      <div className="relative h-2.5 flex-1 rounded-full bg-muted">
+        {value !== undefined && (
+          <span
+            className="absolute inset-y-0 left-0 rounded-full"
+            style={{ width: `${value}%`, backgroundColor: percentColor(value) }}
+          />
+        )}
+      </div>
+      <b className="w-9 text-right tabular-nums">{value === undefined ? "–" : `${value}%`}</b>
+    </div>
+  );
+  const flow = (value: number | null) =>
+    value === null ? (
+      <span className="text-muted-foreground">in attesa di risposta</span>
+    ) : (
+      <b style={{ color: percentColor(value) }}>{value}%</b>
+    );
+  return (
+    <div className="rounded-2xl bg-background p-3">
+      <p className="text-[14px]">Contatto fisico</p>
+      <div className="mt-2 grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <p className="text-[12px] font-semibold">Io</p>
+          {bar("Fare", scenario.me.giveValue)}
+          {bar("Ricevere", scenario.me.receiveValue)}
+        </div>
+        <div className="space-y-1">
+          <p className="text-[12px] font-semibold">Luna</p>
+          {bar("Fare", scenario.other.giveValue)}
+          {bar("Ricevere", scenario.other.receiveValue)}
+        </div>
+      </div>
+      <div className="mt-3 space-y-0.5 text-[12px]">
+        <p>Io faccio ➔ Luna riceve: {flow(flows.aToB)}</p>
+        <p>Luna fa ➔ io ricevo: {flow(flows.bToA)}</p>
+        <p className="text-[14px]">
+          Compatibilità:{" "}
+          <b
+            style={{
+              color:
+                flows.score === null ? "var(--color-muted-foreground)" : percentColor(flows.score),
+            }}
+            data-testid="demo-reciprocal-score"
+          >
+            {flows.score === null ? "–" : `${flows.score}%`}
+          </b>
+          <MarginText result={flows} />
+        </p>
+        {flows.partial && (
+          <p className="text-muted-foreground">
+            Stima parziale: non hai ancora risposto a “Ricevere”, quindi conta solo un verso.
+          </p>
+        )}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Esempi di reciprocità">
+        {RECIPROCAL_SCENARIOS.map((s, i) => (
+          <button
+            key={s.label}
+            type="button"
+            aria-pressed={i === index}
+            onClick={() => setIndex(i)}
+            className={`rounded-full px-3 py-1 text-[12px] ${
+              i === index ? "bg-accent text-accent-foreground" : "bg-surface-2 text-foreground"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -117,22 +221,6 @@ export function DemoFavorite() {
       >
         <Star size={16} fill={favorite ? "currentColor" : "none"} />
       </button>
-    </div>
-  );
-}
-
-function DemoStandby() {
-  return (
-    <div className="rounded-2xl bg-sentinel p-4 text-center">
-      <p className="flex items-center justify-center gap-2 text-[12px] uppercase tracking-[0.2em] text-sentinel-dim">
-        <MoonStar size={13} aria-hidden /> In ascolto
-      </p>
-      <p className="mt-1 font-display text-3xl tabular-nums text-sentinel-foreground">12:04</p>
-      <p className="mt-1 flex items-center justify-center gap-2 text-[12px] text-sentinel-foreground">
-        <span aria-hidden className="sentinel-breathe size-2 rounded-full bg-sentinel-live" /> Relay collegato
-        <span aria-hidden>·</span>
-        <BellRing size={12} aria-hidden /> 1 richiesta in arrivo
-      </p>
     </div>
   );
 }
@@ -240,6 +328,32 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <p className="mt-3 text-[14px]">
+          <strong>Somiglianza o reciprocità:</strong> la maggior parte delle domande misura
+          quanto vi somigliate su valori e stile di vita: più le risposte sono vicine, più siete
+          compatibili. Alcune domande, invece, parlano di qualcosa che si <em>dà</em> e si{" "}
+          <em>riceve</em>: linguaggi d’amore, intimità fisica ed emotiva, supporto economico.
+          Lì trovi <strong>due slider, “Fare” e “Ricevere”</strong>.
+        </p>
+        <p className="mt-2 text-[14px]">
+          Nel confronto non si paragonano tra loro i due “Fare”, ma quanto tu ami fare con
+          quanto l’altra persona ama ricevere, e viceversa. Se a entrambi piace solo dare e a
+          nessuno ricevere, sulla carta vi somigliate, ma nella realtà nessuno dei due si sente
+          accolto: la reciprocità lo mette in luce. Le regole del calcolo e delle domande
+          critiche restano le stesse.
+        </p>
+        <p className="mt-2 text-[14px]">
+          Puoi anche rispondere a uno solo dei due slider: la domanda vale come{" "}
+          <strong>risposta parziale</strong>. Il confronto usa solo il verso che si può
+          calcolare e mostra la compatibilità come <strong>stima</strong>, seguita in grigio dal
+          margine d'errore con “±” (per esempio 90% ±45%): è quanto potrebbe cambiare il
+          risultato quando arriverà la risposta mancante. Anche le medie di categoria e il
+          totale mostrano il loro margine.
+        </p>
+        <div className="mt-2">
+          <DemoReciprocal />
+        </div>
+
+        <p className="mt-3 text-[14px]">
           <strong>Domande Critiche (Dealbreaker):</strong> Puoi contrassegnare determinati
           quesiti come "critici". Questo aumenterà la sensibilità dell'algoritmo nei calcoli di
           compatibilità, dando un peso maggiore alla vicinanza o distanza su quel tema
@@ -318,6 +432,11 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
             <strong>Come avviene il confronto?</strong> Dopo aver scelto una modalità, i profili
             vengono confrontati domanda per domanda. Il cursore doppio mostra le vostre risposte
             affiancate e la compatibilità si calcola in base a quanto siete vicini su ogni tema.
+            Nelle domande con “Fare” e “Ricevere” vedi invece due tracce incrociate,
+            <em> “Io faccio ➔ Luna riceve”</em> e <em>“Luna fa ➔ io ricevo”</em>, ciascuna con
+            il proprio punteggio: la compatibilità della domanda è la loro media. Se manca un
+            “Fare” o un “Ricevere”, quel verso resta “in attesa di risposta” e la
+            compatibilità diventa una stima parziale.
           </p>
           <p className="mt-2 text-[14px]">
             <strong>La creatura avatar come ponte:</strong> il file PNG non è solo un’immagine,
@@ -385,20 +504,11 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
           viene inviata ai contatti né inserita nei backup PNG.
         </p>
 
-        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><MoonStar size={18} className="shrink-0" />9. Standby: resta in ascolto</h3>
+        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><Inbox size={18} className="shrink-0" />9. Richieste anche da offline</h3>
         <p className="mt-2 text-[14px]">
-          Aspetti che qualcuno ti scriva il tuo handle? In <strong>Rubrica</strong>, sotto le
-          richieste, tocca <strong>Resta in ascolto</strong>. L’app ti chiede il permesso per le
-          notifiche, tiene lo schermo acceso e mantiene viva la connessione al relay con un
-          battito regolare.
-        </p>
-        <div className="mt-2"><DemoStandby /></div>
-        <p className="mt-2 text-[14px]">
-          La vista scura a risparmio energetico mostra da quanto sei in ascolto, lo stato del
-          relay e quante richieste sono arrivate; se il browser lo permette puoi aprirla in una
-          <strong> mini finestra</strong> sopra le altre app. Quando arriva una richiesta ricevi
-          una notifica anche se stai guardando altro. Tocca <strong>Termina standby</strong> quando
-          vuoi: lo schermo torna a spegnersi normalmente.
+          Non serve tenere l’app sempre aperta. Se la chiudi o il telefono la mette in pausa, le
+          richieste di connessione che ricevi restano in attesa, cifrate, per <strong>72 ore</strong>{" "}
+          e ti arrivano appena riapri QuestionAR: le trovi in <strong>Rubrica → Richieste</strong>.
         </p>
 
         <footer className="mt-8 rounded-2xl bg-surface p-4 text-[12px] text-muted-foreground">

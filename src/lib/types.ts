@@ -3,12 +3,72 @@ import type { KeyPairJwk } from "./keys";
 import type { ProfileTags } from "./profile-tags";
 
 export type Answer = {
+  /** Single-slider answer; for reciprocal questions the rounded mean of Fare and Ricevere. */
   value: number;
   answered: boolean;
   comment?: string;
   critical?: boolean;
   hidden?: boolean;
+  /** Reciprocal questions only: "Fare" slider, 0–100. */
+  giveValue?: number;
+  /** Reciprocal questions only: "Ricevere" slider, 0–100. */
+  receiveValue?: number;
 };
+
+/**
+ * "Fare" side of an answer. Answers saved with a single slider (neither side set) use their
+ * value for both sides; when only "Ricevere" was answered, "Fare" is unknown (undefined).
+ */
+export function giveOf(a: Answer): number | undefined {
+  if (a.giveValue !== undefined) return a.giveValue;
+  return a.receiveValue === undefined ? a.value : undefined;
+}
+
+/** "Ricevere" side of an answer, with the same single-value fallback and partial rule. */
+export function receiveOf(a: Answer): number | undefined {
+  if (a.receiveValue !== undefined) return a.receiveValue;
+  return a.giveValue === undefined ? a.value : undefined;
+}
+
+/** A reciprocal answer is partial when it is answered but only one of Fare/Ricevere is known. */
+export function isPartialAnswer(a: Answer | undefined): boolean {
+  if (!a?.answered) return false;
+  return (giveOf(a) === undefined) !== (receiveOf(a) === undefined);
+}
+
+/** The single `value` kept for older app versions: mean of the known sides. */
+export function reciprocalValue(give: number | undefined, receive: number | undefined): number {
+  const known = [give, receive].filter((v): v is number => v !== undefined);
+  if (known.length === 0) return 50;
+  return Math.round(known.reduce((s, v) => s + v, 0) / known.length);
+}
+
+function percent(v: unknown): number | undefined {
+  if (typeof v !== "number" || !Number.isFinite(v)) return undefined;
+  return Math.round(Math.min(100, Math.max(0, v)));
+}
+
+/** Keeps only valid answer fields; Fare/Ricevere are kept only when they are real percentages. */
+export function sanitizeAnswers(raw: unknown): Record<string, Answer> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, Answer> = {};
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!value || typeof value !== "object") continue;
+    const a = value as Partial<Record<keyof Answer, unknown>>;
+    const give = percent(a.giveValue);
+    const receive = percent(a.receiveValue);
+    out[id] = {
+      value: percent(a.value) ?? 50,
+      answered: a.answered === true,
+      ...(typeof a.comment === "string" ? { comment: a.comment } : {}),
+      ...(a.critical === true ? { critical: true } : {}),
+      ...(a.hidden === true ? { hidden: true } : {}),
+      ...(give !== undefined ? { giveValue: give } : {}),
+      ...(receive !== undefined ? { receiveValue: receive } : {}),
+    };
+  }
+  return out;
+}
 
 export type Identity = {
   name: string;
@@ -45,7 +105,7 @@ export function sanitizeSnapshot(snap: ProfileSnapshot): ProfileSnapshot {
     name: typeof raw.name === "string" ? raw.name : "",
     bio: typeof raw.bio === "string" ? raw.bio : "",
     ...(raw.tags ? { tags: raw.tags } : {}),
-    answers: raw.answers && typeof raw.answers === "object" ? raw.answers : {},
+    answers: sanitizeAnswers(raw.answers),
     customQuestions: Array.isArray(raw.customQuestions) ? raw.customQuestions : [],
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : 0,
   };

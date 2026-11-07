@@ -6,9 +6,10 @@ L'anti-dating app per connessioni reali: questionario di compatibilità, 100% ze
 ## Documentazione
 
 - [Modalità diagnostica](docs/diagnostics.md)
-- [Standby Sentinella Connessioni](docs/standby.md)
+- [Richieste ricevute da offline](docs/richieste-offline.md)
 - [Preferiti locali e griglia emoji dell'onboarding](docs/preferiti.md)
 - [Avvio rapido, caratteri inclusi e offline](docs/avvio-rapido.md)
+- [Domande a reciprocità Fare/Ricevere e calcolo incrociato](docs/reciprocita.md)
 
 ## Sviluppo
 

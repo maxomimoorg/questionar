@@ -15,6 +15,7 @@ import {
   handleOf,
   migrateContact,
   migrateRequest,
+  sanitizeAnswers,
   type AppState,
   type Answer,
   type Contact,
@@ -271,7 +272,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
           return {
             ...s,
-            answers: { ...s.answers, ...payload.answers },
+            answers: { ...s.answers, ...sanitizeAnswers(payload.answers) },
             tags: { ...EMPTY_STATE.tags, ...(payload.tags ?? {}) },
             customQuestions: custom,
           };

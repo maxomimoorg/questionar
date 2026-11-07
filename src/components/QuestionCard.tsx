@@ -1,60 +1,165 @@
 import { Check, Eye, EyeOff, MessageSquare, Trash2, X, Zap } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { toast } from "sonner";
 
 import { percentColor, thumbGlyph } from "@/lib/color";
 import { useStore } from "@/lib/store";
-import type { Question } from "@/lib/questions";
+import { isReciprocal, type Question } from "@/lib/questions";
+import { giveOf, isPartialAnswer, receiveOf, reciprocalValue } from "@/lib/types";
 
 type Props = { question: Question };
 
-export function QuestionCard({ question }: Props) {
-  const { state, setAnswer, removeCustomQuestion } = useStore();
-  const answer = state.answers[question.id] ?? { value: 50, answered: false };
+type SliderProps = {
+  /** Saved value (0–100). */
+  value: number;
+  answered: boolean;
+  onCommit: (value: number) => void;
+  /** Short label shown before the track ("Fare", "Ricevere"). */
+  label?: string;
+};
+
+/** One answer slider: drag the thumb, tap anywhere on the track, or use the arrow keys. */
+export function AnswerSlider({ value, answered, onCommit, label }: SliderProps) {
   const [dragValue, setDragValue] = useState<number | null>(null);
-  const [commentOpen, setCommentOpen] = useState(false);
-  const [draftComment, setDraftComment] = useState(answer.comment ?? "");
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
-  const shown = dragValue ?? answer.value;
+  const shown = dragValue ?? value;
   // Colours only recalculate on release, never during the drag.
-  const colorValue = answer.answered ? answer.value : 50;
-  const color = answer.answered ? percentColor(colorValue) : "var(--color-muted-foreground)";
+  const color = answered ? percentColor(value) : "var(--color-muted-foreground)";
 
   const valueFromClientX = useCallback((clientX: number) => {
     const el = trackRef.current;
     if (!el) return 50;
     const rect = el.getBoundingClientRect();
+    if (rect.width === 0) return 50;
     const ratio = (clientX - rect.left) / rect.width;
     return Math.round(Math.min(1, Math.max(0, ratio)) * 100);
   }, []);
 
-  useEffect(() => {
+  // The track captures the pointer, so even a very quick tap delivers its release here.
+  const start = (e: ReactPointerEvent, from: number) => {
+    e.preventDefault();
+    dragging.current = true;
+    try {
+      trackRef.current?.setPointerCapture(e.pointerId);
+    } catch {
+      /* capture unsupported: move/up still reach the track while the pointer is over it */
+    }
+    setDragValue(from);
+  };
+  const move = (e: ReactPointerEvent) => {
     if (!dragging.current) return;
-    const move = (e: PointerEvent) => {
-      e.preventDefault();
-      setDragValue(valueFromClientX(e.clientX));
-    };
-    const up = (e: PointerEvent) => {
-      dragging.current = false;
-      const v = valueFromClientX(e.clientX);
-      setDragValue(null);
-      setAnswer(question.id, { value: v, answered: true });
-    };
-    window.addEventListener("pointermove", move, { passive: false });
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", up);
-    return () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", up);
-    };
-  }, [dragValue, question.id, setAnswer, valueFromClientX]);
+    setDragValue(valueFromClientX(e.clientX));
+  };
+  const end = (e: ReactPointerEvent) => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    const v = valueFromClientX(e.clientX);
+    setDragValue(null);
+    onCommit(v);
+  };
 
   const glyph = thumbGlyph(shown);
-  const filledLeft = answer.answered && shown < 50;
-  const filledRight = answer.answered && shown > 50;
+  const filledLeft = answered && shown < 50;
+  const filledRight = answered && shown > 50;
+  const name = label ? `${label}: ${shown}%` : `Risposta: ${shown}%`;
+
+  return (
+    <div className="flex items-center gap-3">
+      {label && (
+        <span className="w-16 shrink-0 text-[12px] font-semibold text-muted-foreground">
+          {label}
+        </span>
+      )}
+      <div
+        ref={trackRef}
+        className="relative h-9 flex-1 touch-none select-none"
+        // Tap on the track: jump there and keep dragging from that point.
+        onPointerDown={(e) => start(e, valueFromClientX(e.clientX))}
+        onPointerMove={move}
+        onPointerUp={end}
+        onPointerCancel={end}
+      >
+        {/* two adjacent segments; only one gets filled */}
+        <div className="absolute inset-x-0 top-1/2 flex h-2.5 -translate-y-1/2 overflow-hidden rounded-full">
+          <div className="relative h-full flex-1 bg-muted">
+            {filledLeft && (
+              <div
+                className="absolute inset-y-0 right-0"
+                style={{ left: `${shown * 2}%`, backgroundColor: color }}
+              />
+            )}
+          </div>
+          <div className="mx-px" />
+          <div className="relative h-full flex-1 bg-muted">
+            {filledRight && (
+              <div
+                className="absolute inset-y-0 left-0"
+                style={{ width: `${(shown - 50) * 2}%`, backgroundColor: color }}
+              />
+            )}
+          </div>
+        </div>
+
+        <button
+          role="slider"
+          aria-label={name}
+          aria-valuenow={shown}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          onPointerDown={(e) => {
+            // Grabbing the thumb keeps its value (no jump to the pointer position).
+            e.stopPropagation();
+            start(e, shown);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") onCommit(Math.max(0, shown - 1));
+            if (e.key === "ArrowRight") onCommit(Math.min(100, shown + 1));
+          }}
+          className="absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 touch-none place-items-center rounded-full shadow-md ring-2 ring-background"
+          style={{ left: `${shown}%`, backgroundColor: color }}
+        >
+          {glyph === "check" ? (
+            <Check size={16} strokeWidth={3.5} color="#fff" />
+          ) : glyph === "cross" ? (
+            <X size={16} strokeWidth={3.5} color="#fff" />
+          ) : (
+            <span className="text-[13px] font-extrabold text-white">?</span>
+          )}
+        </button>
+      </div>
+      <span
+        className="w-11 text-right text-[14px] font-bold tabular-nums"
+        style={{ color }}
+      >
+        {shown}%
+      </span>
+    </div>
+  );
+}
+
+export function QuestionCard({ question }: Props) {
+  const { state, setAnswer, removeCustomQuestion } = useStore();
+  const answer = state.answers[question.id] ?? { value: 50, answered: false };
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [draftComment, setDraftComment] = useState(answer.comment ?? "");
+  const reciprocal = isReciprocal(question);
+
+  const color = answer.answered ? percentColor(answer.value) : "var(--color-muted-foreground)";
+
+  // Answers saved with a single slider start both sides from that value; a side never
+  // touched stays unanswered, so the question counts as partially answered.
+  const give = answer.answered ? giveOf(answer) : undefined;
+  const receive = answer.answered ? receiveOf(answer) : undefined;
+  const partial = isPartialAnswer(answer);
+  const saveReciprocal = (giveValue: number | undefined, receiveValue: number | undefined) =>
+    setAnswer(question.id, {
+      ...(giveValue !== undefined ? { giveValue } : {}),
+      ...(receiveValue !== undefined ? { receiveValue } : {}),
+      value: reciprocalValue(giveValue, receiveValue),
+      answered: true,
+    });
 
   const commit = () => {
     setCommentOpen(false);
@@ -126,68 +231,36 @@ export function QuestionCard({ question }: Props) {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-3">
-        <div ref={trackRef} className="relative h-9 flex-1 select-none">
-          {/* two adjacent segments; only one gets filled */}
-          <div className="absolute inset-x-0 top-1/2 flex h-2.5 -translate-y-1/2 overflow-hidden rounded-full">
-            <div className="relative h-full flex-1 bg-muted">
-              {filledLeft && (
-                <div
-                  className="absolute inset-y-0 right-0"
-                  style={{ left: `${shown * 2}%`, backgroundColor: color }}
-                />
-              )}
-            </div>
-            <div className="mx-px" />
-            <div className="relative h-full flex-1 bg-muted">
-              {filledRight && (
-                <div
-                  className="absolute inset-y-0 left-0"
-                  style={{ width: `${(shown - 50) * 2}%`, backgroundColor: color }}
-                />
-              )}
-            </div>
-          </div>
-
-          <button
-            role="slider"
-            aria-label={`Risposta: ${shown}%`}
-            aria-valuenow={shown}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              dragging.current = true;
-              setDragValue(shown);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowLeft")
-                setAnswer(question.id, { value: Math.max(0, shown - 1), answered: true });
-              if (e.key === "ArrowRight")
-                setAnswer(question.id, { value: Math.min(100, shown + 1), answered: true });
-            }}
-            className="absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 touch-none place-items-center rounded-full shadow-md ring-2 ring-background"
-            style={{
-              left: `${shown}%`,
-              backgroundColor: answer.answered ? color : "var(--color-muted-foreground)",
-            }}
-          >
-            {glyph === "check" ? (
-              <Check size={16} strokeWidth={3.5} color="#fff" />
-            ) : glyph === "cross" ? (
-              <X size={16} strokeWidth={3.5} color="#fff" />
-            ) : (
-              <span className="text-[13px] font-extrabold text-white">?</span>
-            )}
-          </button>
+      {reciprocal ? (
+        <div className="mt-2 space-y-1">
+          <AnswerSlider
+            label="Fare"
+            value={give ?? 50}
+            answered={give !== undefined}
+            onCommit={(v) => saveReciprocal(v, receive)}
+          />
+          <AnswerSlider
+            label="Ricevere"
+            value={receive ?? 50}
+            answered={receive !== undefined}
+            onCommit={(v) => saveReciprocal(give, v)}
+          />
+          {partial && (
+            <p className="text-[12px] text-muted-foreground">
+              Risposta parziale: rispondi anche a “{give === undefined ? "Fare" : "Ricevere"}”
+              per un confronto completo. Intanto i confronti mostrano una stima.
+            </p>
+          )}
         </div>
-        <span
-          className="w-11 text-right text-[14px] font-bold tabular-nums"
-          style={{ color: answer.answered ? color : "var(--color-muted-foreground)" }}
-        >
-          {shown}%
-        </span>
-      </div>
+      ) : (
+        <div className="mt-3">
+          <AnswerSlider
+            value={answer.value}
+            answered={answer.answered}
+            onCommit={(v) => setAnswer(question.id, { value: v, answered: true })}
+          />
+        </div>
+      )}
 
       {commentOpen ? (
         <input

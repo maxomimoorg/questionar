@@ -60,21 +60,12 @@
   --color-tag-match: var(--tag-match);
   --color-tag-match-foreground: var(--tag-match-foreground);
   --color-overlay: var(--overlay);
-  --color-sentinel: var(--sentinel);
-  --color-sentinel-foreground: var(--sentinel-foreground);
-  --color-sentinel-dim: var(--sentinel-dim);
-  --color-sentinel-live: var(--sentinel-live);
   --shadow-action-glow: var(--action-glow);
 }
 
 :root {
   --radius: 1rem;
   --overlay: oklch(0 0 0 / 50%);
-  /* Standby sentinel: true black (OLED pixels off) with dimmed, low-luminance text in both modes. */
-  --sentinel: oklch(0 0 0);
-  --sentinel-foreground: oklch(0.62 0.02 210);
-  --sentinel-dim: oklch(0.42 0.015 210);
-  --sentinel-live: oklch(0.6 0.1 184);
   --backup-background: oklch(0 0 0);
   --backup-surface: oklch(0.2 0.008 285);
   --backup-name: oklch(0.874 0.151 204);
@@ -506,19 +497,3 @@
   .info-scroll { scroll-behavior: auto; }
 }
 
-/* Standby sentinel: slow drift avoids burn-in on always-on screens; the dot breathes gently. */
-@keyframes sentinel-drift {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(14px, -22px); }
-  50% { transform: translate(-12px, 18px); }
-  75% { transform: translate(10px, 26px); }
-}
-.sentinel-drift { animation: sentinel-drift 240s ease-in-out infinite; }
-@keyframes sentinel-breathe {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
-}
-.sentinel-breathe { animation: sentinel-breathe 4s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) {
-  .sentinel-drift, .sentinel-breathe { animation: none; }
-}

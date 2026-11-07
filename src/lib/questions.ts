@@ -37,7 +37,27 @@ export function questionId(category: CategoryKey, text: string) {
   return `${category}-${normalizeText(text)}`;
 }
 
-const DEFAULTS: Record<CategoryKey, string[]> = {
+/**
+ * How a question is compared:
+ * - "similarity": the closer the two answers, the higher the compatibility;
+ * - "reciprocal": two sliders (Fare / Ricevere) compared crosswise, what one person likes to
+ *   give against what the other likes to receive, and vice versa.
+ */
+export type QuestionType = "similarity" | "reciprocal";
+
+/**
+ * A default question. `legacy` keeps the id of a question whose text was reworded, so answers
+ * already saved (and profiles sent by older app versions) keep matching it.
+ */
+type DefaultEntry = string | { text: string; legacy?: string; reciprocal?: true };
+
+const r = (text: string, legacy?: string): DefaultEntry => ({
+  text,
+  reciprocal: true,
+  ...(legacy ? { legacy } : {}),
+});
+
+const DEFAULTS: Record<CategoryKey, DefaultEntry[]> = {
   A: [
     "Etichettare la relazione",
     "Fare piani per il futuro",
@@ -74,20 +94,20 @@ const DEFAULTS: Record<CategoryKey, string[]> = {
     "Passare del tempo in solitudine",
   ],
   D: [
-    "Coccole e gesti fisici di affetto",
+    r("Coccole e gesti fisici di affetto"),
     "Affettuosità in pubblico",
     "Chem-sex (sesso con sostanze)",
     "Raggiungere l'orgasmo",
     "Baciarsi",
-    "Sesso orale",
-    "Petting",
-    "Masturbazione reciproca",
-    "Penetrazione con oggetti",
-    "Penetrazione genitale",
+    r("Sesso orale"),
+    r("Petting"),
+    r("Masturbazione", "Masturbazione reciproca"),
+    r("Penetrazione con oggetti"),
+    r("Penetrazione genitale"),
     "Uso di giocattoli sessuali",
     "Uso di preservativo o altre protezioni",
     "Test periodici IST",
-    "Gioco kinky (fetish/BDSM)",
+    r("Gioco kinky (fetish/BDSM)"),
     "Sesso a 3 o più",
     "Attenzione all'igiene personale",
   ],
@@ -104,13 +124,13 @@ const DEFAULTS: Record<CategoryKey, string[]> = {
     "Fare dei check-up della relazione",
   ],
   F: [
-    "Contatto fisico",
-    "Parole d'affermazione",
-    "Regali",
-    "Atti di servizio",
+    r("Contatto fisico"),
+    r("Parole d'affermazione"),
+    r("Regali"),
+    r("Atti di servizio"),
     "Tempo di qualità",
-    "Dolcezza, piccole grandi attenzioni, gentilezza",
-    "Mandarsi vocali lunghi come audiolibri",
+    r("Dolcezza, piccole grandi attenzioni, gentilezza"),
+    r("Vocali lunghi come audiolibri", "Mandarsi vocali lunghi come audiolibri"),
   ],
   G: [
     "Incontrare meta-partner",
@@ -127,21 +147,21 @@ const DEFAULTS: Record<CategoryKey, string[]> = {
   ],
   H: [
     "Esprimere felicità ed entusiasmo",
-    "Offrire supporto nei momenti difficili",
-    "Condividere vulnerabilità e paure",
+    r("Supporto nei momenti difficili", "Offrire supporto nei momenti difficili"),
+    r("Condividere vulnerabilità e paure"),
     "Dire \u201cti amo\u201d",
-    "Condividere fantasie sessuali",
+    r("Condividere fantasie sessuali"),
     "Condividere speranze per il futuro",
     "Conoscere i reciproci gusti",
-    "Chiedere consigli",
-    "Sostenere il lavoro sulla salute mentale",
+    r("Consigli", "Chiedere consigli"),
+    r("Sostegno nel lavoro sulla salute mentale", "Sostenere il lavoro sulla salute mentale"),
     "Esplicitare apertamente i propri confini",
   ],
   I: [
     "Avere un conto co-intestato",
     "Contribuire equamente alle spese",
-    "Supporto economico",
-    "Regali costosi",
+    r("Supporto economico"),
+    r("Regali costosi"),
   ],
   J: [],
 };
@@ -151,13 +171,32 @@ export type Question = {
   category: CategoryKey;
   text: string;
   custom: boolean;
+  /** Missing means "similarity". */
+  type?: QuestionType;
 };
 
 export const DEFAULT_QUESTIONS: Question[] = CATEGORIES.flatMap((cat) =>
-  DEFAULTS[cat.key].map((text) => ({
-    id: questionId(cat.key, text),
-    category: cat.key,
-    text,
-    custom: false,
-  })),
+  DEFAULTS[cat.key].map((entry) => {
+    const e = typeof entry === "string" ? { text: entry } : entry;
+    return {
+      id: questionId(cat.key, e.legacy ?? e.text),
+      category: cat.key,
+      text: e.text,
+      custom: false,
+      type: e.reciprocal ? ("reciprocal" as const) : ("similarity" as const),
+    };
+  }),
 );
+
+const RECIPROCAL_IDS = new Set(
+  DEFAULT_QUESTIONS.filter((q) => q.type === "reciprocal").map((q) => q.id),
+);
+
+/** Comparison mode of a question id. Custom and unknown questions are always "similarity". */
+export function questionType(id: string): QuestionType {
+  return RECIPROCAL_IDS.has(id) ? "reciprocal" : "similarity";
+}
+
+export function isReciprocal(q: Pick<Question, "id">): boolean {
+  return questionType(q.id) === "reciprocal";
+}

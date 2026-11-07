@@ -35,6 +35,6 @@ describe("Self-contained PWA assets", () => {
     expect(worker).toMatch(/const NAV_TIMEOUT_MS = 2500;/);
     expect(worker).toMatch(/req\.mode === "navigate"[\s\S]*networkFirstWithTimeout/);
     expect(worker).toMatch(/isHashedAsset\(url\)[\s\S]*cacheFirst/);
-    expect(worker).toContain("notificationclick");
+    expect(worker).not.toContain("notificationclick");
   });
 });

@@ -18,7 +18,7 @@ describe("QuestionAR tutorial", () => {
     const onClose = vi.fn();
     render(<InfoModal onClose={onClose} />);
     const dialog = screen.getByRole("dialog", { name: "QuestionAR" });
-    for (const title of ["Tag del profilo", "Domande personalizzate", "Confronto a tre", "Zero-server", "collezione emoji", "Preferiti", "Standby"]) {
+    for (const title of ["Tag del profilo", "Domande personalizzate", "Confronto a tre", "Zero-server", "collezione emoji", "Preferiti", "Richieste anche da offline"]) {
       expect(within(dialog).getByRole("heading", { name: new RegExp(title, "i") })).toBeTruthy();
     }
     expect(dialog).toHaveTextContent("666 caratteri");

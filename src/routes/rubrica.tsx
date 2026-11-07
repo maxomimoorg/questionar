@@ -16,13 +16,13 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Avatar } from "@/components/Avatar";
-import { ConnectionSentinel } from "@/components/ConnectionSentinel";
 import { EmojiCollection } from "@/components/EmojiCollection";
 import { percentColor } from "@/lib/color";
-import { averageCompat } from "@/lib/compat";
+import { averageCompatDetail, formatCompat } from "@/lib/compat";
 import { usePeer } from "@/lib/peer";
 import { exportBackupPng, importBackupPng } from "@/lib/stego";
 import { useStore } from "@/lib/store";
+import { MarginText } from "@/components/MarginText";
 import { emojisFromHandle, isValidHandle } from "@/lib/handle";
 import { handleOf, sortFavoritesFirst } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -123,7 +123,7 @@ function RubricaPage() {
     if (!contact?.snapshot) return null;
     const ids = new Set(questions.map((q) => q.id));
     for (const q of contact.snapshot.customQuestions ?? []) ids.add(q.id);
-    return averageCompat([...ids], [
+    return averageCompatDetail([...ids], [
       { answers: state.answers },
       { answers: contact.snapshot.answers },
     ]);
@@ -304,7 +304,10 @@ function RubricaPage() {
             Nessuna richiesta in sospeso.
           </p>
         )}
-        <ConnectionSentinel />
+        <p className="mt-1 text-[12px] text-muted-foreground">
+          Puoi chiudere l’app quando vuoi: le richieste ricevute mentre sei offline restano in
+          attesa fino a 72 ore e arrivano appena la riapri.
+        </p>
         <div className="mt-2 space-y-2">
           {incoming.map((r) => (
             <div
@@ -393,10 +396,10 @@ function RubricaPage() {
                             color:
                               compat === null
                                 ? "var(--color-muted-foreground)"
-                                : percentColor(compat),
+                                : percentColor(compat.score),
                           }}
                         >
-                          {compat === null ? "–" : `${compat}%`}
+                          {formatCompat(compat)}<MarginText result={compat} />
                         </span>
                         {c.favorite && (
                           <Star

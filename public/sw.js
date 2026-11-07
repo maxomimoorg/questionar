@@ -4,7 +4,7 @@
 //   fast, so they always point to scripts that exist on the server.
 // - Hashed build files (/assets/…): cache first; their name changes whenever their content does.
 // - Other local static files (icons, manifest, logo): stale-while-revalidate.
-const CACHE = "questionar-v6";
+const CACHE = "questionar-v7";
 const NAV_TIMEOUT_MS = 2500;
 const PRECACHE = [
   "/",
@@ -113,16 +113,4 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(staleWhileRevalidate(event));
-});
-
-// Standby sentinel notifications: tapping one brings the app back to the address book.
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-      const open = list.find((c) => new URL(c.url).origin === self.location.origin);
-      if (open) return open.focus();
-      return self.clients.openWindow("/rubrica");
-    }),
-  );
 });

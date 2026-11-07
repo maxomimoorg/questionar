@@ -7,10 +7,26 @@ import { z } from "zod";
 import { Avatar } from "@/components/Avatar";
 import { CompactProfileTags } from "@/components/ProfileTags";
 import { percentColor } from "@/lib/color";
-import { averageCompat, multiCompat } from "@/lib/compat";
-import { CATEGORIES } from "@/lib/questions";
+import {
+  averageCompatDetail,
+  flowCompat,
+  formatCompat,
+  multiCompat,
+  multiCompatDetail,
+  type AverageResult,
+} from "@/lib/compat";
+import { CATEGORIES, isReciprocal } from "@/lib/questions";
 import { useStore } from "@/lib/store";
-import { handleOf, type Answer, type Question } from "@/lib/types";
+import { MarginText } from "@/components/MarginText";
+import { giveOf, handleOf, receiveOf, type Answer, type Question } from "@/lib/types";
+
+/** Short note under a total that includes partial Fare/Ricevere estimates. */
+function partialNote(result: AverageResult | null): string | null {
+  if (!result || result.partialCount === 0) return null;
+  return result.partialCount === 1
+    ? "Stima: include 1 domanda con risposta parziale (± è il margine d'errore)."
+    : `Stima: include ${result.partialCount} domande con risposta parziale (± è il margine d'errore).`;
+}
 
 export const Route = createFileRoute("/confronto")({
   validateSearch: z.object({ b: z.string(), c: z.string().optional() }),
@@ -39,7 +55,7 @@ type ExpandedProfile = {
   handle: string;
   name: string;
   mine: boolean;
-  compatibility: number | null;
+  compatibility: AverageResult | null;
 };
 
 function ComparePage() {
@@ -102,10 +118,12 @@ function ComparePage() {
   }, [questions, contactB, contactC]);
 
   const participants = people.map((p) => ({ answers: p.answers }));
-  const overall = averageCompat(
+  const overallDetail = averageCompatDetail(
     allQuestions.map((q) => q.id),
     participants,
   );
+  const overall = overallDetail?.score ?? null;
+  const overallNote = partialNote(overallDetail);
 
   const others = people.filter((p) => !p.mine);
 
@@ -144,8 +162,11 @@ function ComparePage() {
                   overall === null ? "var(--color-muted-foreground)" : percentColor(overall),
               }}
             >
-              {overall === null ? "dati insufficienti" : `${overall}%`}
+              {overall === null ? "dati insufficienti" : <>{formatCompat(overallDetail)}<MarginText result={overallDetail} /></>}
             </div>
+            {overallNote && (
+              <p className="text-[12px] text-muted-foreground">{overallNote}</p>
+            )}
           </div>
           <button
             onClick={() => {
@@ -185,12 +206,13 @@ function ComparePage() {
 
         <div className="flex flex-wrap gap-2">
           {people.map((p) => {
-            const pair = p.mine
+            const pairDetail = p.mine
               ? null
-              : averageCompat(
+              : averageCompatDetail(
                   allQuestions.map((q) => q.id),
                   [{ answers: state.answers }, { answers: p.answers }],
                 );
+            const pair = pairDetail?.score ?? null;
             const showPair = Boolean(contactC && !p.mine);
             return (
               <div
@@ -203,7 +225,7 @@ function ComparePage() {
                     handle: p.handle,
                     name: p.mine ? me?.name || "io" : p.name,
                     mine: p.mine,
-                    compatibility: pair,
+                    compatibility: pairDetail,
                   })
                 }
                 onPointerUp={stopLongPress}
@@ -236,7 +258,7 @@ function ComparePage() {
                         pair === null ? "var(--color-muted-foreground)" : percentColor(pair),
                     }}
                   >
-                    {pair === null ? "–" : `${pair}%`}
+                    {formatCompat(pairDetail)}<MarginText result={pairDetail} />
                   </span>
                 ) : null}
               </div>
@@ -292,7 +314,7 @@ function ComparePage() {
               borderColor:
                 expandedProfile.compatibility === null
                   ? "var(--color-border)"
-                  : percentColor(expandedProfile.compatibility),
+                  : percentColor(expandedProfile.compatibility.score),
             }}
           >
             <button
@@ -322,15 +344,20 @@ function ComparePage() {
                   color:
                     expandedProfile.compatibility === null
                       ? "var(--color-muted-foreground)"
-                      : percentColor(expandedProfile.compatibility),
+                      : percentColor(expandedProfile.compatibility.score),
                 }}
               >
                 {expandedProfile.mine
                   ? "ME!"
                   : expandedProfile.compatibility === null
                     ? "dati insufficienti"
-                    : `${expandedProfile.compatibility}%`}
+                    : <>{formatCompat(expandedProfile.compatibility)}<MarginText result={expandedProfile.compatibility} /></>}
               </div>
+              {!expandedProfile.mine && partialNote(expandedProfile.compatibility) && (
+                <p className="text-[12px] text-muted-foreground">
+                  {partialNote(expandedProfile.compatibility)}
+                </p>
+              )}
             </div>
           </section>
         </div>
@@ -378,10 +405,11 @@ function ComparePage() {
           })
           .map((x) => x.q);
         if (items.length === 0) return null;
-        const catCompat = averageCompat(
+        const catDetail = averageCompatDetail(
           items.map((q) => q.id),
           participants,
         );
+        const catCompat = catDetail?.score ?? null;
         const closed = Boolean(closedCats[cat.key]);
         return (
           <section key={cat.key} className="rounded-3xl bg-surface-2/60 p-2">
@@ -405,7 +433,7 @@ function ComparePage() {
                         : percentColor(catCompat),
                   }}
                 >
-                  {catCompat === null ? "–" : `${catCompat}%`}
+                  {formatCompat(catDetail)}<MarginText result={catDetail} />
                 </span>
                 <ChevronDown
                   size={16}
@@ -442,6 +470,108 @@ type Person = {
   mine: boolean;
 };
 
+/** Marker on a comparison track: a dot for me, the avatar for everyone else. */
+function PersonThumb({ person, value }: { person: Person; value: number }) {
+  return person.mine ? (
+    <span
+      className="absolute top-1/2 z-10 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-background"
+      style={{ left: `${value}%`, backgroundColor: percentColor(value) }}
+    />
+  ) : (
+    <span
+      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full p-[3px]"
+      style={{ left: `${value}%`, backgroundColor: percentColor(value) }}
+    >
+      <Avatar handle={person.handle} size={26} />
+    </span>
+  );
+}
+
+const giverLabel = (p: Person) => (p.mine ? "Io faccio" : `${p.name} fa`);
+const receiverLabel = (p: Person) => (p.mine ? "io ricevo" : `${p.name} riceve`);
+
+/** One Fare/Ricevere percentage, or "–" when that side has no answer yet. */
+function SideValue({ value }: { value: number | undefined }) {
+  return value === undefined ? (
+    <b className="text-muted-foreground">–</b>
+  ) : (
+    <b style={{ color: percentColor(value) }}>{value}%</b>
+  );
+}
+
+/** Who still has to answer a side, e.g. "manca il tuo “Fare”" / "manca il “Ricevere” di Luna". */
+function missingSide(p: Person, side: "Fare" | "Ricevere") {
+  return p.mine ? `manca il tuo “${side}”` : `manca il “${side}” di ${p.name}`;
+}
+
+/**
+ * Reciprocal question: one track per direction, "who gives → who receives", each with its own
+ * match score. A direction with an unanswered side waits for that answer; the question score is
+ * the mean of the known flows (an estimate when some are missing).
+ */
+function ReciprocalFlowsView({ rows }: { rows: { person: Person; answer: Answer }[] }) {
+  const criticalCount = rows.filter((r) => r.answer.critical).length;
+  const flows: {
+    giver: Person;
+    receiver: Person;
+    give: number | undefined;
+    receive: number | undefined;
+    score: number | null;
+  }[] = [];
+  for (const g of rows) {
+    for (const r of rows) {
+      if (g === r) continue;
+      flows.push({
+        giver: g.person,
+        receiver: r.person,
+        give: giveOf(g.answer),
+        receive: receiveOf(r.answer),
+        score: flowCompat(g.answer, r.answer, criticalCount),
+      });
+    }
+  }
+  return (
+    <div className="mt-2 space-y-1">
+      {flows.map((f) => {
+        const missing = [
+          f.give === undefined ? missingSide(f.giver, "Fare") : null,
+          f.receive === undefined ? missingSide(f.receiver, "Ricevere") : null,
+        ].filter(Boolean);
+        return (
+          <div key={`${f.giver.handle}>${f.receiver.handle}`}>
+            <div className="flex items-center justify-between gap-2 text-[12px]">
+              <span className="text-muted-foreground">
+                {giverLabel(f.giver)} ➔ {receiverLabel(f.receiver)}
+              </span>
+              {f.score === null ? (
+                <span className="text-muted-foreground">in attesa di risposta</span>
+              ) : (
+                <b style={{ color: percentColor(f.score) }}>{f.score}%</b>
+              )}
+            </div>
+            <div className="relative h-9">
+              <div className="absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-muted" />
+              {f.score !== null && (
+                <div
+                  className="absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full"
+                  style={{ backgroundColor: percentColor(f.score) }}
+                />
+              )}
+              {f.give !== undefined && <PersonThumb person={f.giver} value={f.give} />}
+              {f.receive !== undefined && <PersonThumb person={f.receiver} value={f.receive} />}
+            </div>
+            {missing.length > 0 && (
+              <p className="text-[12px] text-muted-foreground">
+                Verso non calcolabile: {missing.join(", ")}.
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CompareRow({
   question,
   people,
@@ -455,14 +585,16 @@ function CompareRow({
   const navigate = useNavigate();
   const rows = people.map((p) => ({ person: p, answer: p.answers[question.id] }));
   const mine = rows[0]!;
-  const compat = multiCompat(
+  const compatDetail = multiCompatDetail(
     question.id,
     people.map((p) => ({ answers: p.answers })),
   );
+  const compat = compatDetail?.score ?? null;
   const criticalBy = rows.filter((r) => r.answer?.critical).map((r) => r.person);
   // Same rule as the profile: critical questions use the percentage colour, not the theme.
   const criticalColor =
     compat !== null ? percentColor(compat) : "var(--color-muted-foreground)";
+  const reciprocal = isReciprocal(question);
   const needsMyAnswer = !mine.answer?.answered;
   const allAnswered = rows.every((r) => r.answer?.answered);
   const noneAnswered = rows.every((r) => !r.answer?.answered);
@@ -522,57 +654,46 @@ function CompareRow({
         )}
       </div>
 
-      {/* shared track with one thumb per person */}
-
-      <div className="relative mt-3 h-9">
-        <div className="absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-muted" />
-        {compat !== null && (
-          <div
-            className="absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full"
-            style={{ backgroundColor: percentColor(compat) }}
-          />
-        )}
-        {rows.map((r) =>
-          r.answer?.answered ? (
-            r.person.mine ? (
-              <span
-                key={r.person.handle}
-                className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-background"
-                style={{
-                  left: `${r.answer.value}%`,
-                  backgroundColor: percentColor(r.answer.value),
-                }}
-              />
-            ) : (
-
-              <span
-                key={r.person.handle}
-                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full p-[3px]"
-                style={{
-                  left: `${r.answer.value}%`,
-                  backgroundColor: percentColor(r.answer.value),
-                }}
-              >
-                <Avatar handle={r.person.handle} size={26} />
-              </span>
-            )
-          ) : null,
-        )}
-      </div>
+      {reciprocal ? (
+        <ReciprocalFlowsView rows={rows as { person: Person; answer: Answer }[]} />
+      ) : (
+        /* shared track with one thumb per person */
+        <div className="relative mt-3 h-9">
+          <div className="absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-muted" />
+          {compat !== null && (
+            <div
+              className="absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full"
+              style={{ backgroundColor: percentColor(compat) }}
+            />
+          )}
+          {rows.map((r) =>
+            r.answer?.answered ? (
+              <PersonThumb key={r.person.handle} person={r.person} value={r.answer.value} />
+            ) : null,
+          )}
+        </div>
+      )}
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px]">
         {rows.map((r) => (
           <span key={r.person.handle}>
             {r.person.mine ? "io" : r.person.name}:{" "}
-            <b
-              style={{
-                color: r.answer?.answered
-                  ? percentColor(r.answer.value)
-                  : "var(--color-muted-foreground)",
-              }}
-            >
-              {r.answer?.answered ? `${r.answer.value}%` : "–"}
-            </b>
+            {reciprocal && r.answer?.answered ? (
+              <>
+                Fare <SideValue value={giveOf(r.answer)} />
+                {" · "}Ricevere <SideValue value={receiveOf(r.answer)} />
+              </>
+            ) : (
+              <b
+                style={{
+                  color: r.answer?.answered
+                    ? percentColor(r.answer.value)
+                    : "var(--color-muted-foreground)",
+                }}
+              >
+                {r.answer?.answered ? `${r.answer.value}%` : "–"}
+              </b>
+            )}
           </span>
         ))}
         <span>
@@ -583,10 +704,16 @@ function CompareRow({
                 compat === null ? "var(--color-muted-foreground)" : percentColor(compat),
             }}
           >
-            {compat === null ? "–" : `${compat}%`}
+            {formatCompat(compatDetail)}<MarginText result={compatDetail} />
           </b>
         </span>
       </div>
+      {compatDetail?.partial && (
+        <p className="mt-1 text-[12px] text-muted-foreground">
+          Compatibilità parziale: è una stima, perché manca una parte della risposta
+          “Fare”/“Ricevere”.
+        </p>
+      )}
 
       <div className="mt-1 space-y-0.5">
         {rows
