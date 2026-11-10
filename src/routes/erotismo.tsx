@@ -31,7 +31,7 @@ function EroticPage() {
       <section className="rounded-3xl bg-surface-2/60 p-4 text-[14px] leading-relaxed text-foreground">
         <h2 className="text-[16px] font-semibold text-accent">Come compilare questa sezione</h2>
         <p className="mt-2">
-          Questa sezione facoltativa approfondisce pratiche e dinamiche riguardanti il mondo dell'erotismo. In QuestionAR è importante distinguere ed indicare quelli che sono i propri <li><strong>desideri</strong> dalle semplici fantasie: rispondi chiedendoti cosa vorresti davvero realizzare con una persona compatibile, più che le cose su cui fantastichi per eccitarti. Sono sfere simili, ma confonderle potrebbe creare aspettative diverse da ciò che si vuole realmente.
+          Questa sezione facoltativa approfondisce pratiche e dinamiche riguardanti il mondo dell'erotismo. In QuestionAR è importante distinguere ed indicare quelli che sono i propri <strong>desideri</strong> dalle semplici fantasie: rispondi chiedendoti cosa vorresti davvero realizzare con una persona compatibile, più che le cose su cui fantastichi per eccitarti. Sono sfere simili, ma confonderle potrebbe creare aspettative diverse da ciò che si vuole realmente.
         </p>
         <h2 className="text-[14px] font-semibold text-accent">Risposte complementari:</h2>
         <p className="mt-2">
