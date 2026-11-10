@@ -231,7 +231,7 @@ const EROTISMO_DEFAULTS: Record<EroticCategoryKey, DefaultEntry[]> = {
     "Seno",
     "Bocca",
     "Sperma",
-    "Squirt"
+    "Squirt",
     "Saliva",
     "Sangue",
     "Piedi",
