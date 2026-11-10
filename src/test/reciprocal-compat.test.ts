@@ -26,14 +26,14 @@ const pair = (id: string, a: Answer, b: Answer) =>
   multiCompat(id, [{ answers: { [id]: a } }, { answers: { [id]: b } }]);
 
 describe("reciprocal questions (Fare / Ricevere)", () => {
-  it("flags exactly the 20 chosen questions, with the reworded texts", () => {
+  it("flags exactly the 43 chosen questions, with the reworded texts", () => {
     const reciprocal = DEFAULT_QUESTIONS.filter((q) => q.type === "reciprocal").map((q) => q.text);
-    expect(reciprocal).toHaveLength(20);
+    expect(reciprocal).toHaveLength(43);
     for (const text of [
       "Contatto fisico",
       "Vocali lunghi come audiolibri",
       "Masturbazione",
-      "Gioco kinky (fetish/BDSM)",
+      "Shibari",
       "Supporto nei momenti difficili",
       "Consigli",
       "Sostegno nel lavoro sulla salute mentale",

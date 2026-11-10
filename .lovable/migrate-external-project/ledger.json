@@ -1,0 +1,82 @@
+{
+  "source": "code-archive: questionar-beta.zip (Lovable TanStack Start project)",
+  "capabilities": [
+    {
+      "capability": "code",
+      "source": "src/, routes /, /rubrica, /confronto, /confronto/erotismo, /erotismo",
+      "outcome": "migrate",
+      "status": "verified",
+      "next_action": "Done"
+    },
+    {
+      "capability": "schema",
+      "source": "none (browser IndexedDB only)",
+      "outcome": "not_applicable",
+      "status": "verified",
+      "next_action": "None: zero-server app keeps data on the device"
+    },
+    {
+      "capability": "records",
+      "source": "none (per-device IndexedDB + PNG backups)",
+      "outcome": "not_applicable",
+      "status": "verified",
+      "next_action": "None"
+    },
+    {
+      "capability": "auth identities",
+      "source": "none (local handle/keys, no accounts)",
+      "outcome": "not_applicable",
+      "status": "verified",
+      "next_action": "None"
+    },
+    {
+      "capability": "authorization",
+      "source": "none",
+      "outcome": "not_applicable",
+      "status": "verified",
+      "next_action": "None"
+    },
+    {
+      "capability": "uploaded file bytes",
+      "source": "logo/icons missing from zip; logo-questionar.png uploaded separately",
+      "outcome": "migrate",
+      "status": "verified",
+      "next_action": "Done"
+    },
+    {
+      "capability": "external providers",
+      "source": "Cloudflare relay worker in relay/ (deployed separately via wrangler)",
+      "outcome": "preserve",
+      "status": "preserved",
+      "next_action": "Relay source kept in relay/; deployed outside Lovable"
+    },
+    {
+      "capability": "public endpoints/callbacks/webhooks/schedules",
+      "source": "none in app",
+      "outcome": "not_applicable",
+      "status": "verified",
+      "next_action": "None"
+    },
+    {
+      "capability": "secrets",
+      "source": "none required",
+      "outcome": "not_applicable",
+      "status": "verified",
+      "next_action": "None"
+    },
+    {
+      "capability": "PWA (manifest, service worker)",
+      "source": "public/manifest.json, public/sw.js",
+      "outcome": "migrate",
+      "status": "verified",
+      "next_action": "Done"
+    },
+    {
+      "capability": "verification",
+      "source": "vitest suite in src/test",
+      "outcome": "migrate",
+      "status": "verified",
+      "next_action": "91/93 tests pass; 2 question-content tests fail in the imported code"
+    }
+  ]
+}

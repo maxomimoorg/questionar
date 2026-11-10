@@ -23,4 +23,5 @@
 - [x] Categories: expand/collapse all, completion counts, category hiding with independent per-question state, hidden sections (main + Erotismo).
 - [x] Erotismo: empty structure, discreet access pill, own page and comparison page, counted once in totals; tutorial, docs, diagnostics checklist, tests (90 pass).
 - [ ] Erotismo content: sub-categories and questions to be supplied by the author.
-- [ ] Missing icon files (favicon.png, logo.png, icon-192/512, apple-touch-icon) not present in the uploaded zip.
+- [x] Missing icon files: logo-questionar.png saved as src/logo.png; favicon, logo, apple-touch-icon and icon-192/512 generated with scripts/generate-icons.mjs.
+- [x] Question counts confirmed by the author as current (43 Fare/Ricevere, 9 moved, Intimità fisica 7, Vanilla 8); tests and docs updated.

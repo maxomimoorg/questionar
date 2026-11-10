@@ -4,15 +4,24 @@ La maggior parte delle domande è a **somiglianza**: più le due risposte sono v
 compatibilità. Alcune domande descrivono invece qualcosa che si dà e si riceve: per queste
 l'app mostra **due slider, "Fare" e "Ricevere"**, e il confronto è **incrociato**.
 
-## Domande a reciprocità (20)
+## Domande a reciprocità (43)
 
+- **Intimità fisica:** Coccole e gesti fisici di affetto · Massaggi
 - **Linguaggi d'amore:** Contatto fisico · Parole d'affermazione · Regali · Atti di servizio ·
   Dolcezza, piccole grandi attenzioni, gentilezza · Vocali lunghi come audiolibri
-- **Intimità fisica:** Coccole e gesti fisici di affetto · Sesso orale · Petting · Masturbazione ·
-  Penetrazione con oggetti · Penetrazione genitale · Gioco kinky (fetish/BDSM)
-- **Intimità emotiva:** Supporto nei momenti difficili · Consigli · Sostegno nel lavoro sulla
-  salute mentale · Condividere vulnerabilità e paure · Condividere fantasie sessuali
+- **Intimità emotiva:** Supporto nei momenti difficili · Condividere vulnerabilità e paure ·
+  Condividere fantasie sessuali · Consigli · Sostegno nel lavoro sulla salute mentale
 - **Finanze:** Supporto economico · Regali costosi
+- **Erotismo · Vanilla:** Massaggi sensuali · Penetrazione genitale · Sesso orale ·
+  Petting e strusciamenti · Masturbazione · Penetrazione con oggetti
+- **Erotismo · Bondage e Disciplina:** Shibari · Mummificazione · Sospensione · Routine ·
+  Punizioni correttive
+- **Erotismo · Dominazione e Sottomissione:** Servizio e compiti · Negazione/Privazione ·
+  Silenziamento · Proprietà personale · Adorazione · Dominazione finanziaria · Umiliazione
+- **Erotismo · Sadismo e Masochismo:** Impact · Temperatura · Aghi · Lame · Iperstimolazione ·
+  Privazione sensoriale · Solletico · Tortura
+- **Erotismo · Feticismo:** Adorazione di parti del corpo
+- **Erotismo · Altre dinamiche:** Voyeurismo
 
 Le domande personalizzate sono sempre a somiglianza. L'elenco è in `src/lib/questions.ts`
 (voci marcate con `r(...)`).
