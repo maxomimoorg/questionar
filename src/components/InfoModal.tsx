@@ -401,6 +401,12 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
           quello che conta davvero per te, anche quando non rientra nei copioni abituali.
         </p>
         <p className="mt-2 text-[14px]">
+          Scegli anche il <strong>tipo</strong>: <strong>Normale</strong> (predefinito) ha un
+          solo cursore e premia le risposte vicine; <strong>Complementare</strong> ha due
+          cursori, <strong>Fare</strong> e <strong>Ricevere</strong>, confrontati in modo
+          incrociato come le domande a reciprocità, con stime e margine d’errore se manca un lato.
+        </p>
+        <p className="mt-2 text-[14px]">
           La <strong>Bio</strong> non è un semplice blocco di testo: hai fino a
           <strong> 666 caratteri</strong> e un editor con titoli, stili, link e colori.
           Dai forma alla tua identità, senza ridurla a uno slogan.

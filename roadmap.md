@@ -25,3 +25,5 @@
 - [ ] Erotismo content: sub-categories and questions to be supplied by the author.
 - [x] Missing icon files: logo-questionar.png saved as src/logo.png; favicon, logo, apple-touch-icon and icon-192/512 generated with scripts/generate-icons.mjs.
 - [x] Question counts confirmed by the author as current (43 Fare/Ricevere, 9 moved, Intimità fisica 7, Vanilla 8); tests and docs updated.
+- [x] Custom question type Normale/Complementare: chosen at creation, saved on the definition, carried through IndexedDB, snapshot, P2P, PNG backup and import (legacy/invalid = Normale); questionnaire, comparisons and per-question/category/total scores; tutorial, docs and tests.
+- [x] Reciprocal-question count test removed at the author's request (question-type counts no longer need checking); "Voyeurismo" is a normal (similarity) question; docs aligned to 42 Fare/Ricevere.

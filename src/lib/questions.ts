@@ -318,11 +318,83 @@ const RECIPROCAL_IDS = new Set(
   DEFAULT_QUESTIONS.filter((q) => q.type === "reciprocal").map((q) => q.id),
 );
 
-/** Comparison mode of a question id. Custom and unknown questions are always "similarity". */
+const DEFAULT_IDS = new Set(DEFAULT_QUESTIONS.map((q) => q.id));
+
+export function isDefaultQuestionId(id: string): boolean {
+  return DEFAULT_IDS.has(id);
+}
+
+/** Only these two values are valid question types; anything else is treated as missing. */
+export function isQuestionType(v: unknown): v is QuestionType {
+  return v === "similarity" || v === "reciprocal";
+}
+
+/**
+ * Comparison mode of a default question id. Custom and unknown ids are "similarity" here: a
+ * custom question's own type is resolved with resolveQuestionType / isReciprocal.
+ */
 export function questionType(id: string): QuestionType {
   return RECIPROCAL_IDS.has(id) ? "reciprocal" : "similarity";
 }
 
-export function isReciprocal(q: Pick<Question, "id">): boolean {
-  return questionType(q.id) === "reciprocal";
+/** A custom question definition as far as its comparison mode is concerned. */
+export type QuestionDefinition = Pick<Question, "id"> & { type?: unknown };
+
+/**
+ * Comparison mode of any question id. Default questions always keep their built-in type, whatever
+ * a definition says. A custom question is "reciprocal" (Complementare) when any of the given
+ * definitions with that id says so — twin questions created by different people share the id —
+ * and "similarity" (Normale) otherwise, including definitions saved before types existed.
+ */
+export function resolveQuestionType(
+  id: string,
+  definitions: Iterable<QuestionDefinition> = [],
+): QuestionType {
+  if (DEFAULT_IDS.has(id)) return questionType(id);
+  for (const d of definitions) if (d.id === id && d.type === "reciprocal") return "reciprocal";
+  return "similarity";
+}
+
+/** True for Fare/Ricevere questions: built-in reciprocal ones and custom Complementare ones. */
+export function isReciprocal(q: QuestionDefinition): boolean {
+  return resolveQuestionType(q.id, [q]) === "reciprocal";
+}
+
+/** Labels shown when creating a custom question. */
+export const CUSTOM_TYPE_LABELS: Record<QuestionType, string> = {
+  similarity: "Normale",
+  reciprocal: "Complementare",
+};
+
+/**
+ * Keeps only well-formed custom question definitions (IndexedDB, snapshots, P2P, PNG backups).
+ * Ids stay exactly as saved (category + text); a missing or invalid type becomes "similarity",
+ * so data from older versions loads as Normale without errors. Ids of default questions and
+ * duplicates are dropped: defaults are never redefined by a custom entry.
+ */
+export function sanitizeCustomQuestions(raw: unknown): Question[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Question[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const q = item as { id?: unknown; text?: unknown; category?: unknown; type?: unknown };
+    if (typeof q.id !== "string" || q.id.length === 0 || q.id.length > 400) continue;
+    if (typeof q.text !== "string" || q.text.trim().length === 0) continue;
+    if (DEFAULT_IDS.has(q.id) || seen.has(q.id)) continue;
+    const fromId = categoryOfId(q.id);
+    const category =
+      typeof q.category === "string" && /^[A-Za-z0-9_]{1,24}$/.test(q.category)
+        ? q.category
+        : fromId;
+    seen.add(q.id);
+    out.push({
+      id: q.id,
+      category: category as AnyCategoryKey,
+      text: q.text,
+      custom: true,
+      type: q.type === "reciprocal" ? "reciprocal" : "similarity",
+    });
+  }
+  return out;
 }

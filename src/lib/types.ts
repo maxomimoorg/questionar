@@ -1,5 +1,5 @@
 import type { CategoryKey, Question } from "./questions";
-import { MOVED_QUESTION_IDS } from "./questions";
+import { MOVED_QUESTION_IDS, sanitizeCustomQuestions } from "./questions";
 import type { KeyPairJwk } from "./keys";
 import type { ProfileTags } from "./profile-tags";
 
@@ -124,7 +124,7 @@ export function sanitizeSnapshot(snap: ProfileSnapshot): ProfileSnapshot {
     ...(raw.tags ? { tags: raw.tags } : {}),
     answers: sanitizeAnswers(raw.answers),
     hiddenCategories: sanitizeHiddenCategories(raw.hiddenCategories),
-    customQuestions: Array.isArray(raw.customQuestions) ? raw.customQuestions : [],
+    customQuestions: sanitizeCustomQuestions(raw.customQuestions),
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : 0,
   };
 }

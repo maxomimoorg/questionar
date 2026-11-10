@@ -12,9 +12,10 @@ import {
   formatCompat,
   multiCompat,
   multiCompatDetail,
+  typeAmong,
   type Participant,
 } from "@/lib/compat";
-import { isEroticQuestionId, isReciprocal } from "@/lib/questions";
+import { isEroticQuestionId } from "@/lib/questions";
 import { useStore } from "@/lib/store";
 import { giveOf, receiveOf, type Answer, type Question } from "@/lib/types";
 
@@ -23,8 +24,16 @@ export type Person = {
   name: string;
   answers: Record<string, Answer>;
   hiddenCategories: string[];
+  /** This person's custom question definitions (their type decides Normale/Complementare). */
+  customQuestions?: Question[];
   mine: boolean;
 };
+
+const participantOf = (p: Person): Participant => ({
+  answers: p.answers,
+  hiddenCategories: p.hiddenCategories,
+  customQuestions: p.customQuestions ?? [],
+});
 
 /** Marker on a comparison track: a dot for me, the avatar for everyone else. */
 function PersonThumb({ person, value }: { person: Person; value: number }) {
@@ -141,22 +150,22 @@ export function CompareRow({
   const navigate = useNavigate();
   const rows = people.map((p) => ({ person: p, answer: p.answers[question.id] }));
   const mine = rows[0]!;
-  const compatDetail = multiCompatDetail(
-    question.id,
-    people.map((p) => ({ answers: p.answers, hiddenCategories: p.hiddenCategories })),
-  );
+  const participants = people.map(participantOf);
+  // Same type as the totals: built-in for defaults, Complementare if any definition says so.
+  const type = typeAmong(question.id, participants);
+  const compatDetail = multiCompatDetail(question.id, participants, type);
   const compat = compatDetail?.score ?? null;
   const criticalBy = rows.filter((r) => r.answer?.critical).map((r) => r.person);
   // Same rule as the profile: critical questions use the percentage colour, not the theme.
   const criticalColor =
     compat !== null ? percentColor(compat) : "var(--color-muted-foreground)";
-  const reciprocal = isReciprocal(question);
+  const reciprocal = type === "reciprocal";
   const needsMyAnswer = !mine.answer?.answered;
   const allAnswered = rows.every((r) => r.answer?.answered);
   const noneAnswered = rows.every((r) => !r.answer?.answered);
 
   const goToMine = () => {
-    if (!known) ensureQuestion(question.id, question.text);
+    if (!known) ensureQuestion(question.id, question.text, type);
     void navigate({
       to: isEroticQuestionId(question.id) ? "/erotismo" : "/",
       search: { focus: question.id },
@@ -305,10 +314,7 @@ export function CompareCategories({
 }) {
   const { questions } = useStore();
   const [openCats, setOpenCats] = useState<Record<string, boolean>>({});
-  const participants: Participant[] = people.map((p) => ({
-    answers: p.answers,
-    hiddenCategories: p.hiddenCategories,
-  }));
+  const participants: Participant[] = people.map(participantOf);
   const visibleTo = (q: Question) =>
     people.every((p) => !p.answers[q.id]?.hidden && !p.hiddenCategories.includes(q.category));
   const shown = categories

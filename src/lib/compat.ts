@@ -4,7 +4,12 @@
 // ("Ricevere"), with exactly the same curves. When a side has no answer yet, only the
 // computable flows count and the result is flagged as a partial estimate.
 
-import { categoryOfId, questionType, type QuestionType } from "./questions";
+import {
+  categoryOfId,
+  resolveQuestionType,
+  type QuestionDefinition,
+  type QuestionType,
+} from "./questions";
 import { giveOf, receiveOf, type Answer } from "./types";
 
 type Point = { gap: number; compat: number };
@@ -153,8 +158,24 @@ export function pairCompat(
   return pairCompatDetail(a, b, criticalCount, type)?.score ?? null;
 }
 
-/** `hiddenCategories`: a question in one of these is left out, exactly like a hidden answer. */
-export type Participant = { answers: Record<string, Answer>; hiddenCategories?: string[] };
+/**
+ * `hiddenCategories`: a question in one of these is left out, exactly like a hidden answer.
+ * `customQuestions`: the participant's custom question definitions; a custom question is
+ * compared as Fare/Ricevere when any participant's definition is Complementare.
+ */
+export type Participant = {
+  answers: Record<string, Answer>;
+  hiddenCategories?: string[];
+  customQuestions?: QuestionDefinition[];
+};
+
+/** Comparison mode of a question among these participants (defaults keep their built-in type). */
+export function typeAmong(questionId: string, participants: Participant[]): QuestionType {
+  return resolveQuestionType(
+    questionId,
+    participants.flatMap((p) => p.customQuestions ?? []),
+  );
+}
 
 /**
  * Average pairwise compatibility for one question across 2 or 3 participants. Pairs whose
@@ -164,7 +185,7 @@ export type Participant = { answers: Record<string, Answer>; hiddenCategories?: 
 export function multiCompatDetail(
   questionId: string,
   participants: Participant[],
-  type: QuestionType = questionType(questionId),
+  type: QuestionType = typeAmong(questionId, participants),
 ): CompatResult | null {
   const rows = participants.map((p) => p.answers[questionId]);
   if (rows.some((r) => !r || !r.answered || r.hidden)) return null;
@@ -190,7 +211,7 @@ export function multiCompatDetail(
 export function multiCompat(
   questionId: string,
   participants: Participant[],
-  type: QuestionType = questionType(questionId),
+  type: QuestionType = typeAmong(questionId, participants),
 ): number | null {
   return multiCompatDetail(questionId, participants, type)?.score ?? null;
 }

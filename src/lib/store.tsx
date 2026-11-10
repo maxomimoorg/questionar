@@ -23,7 +23,16 @@ import {
   type Identity,
   type ProfileSnapshot,
 } from "./types";
-import { DEFAULT_QUESTIONS, ALL_CATEGORIES, type AnyCategoryKey, type Question } from "./questions";
+import {
+  DEFAULT_QUESTIONS,
+  ALL_CATEGORIES,
+  isDefaultQuestionId,
+  questionId,
+  sanitizeCustomQuestions,
+  type AnyCategoryKey,
+  type Question,
+  type QuestionType,
+} from "./questions";
 import { sanitizeHiddenCategories, toggleCategory } from "./visibility";
 import type { BackupPayload } from "./stego";
 import { emojisFromHandle } from "./handle";
@@ -38,8 +47,10 @@ type Ctx = {
   patch: (p: Partial<AppState>) => void;
   setIdentity: (i: Identity) => void;
   setAnswer: (id: string, a: Partial<Answer>) => void;
-  addCustomQuestion: (category: AnyCategoryKey, text: string) => void;
-  ensureQuestion: (id: string, text: string) => void;
+  /** `type`: "similarity" (Normale, default) or "reciprocal" (Complementare, Fare/Ricevere). */
+  addCustomQuestion: (category: AnyCategoryKey, text: string, type?: QuestionType) => void;
+  /** Adds a contact's custom question to my profile, keeping its type. */
+  ensureQuestion: (id: string, text: string, type?: QuestionType) => void;
   removeCustomQuestion: (id: string) => void;
   /** `defaultOpen`: state of a drawer never toggled (main: open, Erotismo: closed). */
   toggleDrawer: (key: string, defaultOpen?: boolean) => void;
@@ -95,6 +106,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...saved,
           tags: { ...EMPTY_STATE.tags, ...(saved.tags ?? {}) },
           answers: sanitizeAnswers(saved.answers),
+          // Custom questions saved before types existed load as Normale.
+          customQuestions: sanitizeCustomQuestions(saved.customQuestions),
           hiddenCategories: sanitizeHiddenCategories(saved.hiddenCategories),
           theme: normalizeTheme(saved.theme),
           contacts: (saved.contacts ?? []).map(migrateContact),
@@ -139,27 +152,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const prev: Answer = s.answers[id] ?? { value: 50, answered: false };
           return { ...s, answers: { ...s.answers, [id]: { ...prev, ...a } } };
         }),
-      addCustomQuestion: (category, text) =>
+      addCustomQuestion: (category, text, type = "similarity") =>
         setState((s) => {
-          const id = `${category}-${text
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "")}`;
-          if (
-            s.customQuestions.some((q) => q.id === id) ||
-            DEFAULT_QUESTIONS.some((q) => q.id === id)
-          )
-            return s;
+          const id = questionId(category, text);
+          if (s.customQuestions.some((q) => q.id === id) || isDefaultQuestionId(id)) return s;
           return {
             ...s,
             customQuestions: [
               ...s.customQuestions,
-              { id, category, text, custom: true },
+              {
+                id,
+                category,
+                text,
+                custom: true,
+                type: type === "reciprocal" ? "reciprocal" : "similarity",
+              },
             ],
           };
         }),
-      ensureQuestion: (id, text) =>
+      ensureQuestion: (id, text, type = "similarity") =>
         setState((s) => {
           if (
             DEFAULT_QUESTIONS.some((q) => q.id === id) ||
@@ -170,7 +181,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const category = ALL_CATEGORIES.some((c) => c.key === letter) ? letter : "J";
           return {
             ...s,
-            customQuestions: [...s.customQuestions, { id, category, text, custom: true }],
+            customQuestions: [
+              ...s.customQuestions,
+              {
+                id,
+                category,
+                text,
+                custom: true,
+                type: type === "reciprocal" ? "reciprocal" : "similarity",
+              },
+            ],
           };
         }),
       removeCustomQuestion: (id) =>
@@ -281,12 +301,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState((s) => {
           // Identity, emoji, avatar, keys, collection and contacts stay untouched.
           const custom = [...s.customQuestions];
-          for (const q of payload.customQuestions ?? []) {
-            if (
-              !custom.some((x) => x.id === q.id) &&
-              !DEFAULT_QUESTIONS.some((x) => x.id === q.id)
-            )
-              custom.push({ ...q, custom: true });
+          // Only valid definitions and types are accepted; a question already on this
+          // profile keeps its own definition (and type).
+          for (const q of sanitizeCustomQuestions(payload.customQuestions)) {
+            if (!custom.some((x) => x.id === q.id)) custom.push(q);
           }
           return {
             ...s,

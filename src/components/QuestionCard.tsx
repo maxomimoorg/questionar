@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { percentColor, thumbGlyph } from "@/lib/color";
 import { useStore } from "@/lib/store";
-import { categoryOfId, isReciprocal, type Question } from "@/lib/questions";
+import { CUSTOM_TYPE_LABELS, categoryOfId, isReciprocal, type Question } from "@/lib/questions";
 import { isCategoryHidden } from "@/lib/visibility";
 import { giveOf, isPartialAnswer, receiveOf, reciprocalValue } from "@/lib/types";
 
@@ -180,7 +180,17 @@ export function QuestionCard({ question, hiddenByCategory }: Props) {
       style={answer.critical ? ({ "--tw-ring-color": color } as import("react").CSSProperties) : undefined}
     >
       <div className="flex items-start gap-2">
-        <p className="flex-1 text-[14px] leading-snug text-foreground">{question.text}</p>
+        <div className="flex-1">
+          <p className="text-[14px] leading-snug text-foreground">{question.text}</p>
+          {question.custom && (
+            <p
+              className="mt-0.5 text-[11px] font-semibold text-muted-foreground"
+              data-testid="custom-type"
+            >
+              Personalizzata · {CUSTOM_TYPE_LABELS[reciprocal ? "reciprocal" : "similarity"]}
+            </p>
+          )}
+        </div>
         <div className="flex shrink-0 items-center gap-1">
           <button
             aria-label="Aggiungi un commento"

@@ -1,5 +1,5 @@
 {
-  "source": "code-archive: questionar-beta.zip (Lovable TanStack Start project)",
+  "source": "code-archive: questionar-beta.zip (Lovable TanStack Start project), imported into the new QuestionAR project",
   "capabilities": [
     {
       "capability": "code",
@@ -75,8 +75,8 @@
       "capability": "verification",
       "source": "vitest suite in src/test",
       "outcome": "migrate",
-      "status": "verified",
-      "next_action": "91/93 tests pass; 2 question-content tests fail in the imported code"
+      "status": "partially_verified",
+      "next_action": "115 tests run: 114 pass; 1 pre-existing failure (Voyeurismo not flagged Fare/Ricevere, 42 vs 43)"
     }
   ]
 }

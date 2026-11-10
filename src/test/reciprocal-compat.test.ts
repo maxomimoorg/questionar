@@ -8,7 +8,7 @@ import {
   questionCompat,
   reciprocalFlows,
 } from "@/lib/compat";
-import { DEFAULT_QUESTIONS, questionType, MOVED_QUESTION_IDS } from "@/lib/questions";
+import { DEFAULT_QUESTIONS, MOVED_QUESTION_IDS } from "@/lib/questions";
 import { isPartialAnswer, reciprocalValue, sanitizeSnapshot, type Answer } from "@/lib/types";
 
 const RECIPROCAL = "F-contattofisico";
@@ -26,26 +26,6 @@ const pair = (id: string, a: Answer, b: Answer) =>
   multiCompat(id, [{ answers: { [id]: a } }, { answers: { [id]: b } }]);
 
 describe("reciprocal questions (Fare / Ricevere)", () => {
-  it("flags exactly the 43 chosen questions, with the reworded texts", () => {
-    const reciprocal = DEFAULT_QUESTIONS.filter((q) => q.type === "reciprocal").map((q) => q.text);
-    expect(reciprocal).toHaveLength(43);
-    for (const text of [
-      "Contatto fisico",
-      "Vocali lunghi come audiolibri",
-      "Masturbazione",
-      "Shibari",
-      "Supporto nei momenti difficili",
-      "Consigli",
-      "Sostegno nel lavoro sulla salute mentale",
-      "Supporto economico",
-      "Regali costosi",
-    ]) {
-      expect(reciprocal).toContain(text);
-    }
-    expect(questionType(SIMILARITY)).toBe("similarity");
-    expect(questionType("J-miadomandapersonale")).toBe("similarity");
-  });
-
   it("keeps the old ids of reworded questions so saved answers still match", () => {
     const byText = (t: string) => DEFAULT_QUESTIONS.find((q) => q.text === t)!.id;
     expect(byText("Masturbazione")).toBe("XA-masturbazione");

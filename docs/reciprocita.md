@@ -4,7 +4,7 @@ La maggior parte delle domande è a **somiglianza**: più le due risposte sono v
 compatibilità. Alcune domande descrivono invece qualcosa che si dà e si riceve: per queste
 l'app mostra **due slider, "Fare" e "Ricevere"**, e il confronto è **incrociato**.
 
-## Domande a reciprocità (43)
+## Domande a reciprocità (42)
 
 - **Intimità fisica:** Coccole e gesti fisici di affetto · Massaggi
 - **Linguaggi d'amore:** Contatto fisico · Parole d'affermazione · Regali · Atti di servizio ·
@@ -21,10 +21,32 @@ l'app mostra **due slider, "Fare" e "Ricevere"**, e il confronto è **incrociato
 - **Erotismo · Sadismo e Masochismo:** Impact · Temperatura · Aghi · Lame · Iperstimolazione ·
   Privazione sensoriale · Solletico · Tortura
 - **Erotismo · Feticismo:** Adorazione di parti del corpo
-- **Erotismo · Altre dinamiche:** Voyeurismo
 
-Le domande personalizzate sono sempre a somiglianza. L'elenco è in `src/lib/questions.ts`
-(voci marcate con `r(...)`).
+L'elenco è in `src/lib/questions.ts` (voci marcate con `r(...)`). Il tipo delle domande
+predefinite è fisso e non può essere cambiato da una definizione personalizzata.
+
+## Domande personalizzate: Normale o Complementare
+
+Creando una domanda personalizzata si sceglie il tipo:
+
+- **Normale** (predefinito): un solo cursore, confronto a somiglianza, come prima.
+- **Complementare**: due cursori Fare/Ricevere e lo stesso modello delle domande a
+  reciprocità (confronto incrociato, risposte parziali, stime e margine "±").
+
+Il tipo è salvato sulla definizione della domanda (`Question.type`: `"similarity"` o
+`"reciprocal"`) e viaggia con essa in IndexedDB, nello snapshot del profilo, nello scambio
+P2P e nel backup PNG. L'identificativo resta `categoria-testo normalizzato`.
+
+- Domande salvate o importate senza tipo, o con un tipo non valido, valgono **Normale**
+  (`sanitizeCustomQuestions()`), senza errori.
+- Due domande gemelle (stessa categoria e stesso testo, quindi stesso id) create da persone
+  diverse con tipi diversi si confrontano come **Complementare**: una risposta a cursore
+  singolo vale Fare = Ricevere = valore, quindi resta confrontabile.
+- Il tipo si sceglie alla creazione; per cambiarlo si elimina la domanda e la si ricrea.
+- Versioni precedenti dell'app ignorano il tipo: vedono una domanda Complementare come
+  Normale e la confrontano con il `value` (media di Fare e Ricevere), quindi il punteggio
+  può differire da quello mostrato dalle versioni nuove. Il tipo resta comunque nella
+  definizione che quelle versioni conservano e ricondividono.
 
 ## Calcolo
 

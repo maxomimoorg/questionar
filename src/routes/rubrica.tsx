@@ -124,8 +124,16 @@ function RubricaPage() {
     const ids = new Set(questions.map((q) => q.id));
     for (const q of contact.snapshot.customQuestions ?? []) ids.add(q.id);
     return averageCompatDetail([...ids], [
-      { answers: state.answers, hiddenCategories: state.hiddenCategories },
-      { answers: contact.snapshot.answers, hiddenCategories: contact.snapshot.hiddenCategories ?? [] },
+      {
+        answers: state.answers,
+        hiddenCategories: state.hiddenCategories,
+        customQuestions: state.customQuestions,
+      },
+      {
+        answers: contact.snapshot.answers,
+        hiddenCategories: contact.snapshot.hiddenCategories ?? [],
+        customQuestions: contact.snapshot.customQuestions ?? [],
+      },
     ]);
   };
 

@@ -5,7 +5,13 @@ import { toast } from "sonner";
 import { CategoryHeader, ExpandAllPill } from "@/components/CategoryControls";
 import { QuestionCard } from "@/components/QuestionCard";
 
-import { categoryOfId, isReciprocal, type AnyCategoryKey } from "@/lib/questions";
+import {
+  CUSTOM_TYPE_LABELS,
+  categoryOfId,
+  isReciprocal,
+  type AnyCategoryKey,
+  type QuestionType,
+} from "@/lib/questions";
 import { useStore } from "@/lib/store";
 import {
   completionLabel,
@@ -33,6 +39,7 @@ type Props = {
 export function Questionnaire({ categories, defaultOpen, hiddenKey, focus, afterCategories, emptyText }: Props) {
   const { state, questions, toggleDrawer, setDrawers, toggleCategoryHidden, addCustomQuestion } = useStore();
   const [newText, setNewText] = useState("");
+  const [newType, setNewType] = useState<QuestionType>("similarity");
   const [newCat, setNewCat] = useState<AnyCategoryKey | "">(
     categories[categories.length - 1]?.key ?? "",
   );
@@ -141,13 +148,45 @@ export function Questionnaire({ categories, defaultOpen, hiddenKey, focus, after
             <button
               onClick={() => {
                 if (!newText.trim() || !newCat) return;
-                addCustomQuestion(newCat, newText.trim());
+                addCustomQuestion(newCat, newText.trim(), newType);
                 setNewText("");
+                setNewType("similarity");
               }}
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-action-glow transition-colors hover:bg-primary/90"
             >
               <Plus size={16} /> Aggiungi
             </button>
+          </div>
+        )}
+        {categories.length > 0 && (
+          <div className="mt-3">
+            <div
+              role="radiogroup"
+              aria-label="Tipo di domanda"
+              className="inline-flex rounded-xl bg-background p-1 ring-1 ring-input"
+            >
+              {(["similarity", "reciprocal"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={newType === t}
+                  onClick={() => setNewType(t)}
+                  className={`rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+                    newType === t
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {CUSTOM_TYPE_LABELS[t]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[12px] text-muted-foreground">
+              {newType === "similarity"
+                ? "Normale: un solo cursore, più le risposte sono vicine più siete compatibili."
+                : "Complementare: due cursori, Fare e Ricevere, confrontati in modo incrociato."}
+            </p>
           </div>
         )}
       </section>
