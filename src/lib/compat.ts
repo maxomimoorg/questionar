@@ -4,7 +4,7 @@
 // ("Ricevere"), with exactly the same curves. When a side has no answer yet, only the
 // computable flows count and the result is flagged as a partial estimate.
 
-import { questionType, type QuestionType } from "./questions";
+import { categoryOfId, questionType, type QuestionType } from "./questions";
 import { giveOf, receiveOf, type Answer } from "./types";
 
 type Point = { gap: number; compat: number };
@@ -153,7 +153,8 @@ export function pairCompat(
   return pairCompatDetail(a, b, criticalCount, type)?.score ?? null;
 }
 
-export type Participant = { answers: Record<string, Answer> };
+/** `hiddenCategories`: a question in one of these is left out, exactly like a hidden answer. */
+export type Participant = { answers: Record<string, Answer>; hiddenCategories?: string[] };
 
 /**
  * Average pairwise compatibility for one question across 2 or 3 participants. Pairs whose
@@ -167,6 +168,8 @@ export function multiCompatDetail(
 ): CompatResult | null {
   const rows = participants.map((p) => p.answers[questionId]);
   if (rows.some((r) => !r || !r.answered || r.hidden)) return null;
+  const category = categoryOfId(questionId);
+  if (participants.some((p) => p.hiddenCategories?.includes(category))) return null;
   const criticalCount = rows.filter((r) => r!.critical).length;
   const ranges: Range[] = [];
   for (let i = 0; i < rows.length; i++) {
@@ -230,3 +233,12 @@ export function formatCompat(result: { score: number } | null): string {
 export function formatMargin(result: { margin?: number } | null): string {
   return result && (result.margin ?? 0) > 0 ? `±${result.margin}%` : "";
 }
+
+/** Short note under a total that includes partial Fare/Ricevere estimates. */
+export function partialNote(result: AverageResult | null): string | null {
+  if (!result || result.partialCount === 0) return null;
+  return result.partialCount === 1
+    ? "Stima: include 1 domanda con risposta parziale (± è il margine d'errore)."
+    : `Stima: include ${result.partialCount} domande con risposta parziale (± è il margine d'errore).`;
+}
+

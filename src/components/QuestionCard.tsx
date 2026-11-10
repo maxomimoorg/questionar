@@ -4,10 +4,15 @@ import { toast } from "sonner";
 
 import { percentColor, thumbGlyph } from "@/lib/color";
 import { useStore } from "@/lib/store";
-import { isReciprocal, type Question } from "@/lib/questions";
+import { categoryOfId, isReciprocal, type Question } from "@/lib/questions";
+import { isCategoryHidden } from "@/lib/visibility";
 import { giveOf, isPartialAnswer, receiveOf, reciprocalValue } from "@/lib/types";
 
-type Props = { question: Question };
+type Props = {
+  question: Question;
+  /** Shown inside a hidden category's group: dimmed, while its own flag stays as it is. */
+  hiddenByCategory?: boolean;
+};
 
 type SliderProps = {
   /** Saved value (0–100). */
@@ -139,7 +144,7 @@ export function AnswerSlider({ value, answered, onCommit, label }: SliderProps) 
   );
 }
 
-export function QuestionCard({ question }: Props) {
+export function QuestionCard({ question, hiddenByCategory }: Props) {
   const { state, setAnswer, removeCustomQuestion } = useStore();
   const answer = state.answers[question.id] ?? { value: 50, answered: false };
   const [commentOpen, setCommentOpen] = useState(false);
@@ -170,7 +175,7 @@ export function QuestionCard({ question }: Props) {
     <div
       id={`q-${question.id}`}
       className={`rounded-2xl px-3 py-3 transition-colors ${
-        answer.hidden ? "opacity-50 grayscale" : ""
+        answer.hidden || hiddenByCategory ? "opacity-50 grayscale" : ""
       } ${answer.critical ? "bg-surface-2 ring-2" : "bg-surface"}`}
       style={answer.critical ? ({ "--tw-ring-color": color } as import("react").CSSProperties) : undefined}
     >
@@ -187,14 +192,17 @@ export function QuestionCard({ question }: Props) {
             <MessageSquare size={15} />
           </button>
           <button
-            aria-label="Nascondi o mostra la domanda"
+            aria-label={answer.hidden ? "Ripristina la domanda" : "Nascondi la domanda"}
             onClick={() => {
               const hidden = !answer.hidden;
               setAnswer(question.id, { hidden });
-              toast(hidden ? "Domanda nascosta" : "Domanda visibile", {
+              const catHidden = isCategoryHidden(state, categoryOfId(question.id));
+              toast(hidden ? "Domanda nascosta" : catHidden ? "Domanda ripristinata" : "Domanda visibile", {
                 description: hidden
                   ? "Non apparirà nei confronti e non influisce sulla compatibilità."
-                  : "Torna nei confronti e nel calcolo della compatibilità.",
+                  : catHidden
+                    ? "Resta nascosta finché la sua categoria è nascosta."
+                    : "Torna nei confronti e nel calcolo della compatibilità.",
               });
             }}
             className="grid size-8 place-items-center rounded-full bg-background text-muted-foreground"

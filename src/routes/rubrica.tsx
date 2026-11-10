@@ -124,8 +124,8 @@ function RubricaPage() {
     const ids = new Set(questions.map((q) => q.id));
     for (const q of contact.snapshot.customQuestions ?? []) ids.add(q.id);
     return averageCompatDetail([...ids], [
-      { answers: state.answers },
-      { answers: contact.snapshot.answers },
+      { answers: state.answers, hiddenCategories: state.hiddenCategories },
+      { answers: contact.snapshot.answers, hiddenCategories: contact.snapshot.hiddenCategories ?? [] },
     ]);
   };
 
@@ -140,6 +140,7 @@ function RubricaPage() {
         bio: snap.bio,
         ...(snap.tags ? { tags: snap.tags } : {}),
         answers: snap.answers,
+        hiddenCategories: snap.hiddenCategories ?? [],
         customQuestions: snap.customQuestions,
         savedAt: Date.now(),
         ...(state.identity?.keys?.publicKey ? { pub: state.identity.keys.publicKey } : {}),
@@ -184,6 +185,7 @@ function RubricaPage() {
         bio: payload.bio,
         ...(payload.tags ? { tags: payload.tags } : {}),
         answers: payload.answers,
+        ...(payload.hiddenCategories ? { hiddenCategories: payload.hiddenCategories } : {}),
         customQuestions: payload.customQuestions,
         updatedAt: payload.savedAt,
       }, payload.pub);

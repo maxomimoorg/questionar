@@ -11,6 +11,8 @@ export type BackupPayload = {
   bio: string;
   tags?: ProfileTags;
   answers: Record<string, Answer>;
+  /** Optional (newer backups): categories hidden as a whole. */
+  hiddenCategories?: string[];
   customQuestions: Question[];
   savedAt: number;
   /** Optional (newer backups): the owner's public key, used to verify the first contact. */

@@ -33,7 +33,7 @@ export function normalizeText(text: string) {
     .replace(/[^a-z0-9]/g, "");
 }
 
-export function questionId(category: CategoryKey, text: string) {
+export function questionId(category: AnyCategoryKey, text: string) {
   return `${category}-${normalizeText(text)}`;
 }
 
@@ -49,7 +49,13 @@ export type QuestionType = "similarity" | "reciprocal";
  * A default question. `legacy` keeps the id of a question whose text was reworded, so answers
  * already saved (and profiles sent by older app versions) keep matching it.
  */
-type DefaultEntry = string | { text: string; legacy?: string; reciprocal?: true };
+type DefaultEntry =
+  | string
+  | { text: string; legacy?: string; reciprocal?: true; /** Full id it had in another category. */ from?: string };
+
+/** A question moved from another category: same text/type, old id remapped to the new one. */
+const moved = (from: string, entry: DefaultEntry): DefaultEntry =>
+  typeof entry === "string" ? { text: entry, from } : { ...entry, from };
 
 const r = (text: string, legacy?: string): DefaultEntry => ({
   text,
@@ -96,19 +102,9 @@ const DEFAULTS: Record<CategoryKey, DefaultEntry[]> = {
   D: [
     r("Coccole e gesti fisici di affetto"),
     "Affettuosità in pubblico",
-    "Chem-sex (sesso con sostanze)",
-    "Raggiungere l'orgasmo",
     "Baciarsi",
-    r("Sesso orale"),
-    r("Petting"),
-    r("Masturbazione", "Masturbazione reciproca"),
-    r("Penetrazione con oggetti"),
-    r("Penetrazione genitale"),
-    "Uso di giocattoli sessuali",
     "Uso di preservativo o altre protezioni",
     "Test periodici IST",
-    r("Gioco kinky (fetish/BDSM)"),
-    "Sesso a 3 o più",
     "Attenzione all'igiene personale",
   ],
   E: [
@@ -166,17 +162,75 @@ const DEFAULTS: Record<CategoryKey, DefaultEntry[]> = {
   J: [],
 };
 
+/**
+ * Erotismo: optional separate questionnaire, treated as a special category of the main one
+ * (same answers map, same snapshot/backup). Its sub-category keys always start with "X" and
+ * never contain "-", so question ids stay `<key>-<text>` like every other question.
+ * No content is defined yet: the author will add sub-categories and questions here, e.g.
+ *   { key: "XA", label: "…" } in EROTISMO_CATEGORIES and XA: ["…", r("…")] in EROTISMO_DEFAULTS.
+ */
+export type EroticCategoryKey = `X${string}`;
+export type AnyCategoryKey = CategoryKey | EroticCategoryKey;
+
+export const EROTISMO_LABEL = "Erotismo";
+
+export const EROTISMO_CATEGORIES: { key: EroticCategoryKey; label: string }[] = [
+  { key: "XA", label: "Vanilla" },
+  { key: "XB", label: "BD" },
+  { key: "XC", label: "DS" },
+  { key: "XD", label: "SM" },
+  { key: "XE", label: "Fet" },
+];
+
+const EROTISMO_DEFAULTS: Record<EroticCategoryKey, DefaultEntry[]> = {
+  XA: [
+    moved("D-chemsexsessoconsostanze", "Chem-sex (sesso con sostanze)"),
+    moved("D-raggiungerelorgasmo", "Raggiungere l'orgasmo"),
+    moved("D-sessoorale", r("Sesso orale")),
+    moved("D-petting", r("Petting")),
+    moved("D-masturbazionereciproca", r("Masturbazione")),
+    moved("D-penetrazioneconoggetti", r("Penetrazione con oggetti")),
+    moved("D-penetrazionegenitale", r("Penetrazione genitale")),
+    moved("D-usodigiocattolisessuali", "Uso di giocattoli sessuali"),
+    moved("D-giocokinkyfetishbdsm", r("Gioco kinky (fetish/BDSM)")),
+    moved("D-sessoa3opiu", "Sesso a 3 o più"),
+  ],
+  XB: [],
+  XC: [],
+  XD: [],
+  XE: [],
+};
+
+export function isEroticCategory(key: string): key is EroticCategoryKey {
+  return /^X[^-]*$/.test(key);
+}
+
+/** Category key encoded in a question id (`A-…`, `XA-…`). */
+export function categoryOfId(id: string): string {
+  return id.split("-")[0] ?? "";
+}
+
+export function isEroticQuestionId(id: string): boolean {
+  return isEroticCategory(categoryOfId(id));
+}
+
+export const ALL_CATEGORIES: { key: AnyCategoryKey; label: string }[] = [
+  ...CATEGORIES,
+  ...EROTISMO_CATEGORIES,
+];
+
 export type Question = {
   id: string;
-  category: CategoryKey;
+  category: AnyCategoryKey;
   text: string;
   custom: boolean;
   /** Missing means "similarity". */
   type?: QuestionType;
 };
 
-export const DEFAULT_QUESTIONS: Question[] = CATEGORIES.flatMap((cat) =>
-  DEFAULTS[cat.key].map((entry) => {
+function buildDefaults(cats: { key: AnyCategoryKey }[], table: Record<string, DefaultEntry[]>) {
+  return cats.flatMap((cat) =>
+  (table[cat.key] ?? []).map((entry) => {
     const e = typeof entry === "string" ? { text: entry } : entry;
     return {
       id: questionId(cat.key, e.legacy ?? e.text),
@@ -186,6 +240,24 @@ export const DEFAULT_QUESTIONS: Question[] = CATEGORIES.flatMap((cat) =>
       type: e.reciprocal ? ("reciprocal" as const) : ("similarity" as const),
     };
   }),
+  );
+}
+
+/** Main and Erotismo default questions: one list, so every id is counted once in totals. */
+export const DEFAULT_QUESTIONS: Question[] = [
+  ...buildDefaults(CATEGORIES, DEFAULTS),
+  ...buildDefaults(EROTISMO_CATEGORIES, EROTISMO_DEFAULTS),
+];
+
+/** Old id → current id of questions moved between categories (saved answers, older peers). */
+export const MOVED_QUESTION_IDS: Record<string, string> = Object.fromEntries(
+  [...CATEGORIES, ...EROTISMO_CATEGORIES].flatMap((cat) =>
+    (({ ...DEFAULTS, ...EROTISMO_DEFAULTS }) as Record<string, DefaultEntry[]>)[cat.key]?.flatMap((entry) =>
+      typeof entry !== "string" && entry.from
+        ? [[entry.from, questionId(cat.key, entry.legacy ?? entry.text)]]
+        : [],
+    ) ?? [],
+  ),
 );
 
 const RECIPROCAL_IDS = new Set(

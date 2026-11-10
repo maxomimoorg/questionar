@@ -1,4 +1,5 @@
 import type { CategoryKey, Question } from "./questions";
+import { MOVED_QUESTION_IDS } from "./questions";
 import type { KeyPairJwk } from "./keys";
 import type { ProfileTags } from "./profile-tags";
 
@@ -52,8 +53,14 @@ function percent(v: unknown): number | undefined {
 export function sanitizeAnswers(raw: unknown): Record<string, Answer> {
   if (!raw || typeof raw !== "object") return {};
   const out: Record<string, Answer> = {};
-  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+  const entries = Object.entries(raw as Record<string, unknown>);
+  const present = new Set(entries.map(([id]) => id));
+  for (const [rawId, value] of entries) {
     if (!value || typeof value !== "object") continue;
+    // Questions moved to another category keep their answers under the new id.
+    const movedTo = MOVED_QUESTION_IDS[rawId];
+    if (movedTo && present.has(movedTo)) continue;
+    const id = movedTo ?? rawId;
     const a = value as Partial<Record<keyof Answer, unknown>>;
     const give = percent(a.giveValue);
     const receive = percent(a.receiveValue);
@@ -68,6 +75,14 @@ export function sanitizeAnswers(raw: unknown): Record<string, Answer> {
     };
   }
   return out;
+}
+
+/** Keeps only plausible category keys (deduplicated). */
+export function sanitizeHiddenCategories(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return Array.from(
+    new Set(raw.filter((c): c is string => typeof c === "string" && /^[A-Za-z0-9_]{1,24}$/.test(c))),
+  );
 }
 
 export type Identity = {
@@ -91,6 +106,8 @@ export type ProfileSnapshot = {
   bio: string;
   tags?: ProfileTags;
   answers: Record<string, Answer>;
+  /** Categories hidden as a whole (main and Erotismo). Older versions omit it. */
+  hiddenCategories?: string[];
   customQuestions: Question[];
   updatedAt: number;
 };
@@ -106,6 +123,7 @@ export function sanitizeSnapshot(snap: ProfileSnapshot): ProfileSnapshot {
     bio: typeof raw.bio === "string" ? raw.bio : "",
     ...(raw.tags ? { tags: raw.tags } : {}),
     answers: sanitizeAnswers(raw.answers),
+    hiddenCategories: sanitizeHiddenCategories(raw.hiddenCategories),
     customQuestions: Array.isArray(raw.customQuestions) ? raw.customQuestions : [],
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : 0,
   };
@@ -148,6 +166,7 @@ export type AppState = {
   identity: Identity | null;
   bio: string;
   answers: Record<string, Answer>;
+  hiddenCategories: string[];
   customQuestions: Question[];
   openDrawers: Record<string, boolean>;
   theme: ThemeState;
@@ -162,6 +181,7 @@ export const EMPTY_STATE: AppState = {
   identity: null,
   bio: "",
   answers: {},
+  hiddenCategories: [],
   customQuestions: [],
   openDrawers: {},
   theme: { mode: "dark" },

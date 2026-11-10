@@ -1,4 +1,4 @@
-import { Check, Eye, EyeOff, Inbox, MessageSquare, Plus, QrCode, ShieldCheck, Sparkles, Star, Users, X, Zap } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, Inbox, MessageSquare, Plus, QrCode, ShieldCheck, Sparkles, Star, Users, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PROFILE_TAGS, ProfileTagChip } from "./ProfileTags";
@@ -509,6 +509,30 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
           Non serve tenere l’app sempre aperta. Se la chiudi o il telefono la mette in pausa, le
           richieste di connessione che ricevi restano in attesa, cifrate, per <strong>72 ore</strong>{" "}
           e ti arrivano appena riapri QuestionAR: le trovi in <strong>Rubrica → Richieste</strong>.
+        </p>
+
+        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><EyeOff size={18} className="shrink-0" />10. Categorie: aprire, contare, nascondere</h3>
+        <p className="mt-2 text-[14px]">
+          Il pulsante <strong>«Espandi tutte» / «Comprimi tutte»</strong> apre o chiude in un colpo
+          tutte le categorie, sia nel questionario sia nel confronto. Accanto a ogni categoria vedi
+          quante domande hai completato su quelle visibili (es. <strong>3/12</strong>); quando le hai
+          completate tutte compare la spunta (<strong>12 ✓</strong>). Una domanda Fare/Ricevere conta
+          come completata solo con entrambi gli slider.
+        </p>
+        <p className="mt-2 text-[14px]">
+          Con l’occhio nell’intestazione puoi <strong>nascondere un’intera categoria</strong>: le sue
+          domande escono da conteggi e confronti. Le domande che avevi nascosto una a una restano
+          nascoste anche quando ripristini la categoria. Tutto si ritrova nella sezione{" "}
+          <strong>Categorie e domande nascoste</strong>, con comandi separati per ripristinare la
+          categoria intera o la singola domanda.
+        </p>
+
+        <h3 className="mt-5 flex items-center gap-2 text-[16px]"><ArrowRight size={18} className="shrink-0" />11. Sezione facoltativa Erotismo</h3>
+        <p className="mt-2 text-[14px]">
+          In fondo al questionario trovi l’accesso a <strong>Erotismo</strong>: un’area facoltativa,
+          organizzata per categorie che restano chiuse finché non scegli di aprirle. Non serve per
+          completare il questionario principale. Nel confronto ha una pagina dedicata; le sue
+          risposte contano una sola volta nella compatibilità generale.
         </p>
 
         <footer className="mt-8 rounded-2xl bg-surface p-4 text-[12px] text-muted-foreground">

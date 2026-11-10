@@ -64,4 +64,30 @@ export const SCENARIOS: ScenarioDef[] = [
     ],
     expected: "Il focus è sempre visibile e non resta intrappolato; i messaggi d'errore sono chiari e leggibili.",
   },
+  {
+    id: "manual.categories",
+    title: "Categorie: espandi/comprimi, conteggi, occultamento",
+    prerequisites: ["Profilo di prova"],
+    steps: [
+      "Nel questionario, nel confronto, in Erotismo e nel confronto Erotismo usa «Espandi tutte» e «Comprimi tutte», anche con categorie miste",
+      "Rispondi a 3 domande di una categoria e controlla il conteggio (es. 3/13); nascondi una domanda senza risposta (3/12) e una con risposta (2/11)",
+      "Rispondi solo a «Fare» in una domanda doppia: non deve contare come completata",
+      "Nascondi una domanda, poi la sua categoria; ripristina la categoria: la domanda resta tra le nascoste singolarmente",
+      "Con la categoria nascosta, ripristina la singola domanda: resta nel gruppo della categoria nascosta",
+      "Ripeti in Erotismo (se ha categorie) e verifica che la sezione vuota mostri un messaggio chiaro",
+    ],
+    expected:
+      "Conteggi coerenti, spunta solo a completamento, elementi nascosti esclusi da conteggi e confronti, stato individuale mai sovrascritto.",
+  },
+  {
+    id: "manual.erotismo-compare",
+    title: "Confronto Erotismo e totale generale",
+    prerequisites: ["Due profili di prova collegati"],
+    steps: [
+      "Apri il confronto e tocca la riga Erotismo",
+      "Controlla compatibilità della sezione, per categoria e per domanda",
+      "Esporta e reimporta il backup PNG: le categorie nascoste restano tali",
+    ],
+    expected: "Le domande di Erotismo contano una sola volta nel totale; i dati e le categorie nascoste sopravvivono a backup e scambio.",
+  },
 ];

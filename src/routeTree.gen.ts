@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConfrontoRouteImport } from './routes/confronto'
+import { Route as ErotismoRouteImport } from './routes/erotismo'
 import { Route as RubricaRouteImport } from './routes/rubrica'
+import { Route as ConfrontoErotismoRouteImport } from './routes/confronto_.erotismo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,40 +25,65 @@ const ConfrontoRoute = ConfrontoRouteImport.update({
   path: '/confronto',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ErotismoRoute = ErotismoRouteImport.update({
+  id: '/erotismo',
+  path: '/erotismo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RubricaRoute = RubricaRouteImport.update({
   id: '/rubrica',
   path: '/rubrica',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfrontoErotismoRoute = ConfrontoErotismoRouteImport.update({
+  id: '/confronto_/erotismo',
+  path: '/confronto/erotismo',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/confronto': typeof ConfrontoRoute
+  '/erotismo': typeof ErotismoRoute
   '/rubrica': typeof RubricaRoute
+  '/confronto/erotismo': typeof ConfrontoErotismoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/confronto': typeof ConfrontoRoute
+  '/erotismo': typeof ErotismoRoute
   '/rubrica': typeof RubricaRoute
+  '/confronto/erotismo': typeof ConfrontoErotismoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/confronto': typeof ConfrontoRoute
+  '/erotismo': typeof ErotismoRoute
   '/rubrica': typeof RubricaRoute
+  '/confronto_/erotismo': typeof ConfrontoErotismoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/confronto' | '/rubrica'
+  fullPaths:
+    '/' | '/confronto' | '/erotismo' | '/rubrica' | '/confronto/erotismo'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/confronto' | '/rubrica'
-  id: '__root__' | '/' | '/confronto' | '/rubrica'
+  to: '/' | '/confronto' | '/erotismo' | '/rubrica' | '/confronto/erotismo'
+  id:
+    | '__root__'
+    | '/'
+    | '/confronto'
+    | '/erotismo'
+    | '/rubrica'
+    | '/confronto_/erotismo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConfrontoRoute: typeof ConfrontoRoute
+  ErotismoRoute: typeof ErotismoRoute
   RubricaRoute: typeof RubricaRoute
+  ConfrontoErotismoRoute: typeof ConfrontoErotismoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,11 +102,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfrontoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/erotismo': {
+      id: '/erotismo'
+      path: '/erotismo'
+      fullPath: '/erotismo'
+      preLoaderRoute: typeof ErotismoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rubrica': {
       id: '/rubrica'
       path: '/rubrica'
       fullPath: '/rubrica'
       preLoaderRoute: typeof RubricaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confronto_/erotismo': {
+      id: '/confronto_/erotismo'
+      path: '/confronto/erotismo'
+      fullPath: '/confronto/erotismo'
+      preLoaderRoute: typeof ConfrontoErotismoRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -88,7 +129,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConfrontoRoute: ConfrontoRoute,
+  ErotismoRoute: ErotismoRoute,
   RubricaRoute: RubricaRoute,
+  ConfrontoErotismoRoute: ConfrontoErotismoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

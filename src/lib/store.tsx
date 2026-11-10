@@ -23,7 +23,8 @@ import {
   type Identity,
   type ProfileSnapshot,
 } from "./types";
-import { DEFAULT_QUESTIONS, CATEGORIES, type CategoryKey, type Question } from "./questions";
+import { DEFAULT_QUESTIONS, ALL_CATEGORIES, type AnyCategoryKey, type Question } from "./questions";
+import { sanitizeHiddenCategories, toggleCategory } from "./visibility";
 import type { BackupPayload } from "./stego";
 import { emojisFromHandle } from "./handle";
 import { normalizeTheme } from "./theme";
@@ -37,10 +38,14 @@ type Ctx = {
   patch: (p: Partial<AppState>) => void;
   setIdentity: (i: Identity) => void;
   setAnswer: (id: string, a: Partial<Answer>) => void;
-  addCustomQuestion: (category: CategoryKey, text: string) => void;
+  addCustomQuestion: (category: AnyCategoryKey, text: string) => void;
   ensureQuestion: (id: string, text: string) => void;
   removeCustomQuestion: (id: string) => void;
-  toggleDrawer: (key: string) => void;
+  /** `defaultOpen`: state of a drawer never toggled (main: open, Erotismo: closed). */
+  toggleDrawer: (key: string, defaultOpen?: boolean) => void;
+  setDrawers: (keys: string[], open: boolean) => void;
+  /** Hides/restores a whole category; per-question hidden flags are left untouched. */
+  toggleCategoryHidden: (key: string) => void;
   toggleMode: () => void;
   addEmojisToCollection: (emojis: string[]) => void;
   addRequest: (r: ConnectionRequest) => void;
@@ -64,12 +69,16 @@ export function buildSnapshot(state: AppState, now = Date.now()): ProfileSnapsho
     bio: state.bio,
     tags: state.tags,
     answers: state.answers,
+    hiddenCategories: state.hiddenCategories,
     customQuestions: state.customQuestions,
     updatedAt: now,
   };
 }
 
-const StoreContext = createContext<Ctx | null>(null);
+// Keep one context instance across hot-module reloads: when a dependency (e.g. questions.ts)
+// changes, this module re-runs and a fresh createContext would orphan the mounted provider.
+const ctxHolder = globalThis as unknown as { __questionarStoreCtx?: import("react").Context<Ctx | null> };
+const StoreContext = (ctxHolder.__questionarStoreCtx ??= createContext<Ctx | null>(null));
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(EMPTY_STATE);
@@ -85,6 +94,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...EMPTY_STATE,
           ...saved,
           tags: { ...EMPTY_STATE.tags, ...(saved.tags ?? {}) },
+          answers: sanitizeAnswers(saved.answers),
+          hiddenCategories: sanitizeHiddenCategories(saved.hiddenCategories),
           theme: normalizeTheme(saved.theme),
           contacts: (saved.contacts ?? []).map(migrateContact),
           requests: (saved.requests ?? []).map(migrateRequest),
@@ -155,8 +166,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             s.customQuestions.some((q) => q.id === id)
           )
             return s;
-          const letter = id.split("-")[0] as CategoryKey;
-          const category = CATEGORIES.some((c) => c.key === letter) ? letter : "J";
+          const letter = id.split("-")[0] as AnyCategoryKey;
+          const category = ALL_CATEGORIES.some((c) => c.key === letter) ? letter : "J";
           return {
             ...s,
             customQuestions: [...s.customQuestions, { id, category, text, custom: true }],
@@ -172,11 +183,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             customQuestions: s.customQuestions.filter((q) => q.id !== id),
           };
         }),
-      toggleDrawer: (key) =>
+      toggleDrawer: (key, defaultOpen = true) =>
         setState((s) => ({
           ...s,
-          openDrawers: { ...s.openDrawers, [key]: !(s.openDrawers[key] ?? true) },
+          openDrawers: { ...s.openDrawers, [key]: !(s.openDrawers[key] ?? defaultOpen) },
         })),
+      setDrawers: (keys, open) =>
+        setState((s) => ({
+          ...s,
+          openDrawers: { ...s.openDrawers, ...Object.fromEntries(keys.map((k) => [k, open])) },
+        })),
+      toggleCategoryHidden: (key) =>
+        setState((s) => ({ ...s, hiddenCategories: toggleCategory(s.hiddenCategories, key) })),
       toggleMode: () =>
         setState((s) => ({
           ...s,
@@ -273,6 +291,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return {
             ...s,
             answers: { ...s.answers, ...sanitizeAnswers(payload.answers) },
+            ...(Array.isArray(payload.hiddenCategories)
+              ? { hiddenCategories: sanitizeHiddenCategories(payload.hiddenCategories) }
+              : {}),
             tags: { ...EMPTY_STATE.tags, ...(payload.tags ?? {}) },
             customQuestions: custom,
           };

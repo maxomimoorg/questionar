@@ -8,7 +8,7 @@ import {
   questionCompat,
   reciprocalFlows,
 } from "@/lib/compat";
-import { DEFAULT_QUESTIONS, questionType } from "@/lib/questions";
+import { DEFAULT_QUESTIONS, questionType, MOVED_QUESTION_IDS } from "@/lib/questions";
 import { isPartialAnswer, reciprocalValue, sanitizeSnapshot, type Answer } from "@/lib/types";
 
 const RECIPROCAL = "F-contattofisico";
@@ -48,7 +48,8 @@ describe("reciprocal questions (Fare / Ricevere)", () => {
 
   it("keeps the old ids of reworded questions so saved answers still match", () => {
     const byText = (t: string) => DEFAULT_QUESTIONS.find((q) => q.text === t)!.id;
-    expect(byText("Masturbazione")).toBe("D-masturbazionereciproca");
+    expect(byText("Masturbazione")).toBe("XA-masturbazione");
+    expect(MOVED_QUESTION_IDS["D-masturbazionereciproca"]).toBe("XA-masturbazione");
     expect(byText("Vocali lunghi come audiolibri")).toBe("F-mandarsivocalilunghicomeaudiolibri");
     expect(byText("Supporto nei momenti difficili")).toBe("H-offriresupportoneimomentidifficili");
     expect(byText("Consigli")).toBe("H-chiedereconsigli");

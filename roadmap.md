@@ -20,3 +20,7 @@
 - [x] Partial reciprocal answers: an untouched Fare/Ricevere side is ignored, only computable flows count, scores and totals marked as estimates (~), tutorial and docs updated (75 tests pass; verified in browser).
 - [x] Robustness review: address-book estimates "~", extra edge-case tests.
 - [x] Error margin "±N%" (uncoloured) on partial estimates: questions, categories, totals, address book, tutorial, docs.
+- [x] Categories: expand/collapse all, completion counts, category hiding with independent per-question state, hidden sections (main + Erotismo).
+- [x] Erotismo: empty structure, discreet access pill, own page and comparison page, counted once in totals; tutorial, docs, diagnostics checklist, tests (90 pass).
+- [ ] Erotismo content: sub-categories and questions to be supplied by the author.
+- [ ] Missing icon files (favicon.png, logo.png, icon-192/512, apple-touch-icon) not present in the uploaded zip.
