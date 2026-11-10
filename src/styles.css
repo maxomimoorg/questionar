@@ -236,214 +236,199 @@
   margin-block: 0.25rem;
 }
 
-/* Info page mini-tutorial animations */
-@keyframes demo-thumb-release {
-  0%,
-  10% {
-    left: 8%;
-    background-color: rgb(226 62 62);
-  }
-  30% {
-    left: 50%;
-    background-color: rgb(226 62 62);
-  }
-  31%,
-  45% {
-    left: 50%;
-    background-color: rgb(231 200 60);
-  }
-  65% {
-    left: 92%;
-    background-color: rgb(231 200 60);
-  }
-  66%,
-  91% {
-    left: 92%;
-    background-color: rgb(52 200 196);
-  }
-  92%,
-  100% {
-    left: 8%;
-    background-color: rgb(226 62 62);
-  }
+/* Info tutorial: chapters, demo frames and looping micro-animations (all token colours). */
+.tutorial-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-inline: -1.25rem;
+  padding: 1.25rem 1.25rem 0.75rem;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.demo-thumb {
-  left: 92%;
-  animation: demo-thumb-release 6s ease-in-out infinite;
-  background-color: rgb(52 200 196);
-  color: white;
+.tutorial-chapter {
+  border-bottom: 1px solid var(--color-border);
+  scroll-margin-top: 6rem;
 }
 
-.demo-glyph {
+.tutorial-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 0.9rem;
+  font-size: var(--text-title);
+  color: var(--color-brand);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.tutorial-chapter-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: var(--color-surface-2);
+  color: var(--color-accent);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.tutorial-trigger[data-state="open"] .tutorial-chapter-icon {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  box-shadow: var(--shadow-action-glow);
+}
+
+.demo-stage {
+  position: relative;
+  border-radius: var(--radius-2xl);
+  background-color: var(--color-background);
+  padding: 0.75rem;
+  padding-top: 1.75rem;
+}
+
+.demo-hint {
   position: absolute;
-  animation-duration: 6s;
-  animation-iteration-count: infinite;
+  top: 0.5rem;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
 }
 
-@keyframes demo-glyph-cross {
-  0%, 30%, 92%, 100% { opacity: 1; }
-  31%, 91% { opacity: 0; }
+.tutorial-warning {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  border-radius: var(--radius-xl);
+  padding: 0.75rem;
+  background-color: color-mix(in srgb, var(--warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  color: var(--color-foreground);
 }
+.tutorial-warning svg { color: var(--warning); }
 
-@keyframes demo-glyph-question {
-  0%, 30%, 66%, 100% { opacity: 0; }
-  31%, 65% { opacity: 1; }
+/* While a demo slider plays by itself, glide between values; dragging stays instant. */
+.demo-autoplay [role="slider"] {
+  transition: left 0.7s ease-in-out, background-color 0.7s ease-in-out;
 }
-
-@keyframes demo-glyph-check {
-  0%, 65%, 92%, 100% { opacity: 0; }
-  66%, 91% { opacity: 1; }
-}
-
-.demo-glyph-cross {
-  opacity: 0;
-  animation-name: demo-glyph-cross;
-}
-
-.demo-glyph-question {
-  opacity: 0;
-  animation-name: demo-glyph-question;
-}
-
-.demo-glyph-check {
-  opacity: 1;
-  animation-name: demo-glyph-check;
-}
-
-@keyframes demo-fill-left {
-  0%, 10% {
-    left: 16%;
-    width: 84%;
-    background-color: rgb(226 62 62);
-  }
-  30% {
-    left: 100%;
-    width: 0;
-    background-color: rgb(226 62 62);
-  }
-  31%, 91% {
-    left: 100%;
-    width: 0;
-  }
-  92%, 100% {
-    left: 16%;
-    width: 84%;
-    background-color: rgb(226 62 62);
-  }
-}
-
-@keyframes demo-fill-right {
-  0%, 30% {
-    width: 0;
-  }
-  31%, 45% {
-    width: 0;
-    background-color: rgb(231 200 60);
-  }
-  65% {
-    width: 84%;
-    background-color: rgb(231 200 60);
-  }
-  66%, 91% {
-    width: 84%;
-    background-color: rgb(52 200 196);
-  }
-  92%, 100% {
-    width: 0;
-  }
-}
-
-.demo-fill-left {
-  left: 100%;
-  width: 0;
-  animation: demo-fill-left 6s ease-in-out infinite;
-}
-
-.demo-fill-right {
-  width: 84%;
-  background-color: rgb(52 200 196);
-  animation: demo-fill-right 6s ease-in-out infinite;
+.demo-autoplay [data-slider-fill] {
+  transition: left 0.7s ease-in-out, width 0.7s ease-in-out, background-color 0.7s ease-in-out;
 }
 
 @keyframes demo-ring {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-  50% {
-    box-shadow: 0 0 0 2px var(--color-accent);
-  }
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 3px var(--color-accent); }
 }
-
-.demo-critical {
-  animation: demo-ring 2.4s ease-in-out infinite;
-}
-
-@keyframes demo-dim {
-  0%,
-  40% {
-    opacity: 1;
-    filter: grayscale(0);
-  }
-  70%,
-  100% {
-    opacity: 0.45;
-    filter: grayscale(1);
-  }
-}
-
-.demo-hidden {
-  animation: demo-dim 3s ease-in-out infinite alternate;
-}
+.demo-critical { animation: demo-ring 2.4s ease-in-out infinite; }
 
 @keyframes demo-typing {
-  0% {
-    max-width: 0;
-  }
-  70%,
-  100% {
-    max-width: 100%;
-  }
+  0% { max-width: 0; }
+  70%, 100% { max-width: 100%; }
 }
+.demo-type { animation: demo-typing 4s steps(28, end) infinite alternate; }
 
-.demo-type {
-  animation: demo-typing 4s ease-in-out infinite alternate;
+@keyframes demo-blink { 50% { opacity: 0; } }
+.demo-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background-color: var(--color-accent);
+  animation: demo-blink 1s steps(1) infinite;
 }
 
 @keyframes demo-pop {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.12);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+.demo-pop { animation: demo-pop 2.4s ease-in-out infinite; }
+
+@keyframes demo-enter {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.demo-enter { animation: demo-enter 0.35s ease-out both; }
+
+@keyframes demo-slide {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: none; }
+}
+.demo-slide { animation: demo-slide 0.6s ease-out both; }
+
+@keyframes demo-scan {
+  0%, 100% { top: 8%; }
+  50% { top: 88%; }
+}
+.demo-scan {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--color-primary);
+  box-shadow: var(--shadow-action-glow);
+  animation: demo-scan 1.8s ease-in-out infinite;
 }
 
-.demo-pop {
-  animation: demo-pop 2.4s ease-in-out infinite;
+@keyframes demo-travel {
+  0% { left: 0; opacity: 0; }
+  15% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { left: calc(100% - 1.5rem); opacity: 0; }
 }
+.demo-travel { animation: demo-travel 2.6s ease-in-out infinite; }
 
-.demo-delay-1 {
-  animation-delay: 0.5s;
+@keyframes demo-dash { to { stroke-dashoffset: -20; } }
+.demo-dash { animation: demo-dash 1.2s linear infinite; }
+
+@keyframes demo-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(2.2); opacity: 0.35; }
 }
+.demo-pulse { animation: demo-pulse 1.8s ease-in-out infinite; }
 
-.demo-delay-2 {
-  animation-delay: 1s;
+@keyframes demo-pixels { to { background-position: 24px 24px, -24px 12px; } }
+.demo-pixels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  background-image:
+    repeating-linear-gradient(90deg, var(--color-primary) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(0deg, var(--color-accent) 0 2px, transparent 2px 6px);
+  animation: demo-pixels 3s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .demo-thumb,
-  .demo-glyph,
-  .demo-fill-left,
-  .demo-fill-right,
   .demo-critical,
-  .demo-hidden,
   .demo-type,
-  .demo-pop {
+  .demo-caret,
+  .demo-pop,
+  .demo-enter,
+  .demo-slide,
+  .demo-scan,
+  .demo-travel,
+  .demo-dash,
+  .demo-pulse,
+  .demo-pixels {
     animation: none;
   }
+  .demo-travel { left: 50%; }
+  .demo-autoplay [role="slider"],
+  .demo-autoplay [data-slider-fill] { transition: none; }
 }
 
 /* Round header action buttons. */
