@@ -248,7 +248,7 @@ const EROTISMO_DEFAULTS: Record<EroticCategoryKey, DefaultEntry[]> = {
   ],
   XF: [
     "Esibizionismo",
-    r("Voyeurismo"),
+    "Voyeurismo",
     "Scambismo",
     moved("D-sessoa3opiu", "Sesso a 3 o più"),
     moved("D-chemsexsessoconsostanze", "Chem-sex (sesso con sostanze)"),
