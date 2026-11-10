@@ -2,7 +2,7 @@
 // A question has two independent hiding states: its own `answer.hidden` flag and the hidden
 // state of its category. Hiding/restoring a category never touches the per-question flag.
 
-import { categoryOfId, type Question } from "./questions";
+import { categoryOfId, isEroticCategory, type Question } from "./questions";
 import { giveOf, isPartialAnswer, receiveOf, type Answer } from "./types";
 
 export { sanitizeHiddenCategories } from "./types";
@@ -87,4 +87,16 @@ export function hiddenSection(
 /** Next state of the global "Espandi tutte / Comprimi tutte" control. */
 export function expandAllAction(openStates: boolean[]): "expand" | "collapse" {
   return openStates.length > 0 && openStates.every(Boolean) ? "collapse" : "expand";
+}
+
+/**
+ * Erotismo info panel: it opens by itself until at least one Erotismo question is answered
+ * (fully or partially). Questions moved into Erotismo keep their old id, so the check goes
+ * through each question's category rather than the id prefix.
+ */
+export function hasAnsweredErotic(
+  questions: Pick<Question, "id" | "category">[],
+  answers: Record<string, Answer>,
+): boolean {
+  return questions.some((q) => isEroticCategory(q.category) && answers[q.id]?.answered === true);
 }
