@@ -1,4 +1,10 @@
-import { REPORT_SCHEMA, REPORT_VERSION, type CheckResult, type DiagEvent, type ScenarioResult } from "./types";
+import {
+  REPORT_SCHEMA,
+  REPORT_VERSION,
+  type CheckResult,
+  type DiagEvent,
+  type ScenarioResult,
+} from "./types";
 import { SCENARIOS } from "./scenarios";
 import { coarsePlatform, sanitizeNote } from "./redact";
 

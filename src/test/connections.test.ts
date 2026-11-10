@@ -242,7 +242,11 @@ describe("network status and issues", () => {
   it("a missing relay URL reports not_configured and stays offline", async () => {
     const a = await makePeer(null, "alice🦊🌊⭐", "");
     await a.p2p.start([]);
-    expect(a.statuses.at(-1)).toEqual({ connected: false, mode: "offline", issue: "not_configured" });
+    expect(a.statuses.at(-1)).toEqual({
+      connected: false,
+      mode: "offline",
+      issue: "not_configured",
+    });
     expect(await a.conn.sendRequest("bob🐻🌲🔥")).toBe("offline");
   });
 

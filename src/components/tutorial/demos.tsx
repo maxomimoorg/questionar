@@ -29,10 +29,10 @@ import { AnswerSlider } from "@/components/AnswerSlider";
 import { Avatar } from "@/components/Avatar";
 import { CategoryHeader, ExpandAllPill } from "@/components/CategoryControls";
 import { MarginText } from "@/components/MarginText";
-import { PROFILE_TAGS, ProfileTagChip } from "@/components/ProfileTags";
+import { ProfileTagChip } from "@/components/ProfileTags";
 import { percentColor } from "@/lib/color";
 import { questionCompat, reciprocalFlows } from "@/lib/compat";
-import { nextTagState, type ProfileTags } from "@/lib/profile-tags";
+import { nextTagState, PROFILE_TAGS, type ProfileTags } from "@/lib/profile-tags";
 import {
   EROTISMO_CATEGORY_LABELS,
   TUTORIAL_CUSTOM_CATEGORY,
@@ -43,7 +43,8 @@ import {
   categoryQuestionCount,
   type TutorialQuestionKey,
 } from "./examples";
-import { Stage, useDemoCycle, useReducedMotion } from "./kit";
+import { useDemoCycle, useReducedMotion } from "./hooks";
+import { Stage } from "./kit";
 
 /* All demos reuse the app's real components and maths, so what the tutorial shows is what
  * the app does. Nothing here reads or writes the saved profile. */
@@ -66,7 +67,9 @@ function QuestionLabel({ example }: { example: TutorialQuestionKey }) {
   const ref = TUTORIAL_QUESTIONS[example];
   return (
     <div className="min-w-0">
-      <p className="text-[11px] font-semibold text-muted-foreground">{categoryLabel(ref.category)}</p>
+      <p className="text-[11px] font-semibold text-muted-foreground">
+        {categoryLabel(ref.category)}
+      </p>
       <p className="text-[14px] leading-snug">{ref.text}</p>
     </div>
   );
@@ -97,7 +100,10 @@ function useProgress(ms = 1400) {
 /* ───────────── 1 · Cos'è ───────────── */
 
 const MAP_VALUES = [92, 64, 38];
-const MAP = TUTORIAL_MAP_CATEGORIES.map((key, i) => ({ label: categoryLabel(key), value: MAP_VALUES[i] ?? 50 }));
+const MAP = TUTORIAL_MAP_CATEGORIES.map((key, i) => ({
+  label: categoryLabel(key),
+  value: MAP_VALUES[i] ?? 50,
+}));
 
 export function DemoCompatMap() {
   const p = useProgress();
@@ -151,11 +157,7 @@ export function DemoSlider() {
     <Stage hint="trascina" className={autoplay ? "demo-autoplay" : ""}>
       <QuestionLabel example="slider" />
       <div className="mt-1" onPointerDownCapture={cycle.stop} onKeyDownCapture={cycle.stop}>
-        <AnswerSlider
-          value={value ?? SLIDER_STEPS[cycle.index]!}
-          answered
-          onCommit={setValue}
-        />
+        <AnswerSlider value={value ?? SLIDER_STEPS[cycle.index]!} answered onCommit={setValue} />
       </div>
       <div className="mt-1 flex justify-between pr-14 text-[12px] text-muted-foreground">
         <span>No · 0%</span>
@@ -189,7 +191,9 @@ export function DemoCritical() {
   const score = questionCompat(me, other, critical ? 1 : 0);
   return (
     <Stage hint="tocca">
-      <div className={`rounded-xl p-2 transition-colors ${critical ? "bg-surface-2 ring-2 ring-accent" : "bg-surface"}`}>
+      <div
+        className={`rounded-xl p-2 transition-colors ${critical ? "bg-surface-2 ring-2 ring-accent" : "bg-surface"}`}
+      >
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <QuestionLabel example="critical" />
@@ -200,7 +204,9 @@ export function DemoCritical() {
             aria-label="Segna come critica"
             onClick={() => setCritical((v) => !v)}
             className={`grid size-8 place-items-center rounded-full ${
-              critical ? "bg-accent text-accent-foreground" : "demo-critical bg-background text-muted-foreground"
+              critical
+                ? "bg-accent text-accent-foreground"
+                : "demo-critical bg-background text-muted-foreground"
             }`}
           >
             <Zap size={15} />
@@ -256,7 +262,9 @@ export function DemoCustomQuestion() {
                 aria-pressed={cycle.index === i}
                 onClick={() => cycle.select(i)}
                 className={`rounded-full px-2.5 py-0.5 text-[12px] ${
-                  cycle.index === i ? "bg-accent text-accent-foreground" : "bg-surface-2 text-foreground"
+                  cycle.index === i
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-surface-2 text-foreground"
                 }`}
               >
                 {label}
@@ -376,7 +384,9 @@ export function DemoReciprocal() {
             aria-pressed={i === cycle.index}
             onClick={() => cycle.select(i)}
             className={`rounded-full px-2.5 py-0.5 text-[12px] ${
-              i === cycle.index ? "bg-accent text-accent-foreground" : "bg-surface-2 text-foreground"
+              i === cycle.index
+                ? "bg-accent text-accent-foreground"
+                : "bg-surface-2 text-foreground"
             }`}
           >
             {s.label}
@@ -409,9 +419,24 @@ export function DemoReciprocal() {
 /* ───────────── 4 · Connettersi e confrontare ───────────── */
 
 const CONNECT_MODES = [
-  { id: "qr", label: "QR", icon: QrCode, caption: "Dal vivo: scansiona il QR sullo schermo dell'altra persona." },
-  { id: "handle", label: "Handle", icon: AtSign, caption: "A distanza: invia il suo handle completo, emoji incluse." },
-  { id: "file", label: "Scheda", icon: FileImage, caption: "Offline: scambiate la scheda avatar e confrontate subito." },
+  {
+    id: "qr",
+    label: "QR",
+    icon: QrCode,
+    caption: "Dal vivo: scansiona il QR sullo schermo dell'altra persona.",
+  },
+  {
+    id: "handle",
+    label: "Handle",
+    icon: AtSign,
+    caption: "A distanza: invia il suo handle completo, emoji incluse.",
+  },
+  {
+    id: "file",
+    label: "Scheda",
+    icon: FileImage,
+    caption: "Offline: scambiate la scheda avatar e confrontate subito.",
+  },
 ] as const;
 
 export function DemoConnect() {
@@ -429,7 +454,9 @@ export function DemoConnect() {
               aria-pressed={i === cycle.index}
               onClick={() => cycle.select(i)}
               className={`flex flex-1 items-center justify-center gap-1 rounded-full px-2 py-1 text-[12px] ${
-                i === cycle.index ? "bg-accent text-accent-foreground" : "bg-surface-2 text-foreground"
+                i === cycle.index
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-surface-2 text-foreground"
               }`}
             >
               <Icon size={13} /> {m.label}
@@ -499,19 +526,42 @@ export function DemoThreeWay() {
   return (
     <Stage hint="guarda">
       <div className="relative mx-auto h-36 max-w-xs">
-        <svg className="absolute inset-0 size-full" viewBox="0 0 200 120" preserveAspectRatio="none" aria-hidden="true">
-          <g className="demo-dash" fill="none" stroke="var(--color-border)" strokeWidth="2" strokeDasharray="5 5">
+        <svg
+          className="absolute inset-0 size-full"
+          viewBox="0 0 200 120"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <g
+            className="demo-dash"
+            fill="none"
+            stroke="var(--color-border)"
+            strokeWidth="2"
+            strokeDasharray="5 5"
+          >
             <line x1="100" y1="22" x2="30" y2="98" />
             <line x1="100" y1="22" x2="170" y2="98" />
             <line x1="30" y1="98" x2="170" y2="98" />
           </g>
         </svg>
-        <div className="absolute left-1/2 top-0 -translate-x-1/2"><Avatar handle="io" size={40} /></div>
-        <div className="absolute bottom-0 left-[5%]"><Avatar handle="luna" size={40} /></div>
-        <div className="absolute bottom-0 right-[5%]"><Avatar handle="sole" size={40} /></div>
-        <span className="absolute left-[18%] top-[38%] text-[12px]"><Percent value={82} /></span>
-        <span className="absolute right-[18%] top-[38%] text-[12px]"><Percent value={64} /></span>
-        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[12px]"><Percent value={71} /></span>
+        <div className="absolute left-1/2 top-0 -translate-x-1/2">
+          <Avatar handle="io" size={40} />
+        </div>
+        <div className="absolute bottom-0 left-[5%]">
+          <Avatar handle="luna" size={40} />
+        </div>
+        <div className="absolute bottom-0 right-[5%]">
+          <Avatar handle="sole" size={40} />
+        </div>
+        <span className="absolute left-[18%] top-[38%] text-[12px]">
+          <Percent value={82} />
+        </span>
+        <span className="absolute right-[18%] top-[38%] text-[12px]">
+          <Percent value={64} />
+        </span>
+        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[12px]">
+          <Percent value={71} />
+        </span>
         <span className="demo-pop absolute left-1/2 top-[48%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-surface px-2 py-0.5 text-[12px]">
           Insieme <Percent value={72} />
         </span>
@@ -534,7 +584,9 @@ export function DemoProfileTags() {
             key={tag.id}
             tag={tag}
             value={tags[tag.id]}
-            onClick={() => setTags((current) => ({ ...current, [tag.id]: nextTagState(current[tag.id]) }))}
+            onClick={() =>
+              setTags((current) => ({ ...current, [tag.id]: nextTagState(current[tag.id]) }))
+            }
           />
         ))}
       </div>
@@ -547,11 +599,17 @@ export function DemoHidden() {
   const hidden = cycle.index === 1;
   return (
     <Stage hint="tocca">
-      <div className={`flex items-center gap-2 rounded-xl bg-surface p-2 transition ${hidden ? "opacity-50 grayscale" : ""}`}>
+      <div
+        className={`flex items-center gap-2 rounded-xl bg-surface p-2 transition ${hidden ? "opacity-50 grayscale" : ""}`}
+      >
         <div className="flex-1">
           <QuestionLabel example="hidden" />
         </div>
-        {hidden && <span className="rounded-full bg-background px-2 py-0.5 text-[11px] text-muted-foreground">fuori dal calcolo</span>}
+        {hidden && (
+          <span className="rounded-full bg-background px-2 py-0.5 text-[11px] text-muted-foreground">
+            fuori dal calcolo
+          </span>
+        )}
         <button
           type="button"
           aria-label={hidden ? "Ripristina la domanda" : "Nascondi la domanda"}
@@ -604,7 +662,9 @@ export function DemoCategories() {
       </div>
       {hiddenOnes.length > 0 && (
         <div className="demo-enter mt-2 rounded-xl border border-dashed border-border p-2">
-          <p className="text-[12px] font-semibold text-muted-foreground">Categorie e domande nascoste</p>
+          <p className="text-[12px] font-semibold text-muted-foreground">
+            Categorie e domande nascoste
+          </p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {hiddenOnes.map((c) => (
               <button
@@ -670,9 +730,15 @@ export function DemoErotismo() {
         </button>
       </div>
       {open && (
-        <ul className="demo-enter mt-2 flex flex-wrap justify-center gap-1.5" aria-label="Categorie di Erotismo">
+        <ul
+          className="demo-enter mt-2 flex flex-wrap justify-center gap-1.5"
+          aria-label="Categorie di Erotismo"
+        >
           {EROTISMO_CATEGORY_LABELS.map((label) => (
-            <li key={label} className="flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-[12px]">
+            <li
+              key={label}
+              className="flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-[12px]"
+            >
               <Lock size={11} className="text-muted-foreground" aria-hidden="true" />
               {label}
             </li>
@@ -697,7 +763,10 @@ export function DemoZeroServer() {
           <span className="text-[11px] text-muted-foreground">il tuo browser (IndexedDB)</span>
         </div>
         <div className="relative h-0 max-w-24 flex-1 border-t-2 border-dashed border-border">
-          <X size={16} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-background text-destructive" />
+          <X
+            size={16}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-background text-destructive"
+          />
         </div>
         <div className="flex flex-col items-center gap-1 opacity-50">
           <span className="grid size-14 place-items-center rounded-2xl bg-surface text-muted-foreground">
@@ -721,7 +790,9 @@ export function DemoBackupCard() {
         </div>
         <span className="demo-pixels" aria-hidden="true" />
       </div>
-      <p className="mt-2 text-center text-[11px] text-muted-foreground">risposte e chiave pubblica nascoste nei pixel</p>
+      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        risposte e chiave pubblica nascoste nei pixel
+      </p>
     </Stage>
   );
 }
@@ -737,7 +808,10 @@ export function DemoEmojiCollection() {
     <Stage hint="guarda">
       <div className="mx-auto grid max-w-xs grid-cols-6 gap-1.5">
         {HANDLE_EMOJI.map((e) => (
-          <span key={e} className="grid aspect-square place-items-center rounded-xl bg-surface text-[18px] ring-2 ring-primary">
+          <span
+            key={e}
+            className="grid aspect-square place-items-center rounded-xl bg-surface text-[18px] ring-2 ring-primary"
+          >
             {e}
           </span>
         ))}

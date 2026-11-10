@@ -8,7 +8,12 @@ import {
   startBuffer,
   stopBuffer,
 } from "@/lib/diagnostics/buffer";
-import { coarsePlatform, normalizeError, sanitizeNote, sanitizePath } from "@/lib/diagnostics/redact";
+import {
+  coarsePlatform,
+  normalizeError,
+  sanitizeNote,
+  sanitizePath,
+} from "@/lib/diagnostics/redact";
 import { buildReport } from "@/lib/diagnostics/report";
 import { DIAG_DB_NAME } from "@/lib/diagnostics/checks";
 
@@ -52,12 +57,15 @@ describe("redaction", () => {
     expect(sanitizePath("/u/luca")).toBe("/:other");
   });
   it("masks personal data in notes and limits length", () => {
-    const n = sanitizeNote("mail a.b@c.it, @mario, https://x.y/?t=1 +39 333 1234567 eyJhbGciOiJIUzI1NiIsInR5cCI6");
+    const n = sanitizeNote(
+      "mail a.b@c.it, @mario, https://x.y/?t=1 +39 333 1234567 eyJhbGciOiJIUzI1NiIsInR5cCI6",
+    );
     expect(n).not.toMatch(/a\.b@c\.it|@mario|https|333|eyJ/);
     expect(sanitizeNote("x".repeat(900)).length).toBeLessThanOrEqual(500);
   });
   it("reports only browser family, major version and OS", () => {
-    const ua = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/131.0.6778.39 Mobile Safari/537.36";
+    const ua =
+      "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/131.0.6778.39 Mobile Safari/537.36";
     expect(coarsePlatform(ua)).toEqual({ browser: "chromium", browserMajor: "131", os: "android" });
   });
   it("uses a diagnostic database separate from the app's", () => {
@@ -80,10 +88,19 @@ describe("report", () => {
       ...base,
       checks: [
         { id: "a", title: "A", category: "browser", status: "pass", durationMs: 1 },
-        { id: "b", title: "B", category: "pwa", status: "fail", durationMs: 1, code: "sw_not_registered" },
+        {
+          id: "b",
+          title: "B",
+          category: "pwa",
+          status: "fail",
+          durationMs: 1,
+          code: "sw_not_registered",
+        },
         { id: "c", title: "C", category: "network", status: "skip", durationMs: 0 },
       ],
-      scenarios: [{ id: "manual.backup", status: "passed", stepsDone: [0, 9], note: "ok, scrivimi a z@z.it" }],
+      scenarios: [
+        { id: "manual.backup", status: "passed", stepsDone: [0, 9], note: "ok, scrivimi a z@z.it" },
+      ],
     });
     expect(r.schema).toBe("questionar-diagnostics");
     expect(r.version).toBe(1);

@@ -23,13 +23,18 @@ export const SCENARIOS: ScenarioDef[] = [
       "Riattiva la rete",
       "Verifica che lo stato di connessione torni disponibile",
     ],
-    expected: "L'app si apre offline dalla cache e si riconnette senza intervento al ritorno della rete.",
+    expected:
+      "L'app si apre offline dalla cache e si riconnette senza intervento al ritorno della rete.",
   },
   {
     id: "manual.persistence",
     title: "Persistenza dopo ricarica",
     prerequisites: ["Preferibilmente un profilo di prova (profilo browser separato)"],
-    steps: ["Modifica una risposta di prova", "Ricarica la pagina", "Controlla che la modifica sia presente"],
+    steps: [
+      "Modifica una risposta di prova",
+      "Ricarica la pagina",
+      "Controlla che la modifica sia presente",
+    ],
     expected: "La modifica resta salvata; nessun dato reale viene cancellato.",
   },
   {
@@ -41,12 +46,16 @@ export const SCENARIOS: ScenarioDef[] = [
       "Importa il backup appena esportato",
       "Prova a importare il PNG non valido",
     ],
-    expected: "Il backup valido viene ripristinato; il file non valido viene rifiutato con un messaggio chiaro.",
+    expected:
+      "Il backup valido viene ripristinato; il file non valido viene rifiutato con un messaggio chiaro.",
   },
   {
     id: "manual.relay",
     title: "Connessione e riconnessione relay/WebRTC",
-    prerequisites: ["Due profili di prova su dispositivi o profili browser separati", "Nessun contatto reale"],
+    prerequisites: [
+      "Due profili di prova su dispositivi o profili browser separati",
+      "Nessun contatto reale",
+    ],
     steps: [
       "Collega i due profili di prova",
       "Interrompi la rete su uno dei due e ripristinala",
@@ -62,7 +71,8 @@ export const SCENARIOS: ScenarioDef[] = [
       "Usa solo Tab, Maiusc+Tab, Invio ed Esc per navigare e aprire/chiudere il popup informativo",
       "Provoca un errore visibile (es. importa un file non valido)",
     ],
-    expected: "Il focus è sempre visibile e non resta intrappolato; i messaggi d'errore sono chiari e leggibili.",
+    expected:
+      "Il focus è sempre visibile e non resta intrappolato; i messaggi d'errore sono chiari e leggibili.",
   },
   {
     id: "manual.categories",
@@ -88,6 +98,7 @@ export const SCENARIOS: ScenarioDef[] = [
       "Controlla compatibilità della sezione, per categoria e per domanda",
       "Esporta e reimporta il backup PNG: le categorie nascoste restano tali",
     ],
-    expected: "Le domande di Erotismo contano una sola volta nel totale; i dati e le categorie nascoste sopravvivono a backup e scambio.",
+    expected:
+      "Le domande di Erotismo contano una sola volta nel totale; i dati e le categorie nascoste sopravvivono a backup e scambio.",
   },
 ];

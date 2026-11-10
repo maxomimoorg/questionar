@@ -8,11 +8,11 @@ l'italiano). Vengono pubblicati insieme all'app: all'avvio non c'è nessuna rich
 
 ## Service worker (`public/sw.js`)
 
-| Risorsa | Strategia |
-| --- | --- |
-| Pagine (`/`, `/rubrica`, `/confronto`) | Rete prima; dopo 2,5 s senza risposta si mostra la copia salvata, che la rete aggiorna in background. Offline: copia salvata. |
-| File di build con hash (`/assets/…`, inclusi i font) | Cache prima: il nome cambia quando cambia il contenuto. |
-| Altri file statici (icone, manifest, logo) | Copia salvata subito, aggiornata in background. |
+| Risorsa                                              | Strategia                                                                                                                     |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Pagine (`/`, `/rubrica`, `/confronto`)               | Rete prima; dopo 2,5 s senza risposta si mostra la copia salvata, che la rete aggiorna in background. Offline: copia salvata. |
+| File di build con hash (`/assets/…`, inclusi i font) | Cache prima: il nome cambia quando cambia il contenuto.                                                                       |
+| Altri file statici (icone, manifest, logo)           | Copia salvata subito, aggiornata in background.                                                                               |
 
 Le pagine non vengono servite dalla cache quando la rete risponde in tempo: così puntano sempre a
 script presenti sul server dopo un nuovo deploy.

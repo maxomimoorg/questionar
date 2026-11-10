@@ -14,14 +14,20 @@ describe("Erotismo info panel opens until the first Erotismo answer", () => {
   });
 
   it("an untouched slider does not count as an answer", () => {
-    expect(hasAnsweredErotic(questions, { "XB-shibari": { value: 50, answered: false } })).toBe(false);
+    expect(hasAnsweredErotic(questions, { "XB-shibari": { value: 50, answered: false } })).toBe(
+      false,
+    );
   });
 
   it("stays closed after one Erotismo answer", () => {
-    expect(hasAnsweredErotic(questions, { "XB-shibari": { value: 70, answered: true } })).toBe(true);
+    expect(hasAnsweredErotic(questions, { "XB-shibari": { value: 70, answered: true } })).toBe(
+      true,
+    );
   });
 
   it("counts questions moved into Erotismo that kept their old id", () => {
-    expect(hasAnsweredErotic(questions, { "D-sessoorale": { value: 70, answered: true } })).toBe(true);
+    expect(hasAnsweredErotic(questions, { "D-sessoorale": { value: 70, answered: true } })).toBe(
+      true,
+    );
   });
 });

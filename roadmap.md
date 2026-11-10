@@ -1,4 +1,5 @@
 # QuestionAR — requested changes
+
 - [x] Restore original local graphics and icon-generation source from questionar-fixed.zip; remove CDN asset pointers and verify local PWA references without changing app logic (original bytes verified, local resources return 200, logos render, 28 tests pass).
 - [ ] Apply the requested fuchsia/teal day and night tokens, primary/focus glow and coherent controls.
 - [ ] Verify day/night switching, palette fidelity, readability, tag appearance and existing tests.
@@ -29,3 +30,5 @@
 - [x] Reciprocal-question count test removed at the author's request (question-type counts no longer need checking); "Voyeurismo" is a normal (similarity) question; docs aligned to 42 Fare/Ricevere.
 - [x] Tutorial: shorter text, six clear chapters with live/animated demos (real slider and maths), sticky header, chapter auto-scroll, theme-token animations, licence folded; tests and docs reference updated.
 - [x] Tutorial demos quote only real questions and categories (with real counts), verified by tests.
+- [x] Comparison chart on /confronto and /confronto/erotismo: overall ring plus category bars always sorted by affinity; tapping a bar opens and scrolls to that category (Erotismo bar opens its page); tests.
+- [x] Fix review findings: /confronto without ?b= no longer errors, QR colours from theme tokens, /erotismo precached offline, Fast Refresh splits, handle check rewritten, project formatted (127 tests pass).

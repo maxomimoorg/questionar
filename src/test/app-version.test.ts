@@ -2,10 +2,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { appVersion } from "@/components/diagnostics/DiagnosticsPanel";
+import { appVersion } from "@/lib/diagnostics/export";
 import { buildReport } from "@/lib/diagnostics/report";
 
-const pkg = JSON.parse(readFileSync(path.resolve(__dirname, "../../package.json"), "utf8")) as { version: string };
+const pkg = JSON.parse(readFileSync(path.resolve(__dirname, "../../package.json"), "utf8")) as {
+  version: string;
+};
 
 describe("diagnostic report version", () => {
   it("uses the package.json version, not 'unknown'", () => {

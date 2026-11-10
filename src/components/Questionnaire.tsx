@@ -36,8 +36,16 @@ type Props = {
 };
 
 /** Categories, counts, hide/restore, custom questions and the hidden section of one questionnaire. */
-export function Questionnaire({ categories, defaultOpen, hiddenKey, focus, afterCategories, emptyText }: Props) {
-  const { state, questions, toggleDrawer, setDrawers, toggleCategoryHidden, addCustomQuestion } = useStore();
+export function Questionnaire({
+  categories,
+  defaultOpen,
+  hiddenKey,
+  focus,
+  afterCategories,
+  emptyText,
+}: Props) {
+  const { state, questions, toggleDrawer, setDrawers, toggleCategoryHidden, addCustomQuestion } =
+    useStore();
   const [newText, setNewText] = useState("");
   const [newType, setNewType] = useState<QuestionType>("similarity");
   const [newCat, setNewCat] = useState<AnyCategoryKey | "">(
@@ -46,7 +54,10 @@ export function Questionnaire({ categories, defaultOpen, hiddenKey, focus, after
 
   const isOpen = (key: string) => state.openDrawers[key] ?? defaultOpen;
   const visibleCats = categories.filter((c) => !isCategoryHidden(state, c.key));
-  const hidden = useMemo(() => hiddenSection(categories, questions, state), [categories, questions, state]);
+  const hidden = useMemo(
+    () => hiddenSection(categories, questions, state),
+    [categories, questions, state],
+  );
   const hiddenCount = hidden.groups.length + hidden.individual.length;
 
   useEffect(() => {
@@ -77,7 +88,12 @@ export function Questionnaire({ categories, defaultOpen, hiddenKey, focus, after
     <>
       <ExpandAllPill
         openStates={visibleCats.map((c) => isOpen(c.key))}
-        onSet={(open) => setDrawers(visibleCats.map((c) => c.key), open)}
+        onSet={(open) =>
+          setDrawers(
+            visibleCats.map((c) => c.key),
+            open,
+          )
+        }
       />
 
       {categories.length === 0 && emptyText && (
@@ -85,7 +101,9 @@ export function Questionnaire({ categories, defaultOpen, hiddenKey, focus, after
       )}
 
       {visibleCats.map((cat) => {
-        const items = questions.filter((q) => q.category === cat.key && !isIndividuallyHidden(state, q.id));
+        const items = questions.filter(
+          (q) => q.category === cat.key && !isIndividuallyHidden(state, q.id),
+        );
         const open = isOpen(cat.key);
         const completion = completionOf(
           questions.filter((q) => q.category === cat.key),
@@ -93,7 +111,11 @@ export function Questionnaire({ categories, defaultOpen, hiddenKey, focus, after
           isReciprocal,
         );
         return (
-          <section key={cat.key} className="rounded-3xl bg-surface-2/60 p-2" data-category={cat.key}>
+          <section
+            key={cat.key}
+            className="rounded-3xl bg-surface-2/60 p-2"
+            data-category={cat.key}
+          >
             <CategoryHeader
               label={cat.label}
               open={open}
@@ -206,7 +228,11 @@ export function Questionnaire({ categories, defaultOpen, hiddenKey, focus, after
               </p>
             )}
             {hidden.groups.map((g) => (
-              <div key={g.key} className="space-y-2 rounded-2xl bg-background/40 p-2" data-hidden-group={g.key}>
+              <div
+                key={g.key}
+                className="space-y-2 rounded-2xl bg-background/40 p-2"
+                data-hidden-group={g.key}
+              >
                 <div className="flex items-center gap-2 px-1">
                   <span className="flex-1 text-[14px] font-bold text-brand">{g.label}</span>
                   <button
@@ -218,7 +244,9 @@ export function Questionnaire({ categories, defaultOpen, hiddenKey, focus, after
                   </button>
                 </div>
                 {g.questions.length === 0 && (
-                  <p className="px-1 text-[12px] text-muted-foreground">Nessuna domanda in questa categoria.</p>
+                  <p className="px-1 text-[12px] text-muted-foreground">
+                    Nessuna domanda in questa categoria.
+                  </p>
                 )}
                 {g.questions.map((q) => (
                   <QuestionCard key={q.id} question={q} hiddenByCategory />

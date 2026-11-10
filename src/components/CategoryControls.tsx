@@ -1,5 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, Eye, EyeOff } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronDown,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { expandAllAction } from "@/lib/visibility";
@@ -70,7 +78,9 @@ export function CategoryHeader({
       {onToggleHidden && (
         <button
           type="button"
-          aria-label={hidden ? `Ripristina la categoria ${label}` : `Nascondi la categoria ${label}`}
+          aria-label={
+            hidden ? `Ripristina la categoria ${label}` : `Nascondi la categoria ${label}`
+          }
           title={hidden ? "Ripristina categoria" : "Nascondi categoria"}
           onClick={onToggleHidden}
           className="grid size-8 shrink-0 place-items-center rounded-full bg-background text-muted-foreground"

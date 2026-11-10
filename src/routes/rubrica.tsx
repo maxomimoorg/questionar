@@ -1,15 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  Check,
-  Copy,
-  Download,
-  Search,
-  Star,
-  Trash2,
-  Upload,
-  UserPlus,
-  X,
-} from "lucide-react";
+import { Check, Copy, Download, Search, Star, Trash2, Upload, UserPlus, X } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -18,6 +8,7 @@ import { z } from "zod";
 import { Avatar } from "@/components/Avatar";
 import { EmojiCollection } from "@/components/EmojiCollection";
 import { percentColor } from "@/lib/color";
+import { qrColors } from "@/lib/qr-colors";
 import { averageCompatDetail, formatCompat } from "@/lib/compat";
 import { usePeer } from "@/lib/peer";
 import { exportBackupPng, importBackupPng } from "@/lib/stego";
@@ -42,8 +33,7 @@ export const Route = createFileRoute("/rubrica")({
       { property: "og:title", content: "Rubrica connessioni — QuestionAR" },
       {
         property: "og:description",
-        content:
-          "Gestisci le tue connessioni QuestionAR, il QR del tuo handle e i backup locali.",
+        content: "Gestisci le tue connessioni QuestionAR, il QR del tuo handle e i backup locali.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -66,16 +56,7 @@ function HandleDisplay({ handle }: { handle: string }) {
 
 function RubricaPage() {
   const { state, questions, resetProfile, removeContact, applyBackup, mySnapshot } = useStore();
-  const {
-    sendRequest,
-    accept,
-    reject,
-    cancel,
-    linkFromBackup,
-    connected,
-    mode,
-    issue,
-  } = usePeer();
+  const { sendRequest, accept, reject, cancel, linkFromBackup, connected, mode, issue } = usePeer();
   const navigate = useNavigate();
   const { handle: prefill } = Route.useSearch();
   const [searchOpen, setSearchOpen] = useState(Boolean(prefill));
@@ -95,15 +76,12 @@ function RubricaPage() {
 
   useEffect(() => {
     if (!canvasRef.current || !qrLink) return;
-    const isDark = state.theme.mode === "dark";
-    void QRCode.toCanvas(canvasRef.current, qrLink, {
-      width: 220,
-      margin: 2,
-      color: {
-        dark: isDark ? "#F8FAFC" : "#2F5257",
-        light: isDark ? "#16272B" : "#FFFFFF",
-      },
+    // Wait one frame: the theme class on <html> is switched by the store after this effect runs.
+    const frame = requestAnimationFrame(() => {
+      if (!canvasRef.current) return;
+      void QRCode.toCanvas(canvasRef.current, qrLink, { width: 220, margin: 2, color: qrColors() });
     });
+    return () => cancelAnimationFrame(frame);
   }, [qrLink, state.theme.mode]);
 
   const incoming = state.requests.filter((r) => r.direction === "incoming");
@@ -123,18 +101,21 @@ function RubricaPage() {
     if (!contact?.snapshot) return null;
     const ids = new Set(questions.map((q) => q.id));
     for (const q of contact.snapshot.customQuestions ?? []) ids.add(q.id);
-    return averageCompatDetail([...ids], [
-      {
-        answers: state.answers,
-        hiddenCategories: state.hiddenCategories,
-        customQuestions: state.customQuestions,
-      },
-      {
-        answers: contact.snapshot.answers,
-        hiddenCategories: contact.snapshot.hiddenCategories ?? [],
-        customQuestions: contact.snapshot.customQuestions ?? [],
-      },
-    ]);
+    return averageCompatDetail(
+      [...ids],
+      [
+        {
+          answers: state.answers,
+          hiddenCategories: state.hiddenCategories,
+          customQuestions: state.customQuestions,
+        },
+        {
+          answers: contact.snapshot.answers,
+          hiddenCategories: contact.snapshot.hiddenCategories ?? [],
+          customQuestions: contact.snapshot.customQuestions ?? [],
+        },
+      ],
+    );
   };
 
   const doExport = async () => {
@@ -188,15 +169,20 @@ function RubricaPage() {
         toast.error("Questo è il tuo stesso backup");
         return;
       }
-      await linkFromBackup(payload.handle, payload.name || payload.handle, {
-        name: payload.name,
-        bio: payload.bio,
-        ...(payload.tags ? { tags: payload.tags } : {}),
-        answers: payload.answers,
-        ...(payload.hiddenCategories ? { hiddenCategories: payload.hiddenCategories } : {}),
-        customQuestions: payload.customQuestions,
-        updatedAt: payload.savedAt,
-      }, payload.pub);
+      await linkFromBackup(
+        payload.handle,
+        payload.name || payload.handle,
+        {
+          name: payload.name,
+          bio: payload.bio,
+          ...(payload.tags ? { tags: payload.tags } : {}),
+          answers: payload.answers,
+          ...(payload.hiddenCategories ? { hiddenCategories: payload.hiddenCategories } : {}),
+          customQuestions: payload.customQuestions,
+          updatedAt: payload.savedAt,
+        },
+        payload.pub,
+      );
       toast.success(`Confronto disponibile con @${payload.handle}`);
       void navigate({ to: "/confronto", search: { b: payload.handle } });
     } catch {
@@ -240,7 +226,8 @@ function RubricaPage() {
                   void sendRequest(h);
                   setQuery("");
                 }}
-                size="icon" className="size-10 rounded-xl"
+                size="icon"
+                className="size-10 rounded-xl"
                 aria-label="Cerca utente online e invia richiesta"
               >
                 <UserPlus size={18} />
@@ -249,7 +236,9 @@ function RubricaPage() {
 
             <div className="relative flex items-center justify-center">
               <span className="absolute w-full border-t border-input" />
-              <span className="relative bg-card px-2 text-[12px] text-muted-foreground">oppure</span>
+              <span className="relative bg-card px-2 text-[12px] text-muted-foreground">
+                oppure
+              </span>
             </div>
 
             <button
@@ -301,8 +290,8 @@ function RubricaPage() {
             : mode === "offline"
               ? "Rete non disponibile."
               : connected
-              ? "Puoi cercare un utente online tramite handle o caricare il backup PNG che ti ha inviato per confrontare subito i profili."
-              : "Collegamento in corso…"}
+                ? "Puoi cercare un utente online tramite handle o caricare il backup PNG che ti ha inviato per confrontare subito i profili."
+                : "Collegamento in corso…"}
         </p>
       </section>
 
@@ -310,9 +299,7 @@ function RubricaPage() {
       <section className="section-card">
         <h2 className="text-[16px]">Richieste</h2>
         {incoming.length === 0 && outgoing.length === 0 && (
-          <p className="mt-1 text-[12px] text-muted-foreground">
-            Nessuna richiesta in sospeso.
-          </p>
+          <p className="mt-1 text-[12px] text-muted-foreground">Nessuna richiesta in sospeso.</p>
         )}
         <p className="mt-1 text-[12px] text-muted-foreground">
           Puoi chiudere l’app quando vuoi: le richieste ricevute mentre sei offline restano in
@@ -320,10 +307,7 @@ function RubricaPage() {
         </p>
         <div className="mt-2 space-y-2">
           {incoming.map((r) => (
-            <div
-              key={r.handle}
-              className="flex items-center gap-3 rounded-2xl bg-background p-2"
-            >
+            <div key={r.handle} className="flex items-center gap-3 rounded-2xl bg-background p-2">
               <Avatar handle={r.handle} size={40} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[14px] font-semibold">{r.name}</div>
@@ -332,7 +316,8 @@ function RubricaPage() {
               <Button
                 aria-label="Accetta"
                 onClick={() => void accept(r.handle)}
-                size="icon" className="rounded-full"
+                size="icon"
+                className="rounded-full"
               >
                 <Check size={16} />
               </Button>
@@ -346,10 +331,7 @@ function RubricaPage() {
             </div>
           ))}
           {outgoing.map((r) => (
-            <div
-              key={r.handle}
-              className="flex items-center gap-3 rounded-2xl bg-background p-2"
-            >
+            <div key={r.handle} className="flex items-center gap-3 rounded-2xl bg-background p-2">
               <Avatar handle={r.handle} size={40} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[14px] font-semibold">{r.name}</div>
@@ -409,7 +391,8 @@ function RubricaPage() {
                                 : percentColor(compat.score),
                           }}
                         >
-                          {formatCompat(compat)}<MarginText result={compat} />
+                          {formatCompat(compat)}
+                          <MarginText result={compat} />
                         </span>
                         {c.favorite && (
                           <Star
@@ -433,9 +416,7 @@ function RubricaPage() {
                       </button>
                     </div>
 
-                    <div className="mt-1 truncate text-[14px] font-semibold">
-                      {c.name}
-                    </div>
+                    <div className="mt-1 truncate text-[14px] font-semibold">{c.name}</div>
                     <HandleDisplay handle={c.handle} />
                   </div>
 
@@ -473,7 +454,9 @@ function RubricaPage() {
       {/* QR */}
       <section className="section-card text-center">
         <h2 className="text-[16px]">Il tuo QR</h2>
-        <div className="mx-auto mt-2 inline-block rounded-2xl border border-border bg-surface p-3"><canvas ref={canvasRef} className="block" /></div>
+        <div className="mx-auto mt-2 inline-block rounded-2xl border border-border bg-surface p-3">
+          <canvas ref={canvasRef} className="block" />
+        </div>
         <button
           onClick={() => copy(myHandle)}
           className="mx-auto mt-1 flex items-center gap-1 text-[14px] font-normal text-muted-foreground"
@@ -486,9 +469,9 @@ function RubricaPage() {
       <section className="section-card">
         <h2 className="text-[16px]">Backup</h2>
         <p className="mt-1 text-[12px] text-muted-foreground">
-          Verrà scaricata un'immagine della tua creatura avatar che contiene al suo interno
-          le domande e le risposte del tuo questionario. Condividila solo come file PNG: le
-          immagini compresse in JPG delle chat perdono i dati.
+          Verrà scaricata un'immagine della tua creatura avatar che contiene al suo interno le
+          domande e le risposte del tuo questionario. Condividila solo come file PNG: le immagini
+          compresse in JPG delle chat perdono i dati.
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <Button

@@ -21,9 +21,13 @@ export class E2E {
   private priv: Promise<CryptoKey>;
 
   constructor(privateJwk: JsonWebKey) {
-    this.priv = crypto.subtle.importKey("jwk", privateJwk, { name: "ECDH", namedCurve: "P-256" }, false, [
-      "deriveKey",
-    ]);
+    this.priv = crypto.subtle.importKey(
+      "jwk",
+      privateJwk,
+      { name: "ECDH", namedCurve: "P-256" },
+      false,
+      ["deriveKey"],
+    );
   }
 
   private key(peer: JsonWebKey) {

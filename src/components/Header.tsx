@@ -58,7 +58,8 @@ export function Header() {
             {identity?.name ?? "QuestionAR"}
           </div>
           {handle && (
-            <Button variant="link"
+            <Button
+              variant="link"
               onClick={copyHandle}
               className="h-auto max-w-full justify-start truncate p-0 text-left text-[12px] font-normal text-muted-foreground"
             >
@@ -68,27 +69,41 @@ export function Header() {
         </div>
 
         <div className="relative flex items-center gap-1">
-          <Button asChild variant="secondary" size="icon" className="header-action"><Link
-            to={onRubrica ? "/" : "/rubrica"}
-            onClick={(e) => e.stopPropagation()}
-            aria-label={onRubrica ? "Vai al profilo" : "Apri la rubrica"}
-          >
-            {onRubrica ? <UserRound size={18} /> : <BookUser size={18} />}
-          </Link></Button>
+          <Button asChild variant="secondary" size="icon" className="header-action">
+            <Link
+              to={onRubrica ? "/" : "/rubrica"}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={onRubrica ? "Vai al profilo" : "Apri la rubrica"}
+            >
+              {onRubrica ? <UserRound size={18} /> : <BookUser size={18} />}
+            </Link>
+          </Button>
           <Button
-            variant="secondary" size="icon" title="Informazioni sull'app"
+            variant="secondary"
+            size="icon"
+            title="Informazioni sull'app"
             aria-label="Informazioni sull'app"
-            onClick={(e) => { e.stopPropagation(); setInfoOpen(true); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setInfoOpen(true);
+            }}
             className="header-action"
           >
             <Info size={18} />
           </Button>
-          <Button variant="secondary" size="icon" className="header-action"
-            aria-label="Cambia tema" title={state.theme.mode === "dark" ? "Modalità chiara" : "Modalità scura"}
-            onClick={(e) => { e.stopPropagation(); toggleMode(); }}>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="header-action"
+            aria-label="Cambia tema"
+            title={state.theme.mode === "dark" ? "Modalità chiara" : "Modalità scura"}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleMode();
+            }}
+          >
             {state.theme.mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </Button>
-
         </div>
       </div>
 

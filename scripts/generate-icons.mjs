@@ -15,10 +15,18 @@ const out = [
 ];
 
 async function tightSource() {
-  const { data, info } = await sharp(src).trim({ threshold: 20 }).toBuffer({ resolveWithObject: true });
+  const { data, info } = await sharp(src)
+    .trim({ threshold: 20 })
+    .toBuffer({ resolveWithObject: true });
   const pad = Math.round(Math.max(info.width, info.height) * 0.06);
   return sharp(data)
-    .extend({ top: pad, bottom: pad, left: pad, right: pad, background: { r: 0, g: 0, b: 0, alpha: 1 } })
+    .extend({
+      top: pad,
+      bottom: pad,
+      left: pad,
+      right: pad,
+      background: { r: 0, g: 0, b: 0, alpha: 1 },
+    })
     .toBuffer();
 }
 

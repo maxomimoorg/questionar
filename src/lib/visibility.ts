@@ -26,10 +26,16 @@ export function isEffectivelyHidden(v: Visibility, id: string): boolean {
 }
 
 /** Complete = answered, and for Fare/Ricevere both sides known. Partial answers do not count. */
-export function isComplete(question: Pick<Question, "id">, answer: Answer | undefined, reciprocal: boolean): boolean {
+export function isComplete(
+  question: Pick<Question, "id">,
+  answer: Answer | undefined,
+  reciprocal: boolean,
+): boolean {
   if (!answer?.answered) return false;
   if (!reciprocal) return true;
-  return !isPartialAnswer(answer) && giveOf(answer) !== undefined && receiveOf(answer) !== undefined;
+  return (
+    !isPartialAnswer(answer) && giveOf(answer) !== undefined && receiveOf(answer) !== undefined
+  );
 }
 
 export type Completion = { done: number; total: number };

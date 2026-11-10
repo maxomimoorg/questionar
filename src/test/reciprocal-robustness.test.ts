@@ -6,7 +6,11 @@ import { sanitizeAnswers, type Answer } from "@/lib/types";
 const R = "F-contattofisico";
 const two = (a: Answer, b: Answer) => [{ answers: { [R]: a } }, { answers: { [R]: b } }];
 const full = (g: number, r: number, extra: Partial<Answer> = {}): Answer => ({
-  value: Math.round((g + r) / 2), answered: true, giveValue: g, receiveValue: r, ...extra,
+  value: Math.round((g + r) / 2),
+  answered: true,
+  giveValue: g,
+  receiveValue: r,
+  ...extra,
 });
 
 describe("reciprocal robustness", () => {
@@ -41,7 +45,10 @@ describe("reciprocal robustness", () => {
 
   it("margin uses the critical curve range of the unknown flow", () => {
     // one critical: known flow gap 100 -> -25; unknown flow in [-25, 110] -> range [-25, 42.5]
-    const res = multiCompatDetail(R, two({ value: 100, answered: true, giveValue: 100, critical: true }, full(100, 0)));
+    const res = multiCompatDetail(
+      R,
+      two({ value: 100, answered: true, giveValue: 100, critical: true }, full(100, 0)),
+    );
     expect(res).toEqual({ score: -25, partial: true, margin: 68 });
     expect(formatMargin(res)).toBe("±68%");
   });

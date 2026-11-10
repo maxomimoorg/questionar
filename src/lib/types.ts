@@ -81,7 +81,9 @@ export function sanitizeAnswers(raw: unknown): Record<string, Answer> {
 export function sanitizeHiddenCategories(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return Array.from(
-    new Set(raw.filter((c): c is string => typeof c === "string" && /^[A-Za-z0-9_]{1,24}$/.test(c))),
+    new Set(
+      raw.filter((c): c is string => typeof c === "string" && /^[A-Za-z0-9_]{1,24}$/.test(c)),
+    ),
   );
 }
 

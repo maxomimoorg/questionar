@@ -1,21 +1,48 @@
 import type { BackupPayload } from "./stego";
-import { PROFILE_TAGS } from "@/components/ProfileTags";
+import { PROFILE_TAGS } from "@/lib/profile-tags";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 
-type TextStyle = { color: string; bold: boolean; italic: boolean; strike: boolean; heading: boolean };
+type TextStyle = {
+  color: string;
+  bold: boolean;
+  italic: boolean;
+  strike: boolean;
+  heading: boolean;
+};
 type Glyph = TextStyle & { text: string; width: number };
 
-const graphemes = (text: string) => Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text), part => part.segment);
-const isEmoji = (text: string) => /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3/u.test(text);
-const emojiFont = (size: number) => `400 ${size}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+const graphemes = (text: string) =>
+  Array.from(
+    new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text),
+    (part) => part.segment,
+  );
+const isEmoji = (text: string) =>
+  /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20e3/u.test(text);
+const emojiFont = (size: number) =>
+  `400 ${size}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
 
-function drawCenteredText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, width: number, size: number, family: string) {
+function drawCenteredText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  width: number,
+  size: number,
+  family: string,
+) {
   const parts = graphemes(text);
-  const font = (part: string) => isEmoji(part) ? emojiFont(size) : `700 ${size}px ${family}`;
-  const measure = () => parts.map(part => { ctx.font = font(part); return ctx.measureText(part).width; });
+  const font = (part: string) => (isEmoji(part) ? emojiFont(size) : `700 ${size}px ${family}`);
+  const measure = () =>
+    parts.map((part) => {
+      ctx.font = font(part);
+      return ctx.measureText(part).width;
+    });
   let widths = measure();
-  while (widths.reduce((sum, w) => sum + w, 0) > width && size > 10) { size--; widths = measure(); }
+  while (widths.reduce((sum, w) => sum + w, 0) > width && size > 10) {
+    size--;
+    widths = measure();
+  }
   let left = x - widths.reduce((sum, w) => sum + w, 0) / 2;
   ctx.textAlign = "left";
   parts.forEach((part, index) => {
@@ -42,22 +69,40 @@ async function imageFrom(url: string): Promise<ImageBitmap> {
       img.src = objectUrl;
       await img.decode();
       return await createImageBitmap(img);
-    } finally { URL.revokeObjectURL(objectUrl); }
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
   return createImageBitmap(blob);
 }
 
 /** Render editor HTML as styled text only: never execute or load embedded content. */
-function drawBio(ctx: CanvasRenderingContext2D, html: string, family: string, display: string, color: string, maxLines = 3) {
+function drawBio(
+  ctx: CanvasRenderingContext2D,
+  html: string,
+  family: string,
+  display: string,
+  color: string,
+  maxLines = 3,
+) {
   const root = new DOMParser().parseFromString(html, "text/html").body;
   const lines: Glyph[][] = [[]];
   let width = 0;
-  const font = (s: TextStyle) => `${s.italic ? "italic " : ""}${s.bold ? 700 : 400} ${s.heading ? 26 : 22}px ${s.heading ? display : family}`;
-  const newline = () => { lines.push([]); width = 0; };
+  const font = (s: TextStyle) =>
+    `${s.italic ? "italic " : ""}${s.bold ? 700 : 400} ${s.heading ? 26 : 22}px ${s.heading ? display : family}`;
+  const newline = () => {
+    lines.push([]);
+    width = 0;
+  };
   const append = (text: string, style: TextStyle) => {
     for (const char of graphemes(text)) {
-      if (char === "\n") { newline(); continue; }
-      const glyphStyle = isEmoji(char) ? { ...style, bold: false, italic: false, strike: false } : style;
+      if (char === "\n") {
+        newline();
+        continue;
+      }
+      const glyphStyle = isEmoji(char)
+        ? { ...style, bold: false, italic: false, strike: false }
+        : style;
       ctx.font = isEmoji(char) ? emojiFont(style.heading ? 26 : 22) : font(style);
       const w = ctx.measureText(char).width;
       if (width + w > 572) newline();
@@ -66,27 +111,44 @@ function drawBio(ctx: CanvasRenderingContext2D, html: string, family: string, di
     }
   };
   const walk = (node: Node, inherited: TextStyle) => {
-    if (node.nodeType === Node.TEXT_NODE) { append(node.textContent ?? "", inherited); return; }
+    if (node.nodeType === Node.TEXT_NODE) {
+      append(node.textContent ?? "", inherited);
+      return;
+    }
     if (!(node instanceof HTMLElement)) return;
     const tag = node.tagName.toLowerCase();
     if (["script", "style", "iframe", "object", "img"].includes(tag)) return;
-    if (tag === "br") { newline(); return; }
+    if (tag === "br") {
+      newline();
+      return;
+    }
     const block = ["div", "p", "h1", "h2", "h3", "li"].includes(tag);
     if (block && (lines.at(-1)?.length ?? 0) > 0) newline();
     const requestedColor = node.style.color || node.getAttribute("color");
     const style: TextStyle = {
-      color: requestedColor && CSS.supports("color", requestedColor) && !["inherit", "initial", "unset"].includes(requestedColor) ? requestedColor : inherited.color,
-      bold: inherited.bold || ["b", "strong", "h1", "h2", "h3"].includes(tag) || ["bold", "700"].includes(node.style.fontWeight),
+      color:
+        requestedColor &&
+        CSS.supports("color", requestedColor) &&
+        !["inherit", "initial", "unset"].includes(requestedColor)
+          ? requestedColor
+          : inherited.color,
+      bold:
+        inherited.bold ||
+        ["b", "strong", "h1", "h2", "h3"].includes(tag) ||
+        ["bold", "700"].includes(node.style.fontWeight),
       italic: inherited.italic || ["i", "em"].includes(tag) || node.style.fontStyle === "italic",
-      strike: inherited.strike || ["s", "strike", "del"].includes(tag) || node.style.textDecoration.includes("line-through"),
+      strike:
+        inherited.strike ||
+        ["s", "strike", "del"].includes(tag) ||
+        node.style.textDecoration.includes("line-through"),
       heading: inherited.heading || ["h1", "h2", "h3"].includes(tag),
     };
-    node.childNodes.forEach(child => walk(child, style));
+    node.childNodes.forEach((child) => walk(child, style));
     if (block && (lines.at(-1)?.length ?? 0) > 0) newline();
   };
   const base = { color, bold: false, italic: false, strike: false, heading: false };
-  root.childNodes.forEach(node => walk(node, base));
-  if (!lines.some(line => line.some(glyph => glyph.text.trim()))) {
+  root.childNodes.forEach((node) => walk(node, base));
+  if (!lines.some((line) => line.some((glyph) => glyph.text.trim()))) {
     lines.splice(0, lines.length, []);
     width = 0;
     append("Nessuna bio.", base);
@@ -99,15 +161,15 @@ function drawBio(ctx: CanvasRenderingContext2D, html: string, family: string, di
       ctx.font = font(style);
       const dots = ctx.measureText("...").width;
       let used = last.reduce((sum, g) => sum + g.width, 0);
-       while (used + dots > 572 && last.length) used -= last.pop()?.width ?? 0;
+      while (used + dots > 572 && last.length) used -= last.pop()?.width ?? 0;
       last.push({ ...style, text: "...", width: dots });
     }
   }
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-   lines.slice(0, maxLines).forEach((line, index) => {
-     let x = 64;
-     const y = 902 + index * 30;
+  lines.slice(0, maxLines).forEach((line, index) => {
+    let x = 64;
+    const y = 902 + index * 30;
     for (const glyph of line) {
       ctx.font = isEmoji(glyph.text) ? emojiFont(glyph.heading ? 26 : 22) : font(glyph);
       ctx.fillStyle = glyph.color;
@@ -119,7 +181,11 @@ function drawBio(ctx: CanvasRenderingContext2D, html: string, family: string, di
 }
 
 /** At most two rows, always leaving one line for the biography. */
-export function layoutBackupTags(ctx: Pick<CanvasRenderingContext2D, "measureText" | "font">, labels: string[], family = '"Nunito", sans-serif') {
+export function layoutBackupTags(
+  ctx: Pick<CanvasRenderingContext2D, "measureText" | "font">,
+  labels: string[],
+  family = '"Nunito", sans-serif',
+) {
   let size = 18;
   ctx.font = `700 ${size}px ${family}`;
   const pack = () => {
@@ -127,7 +193,10 @@ export function layoutBackupTags(ctx: Pick<CanvasRenderingContext2D, "measureTex
     let used = 0;
     for (const label of labels) {
       const width = ctx.measureText(label).width + 40;
-      if (used && used + 8 + width > 572) { rows.push([]); used = 0; }
+      if (used && used + 8 + width > 572) {
+        rows.push([]);
+        used = 0;
+      }
       rows.at(-1)?.push({ label, width });
       used += (used ? 8 : 0) + width;
     }
@@ -142,21 +211,35 @@ export function layoutBackupTags(ctx: Pick<CanvasRenderingContext2D, "measureTex
   return { rows: labels.length ? rows : [], size };
 }
 
-async function drawFooter(ctx: CanvasRenderingContext2D, payload: BackupPayload, family: string, display: string, token: (name: string) => string) {
-  const tags = PROFILE_TAGS.filter(tag => payload.tags?.[tag.id] === true);
+async function drawFooter(
+  ctx: CanvasRenderingContext2D,
+  payload: BackupPayload,
+  family: string,
+  display: string,
+  token: (name: string) => string,
+) {
+  const tags = PROFILE_TAGS.filter((tag) => payload.tags?.[tag.id] === true);
   ctx.font = `700 18px ${family}`;
-  const { rows, size } = layoutBackupTags(ctx, tags.map(tag => tag.label), family);
+  const { rows, size } = layoutBackupTags(
+    ctx,
+    tags.map((tag) => tag.label),
+    family,
+  );
   drawBio(ctx, payload.bio, family, display, token("text"), 3 - rows.length);
-  const icons = await Promise.all(tags.map(async tag => {
-    const svg = renderToStaticMarkup(createElement(tag.icon, { color: token("name"), size: 18 }));
-    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-    try {
-      const image = new Image();
-      image.src = url;
-      await image.decode();
-      return { label: tag.label, image };
-    } finally { URL.revokeObjectURL(url); }
-  }));
+  const icons = await Promise.all(
+    tags.map(async (tag) => {
+      const svg = renderToStaticMarkup(createElement(tag.icon, { color: token("name"), size: 18 }));
+      const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+      try {
+        const image = new Image();
+        image.src = url;
+        await image.decode();
+        return { label: tag.label, image };
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }),
+  );
   rows.forEach((row, index) => {
     let x = 64;
     const y = 902 + (3 - rows.length + index) * 30;
@@ -166,7 +249,7 @@ async function drawFooter(ctx: CanvasRenderingContext2D, payload: BackupPayload,
       ctx.beginPath();
       ctx.roundRect(x, y - 21, tag.width, 28, 14);
       ctx.stroke();
-      const icon = icons.find(icon => icon.label === tag.label);
+      const icon = icons.find((icon) => icon.label === tag.label);
       if (icon) ctx.drawImage(icon.image, x + 8, y - 16, 18, 18);
       ctx.fillStyle = token("name");
       ctx.font = `700 ${size}px ${family}`;
@@ -184,7 +267,9 @@ export async function createBackupCard(payload: BackupPayload): Promise<HTMLCanv
   ]);
   await document.fonts.ready;
   const [avatar, logo] = await Promise.all([
-    imageFrom(`https://api.dicebear.com/10.x/critters/svg?size=700&seed=${encodeURIComponent(payload.handle)}`),
+    imageFrom(
+      `https://api.dicebear.com/10.x/critters/svg?size=700&seed=${encodeURIComponent(payload.handle)}`,
+    ),
     imageFrom("/logo.png"),
   ]);
   const css = getComputedStyle(document.documentElement);
@@ -197,25 +282,41 @@ export async function createBackupCard(payload: BackupPayload): Promise<HTMLCanv
   const ctx = contextOf(canvas);
   ctx.fillStyle = token("background");
   ctx.fillRect(0, 0, 700, 1000);
-   ctx.drawImage(logo, 40, 12, 108, 108);
+  ctx.drawImage(logo, 40, 12, 108, 108);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = token("name");
   ctx.font = `700 19px ${display}`;
-   ctx.fillText("QuestionAR", 94, 130);
+  ctx.fillText("QuestionAR", 94, 130);
   ctx.fillStyle = token("surface");
   ctx.beginPath();
-   ctx.roundRect(180, 30, 340, 96, 48);
+  ctx.roundRect(180, 30, 340, 96, 48);
   ctx.fill();
   ctx.fillStyle = token("name");
-   drawCenteredText(ctx, payload.name, 350, 61, 292, 28, display);
+  drawCenteredText(ctx, payload.name, 350, 61, 292, 28, display);
   ctx.fillStyle = token("handle");
-   drawCenteredText(ctx, `@${payload.handle}`, 350, 98, 292, 22, body);
+  drawCenteredText(ctx, `@${payload.handle}`, 350, 98, 292, 22, body);
   const date = new Date(payload.savedAt);
   const pad = (n: number) => String(n).padStart(2, "0");
   ctx.fillStyle = token("text");
-   drawCenteredText(ctx, `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`, 606, 61, 132, 20, display);
-   drawCenteredText(ctx, `${pad(date.getHours())}:${pad(date.getMinutes())}`, 606, 98, 132, 22, display);
+  drawCenteredText(
+    ctx,
+    `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`,
+    606,
+    61,
+    132,
+    20,
+    display,
+  );
+  drawCenteredText(
+    ctx,
+    `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+    606,
+    98,
+    132,
+    22,
+    display,
+  );
   ctx.save();
   ctx.beginPath();
   ctx.arc(350, 500, 300, 0, Math.PI * 2);
@@ -224,7 +325,7 @@ export async function createBackupCard(payload: BackupPayload): Promise<HTMLCanv
   ctx.restore();
   ctx.fillStyle = token("surface");
   ctx.beginPath();
-   ctx.roundRect(28, 866, 644, 116, 58);
+  ctx.roundRect(28, 866, 644, 116, 58);
   ctx.fill();
   await drawFooter(ctx, payload, body, display, token);
   avatar.close();

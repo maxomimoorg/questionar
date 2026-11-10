@@ -22,7 +22,6 @@ import { PeerProvider } from "../lib/peer";
 import { StoreProvider, useStore } from "../lib/store";
 import { setupServiceWorker } from "../lib/sw-register";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -89,8 +88,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content:
-          "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1",
       },
       { title: "QuestionAR" },
       {
@@ -181,4 +179,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-

@@ -20,7 +20,8 @@ import { Button } from "@/components/ui/button";
 import { createTapCounter } from "@/lib/diagnostics/activation";
 import { startDiagnostics } from "@/lib/diagnostics/session";
 import { categoryQuestionCount } from "./tutorial/examples";
-import { Feature, useReducedMotion } from "./tutorial/kit";
+import { useReducedMotion } from "./tutorial/hooks";
+import { Feature } from "./tutorial/kit";
 import {
   DemoBackupCard,
   DemoBio,
@@ -88,7 +89,15 @@ function Lead({ children }: { children: ReactNode }) {
   return <p className="text-[14px] leading-relaxed">{children}</p>;
 }
 
-function Point({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: ReactNode }) {
+function Point({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <li className="flex items-start gap-2 rounded-2xl bg-background p-2.5">
       <Icon size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
@@ -120,10 +129,16 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
       const first = controls?.[0];
       const last = controls?.[controls.length - 1];
       if (!first || !last) return;
-      if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) {
+      if (
+        event.shiftKey &&
+        (document.activeElement === first || document.activeElement === dialogRef.current)
+      ) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialogRef.current)) {
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === last || document.activeElement === dialogRef.current)
+      ) {
         event.preventDefault();
         first.focus();
       }
@@ -204,21 +219,33 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
         >
           <Chapter value="cos-e" number={1} icon={Compass} title="Cos’è QuestionAR">
             <Lead>
-              Un’<strong>anti-dating app</strong>: niente swipe, foto o algoritmi segreti. Rispondi a
-              domande sincere e scopri dove tu e l’altra persona vi incontrate.
+              Un’<strong>anti-dating app</strong>: niente swipe, foto o algoritmi segreti. Rispondi
+              a domande sincere e scopri dove tu e l’altra persona vi incontrate.
             </Lead>
             <Feature title="Una mappa, non un voto" demo={<DemoCompatMap />}>
-              Ricevi una compatibilità totale e una per ogni categoria. Tocca categorie e domande
-              nel confronto per leggere risposte e commenti: i numeri servono per iniziare a parlare.
+              Nel confronto trovi la stessa mappa con i tuoi dati: totale e categorie, dalla più
+              affine. Tocca una barra per aprire le domande: i numeri servono per iniziare a
+              parlare.
             </Feature>
             <ul className="grid gap-2 sm:grid-cols-3">
-              <Point icon={Timer} title="Con calma">Ogni risposta si salva subito e si può cambiare.</Point>
-              <Point icon={UserCheck} title="Scegli tu">Nessun profilo pubblico: condividi solo con chi vuoi.</Point>
-              <Point icon={MessagesSquare} title="Parlatene">I numeri sono un punto di partenza.</Point>
+              <Point icon={Timer} title="Con calma">
+                Ogni risposta si salva subito e si può cambiare.
+              </Point>
+              <Point icon={UserCheck} title="Scegli tu">
+                Nessun profilo pubblico: condividi solo con chi vuoi.
+              </Point>
+              <Point icon={MessagesSquare} title="Parlatene">
+                I numeri sono un punto di partenza.
+              </Point>
             </ul>
           </Chapter>
 
-          <Chapter value="rispondere" number={2} icon={SlidersHorizontal} title="Rispondere a modo tuo">
+          <Chapter
+            value="rispondere"
+            number={2}
+            icon={SlidersHorizontal}
+            title="Rispondere a modo tuo"
+          >
             <Feature title="Sfumature" demo={<DemoSlider />}>
               No = 0%, Sì = 100%, e tutte le vie di mezzo.
             </Feature>
@@ -237,7 +264,12 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
             </Feature>
           </Chapter>
 
-          <Chapter value="reciprocita" number={3} icon={ArrowLeftRight} title="Somiglianza e reciprocità">
+          <Chapter
+            value="reciprocita"
+            number={3}
+            icon={ArrowLeftRight}
+            title="Somiglianza e reciprocità"
+          >
             <Feature title="Somiglianza" demo={<DemoSimilarity />}>
               Nella maggior parte delle domande, più le risposte sono vicine, più siete compatibili.
             </Feature>
@@ -270,8 +302,8 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
             </Feature>
             <Feature title="Categorie: aprire, contare, nascondere" demo={<DemoCategories />}>
               Apri o chiudi tutto insieme e segui i progressi (es. 3/{categoryQuestionCount("B")} →{" "}
-              {categoryQuestionCount("B")} ✓). Le categorie nascoste
-              si ripristinano da «Categorie e domande nascoste».
+              {categoryQuestionCount("B")} ✓). Le categorie nascoste si ripristinano da «Categorie e
+              domande nascoste».
             </Feature>
             <Feature title="Preferiti" demo={<DemoFavorite />}>
               La stella resta solo sul tuo dispositivo: non viene inviata né salvata nei backup.
@@ -293,13 +325,13 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
             <div role="note" className="tutorial-warning">
               <ShieldAlert size={18} className="shrink-0" aria-hidden="true" />
               <p className="text-[13px]">
-                <strong>Nascondere non significa cifrare.</strong> Chi riceve la scheda può leggerla e
-                inoltrarla: condividila solo con persone fidate.
+                <strong>Nascondere non significa cifrare.</strong> Chi riceve la scheda può leggerla
+                e inoltrarla: condividila solo con persone fidate.
               </p>
             </div>
             <Feature title="La tua collezione emoji" demo={<DemoEmojiCollection />}>
-              Parti dalle 3 emoji del tuo handle e raccogli quelle delle persone con cui ti connetti.
-              Le 9 emoji proposte all’inizio non cambiano se ricarichi la pagina.
+              Parti dalle 3 emoji del tuo handle e raccogli quelle delle persone con cui ti
+              connetti. Le 9 emoji proposte all’inizio non cambiano se ricarichi la pagina.
             </Feature>
           </Chapter>
         </AccordionPrimitive.Root>
@@ -311,13 +343,20 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
             </span>
             <span>
               <strong className="text-accent">QuestionAR</strong> è un&apos;opera di Max Omimo ·{" "}
-              <a href="https://maxomimo.org" target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
+              <a
+                href="https://maxomimo.org"
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-accent underline"
+              >
                 maxomimo.org
               </a>
             </span>
           </div>
           <details className="mt-2">
-            <summary className="cursor-pointer font-semibold text-foreground">Dettagli della licenza</summary>
+            <summary className="cursor-pointer font-semibold text-foreground">
+              Dettagli della licenza
+            </summary>
             <p className="mt-2">
               Quest&apos;opera è distribuita con licenza Creative Commons
               Attribuzione-NonCommerciale-CondividiAlloStessoModo 4.0 Internazionale. Per vedere una
@@ -331,15 +370,19 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
                 creativecommons.org/licenses/by-nc-sa/4.0/deed.it
               </a>
               . L&apos;utilizzo di quest&apos;opera deve essere in conformità con i termini della
-              licenza, che includono l&apos;obbligo di fornire attribuzione al titolare del copyright
-              originale, di non utilizzare l&apos;opera a scopo commerciale e di distribuire le
-              eventuali modifiche all&apos;opera originale sotto la stessa licenza.
+              licenza, che includono l&apos;obbligo di fornire attribuzione al titolare del
+              copyright originale, di non utilizzare l&apos;opera a scopo commerciale e di
+              distribuire le eventuali modifiche all&apos;opera originale sotto la stessa licenza.
             </p>
           </details>
         </footer>
 
         <div className="mt-5 flex gap-3">
-          <Button asChild variant="secondary" className="h-auto flex-1 rounded-2xl px-4 py-3 text-[16px]">
+          <Button
+            asChild
+            variant="secondary"
+            className="h-auto flex-1 rounded-2xl px-4 py-3 text-[16px]"
+          >
             <a href="https://t.me/maxomimo" target="_blank" rel="noreferrer">
               Feedback
             </a>

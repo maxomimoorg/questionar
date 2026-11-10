@@ -262,4 +262,3 @@ export function partialNote(result: AverageResult | null): string | null {
     ? "Stima: include 1 domanda con risposta parziale (± è il margine d'errore)."
     : `Stima: include ${result.partialCount} domande con risposta parziale (± è il margine d'errore).`;
 }
-

@@ -18,7 +18,12 @@ export function DiagnosticsBadge() {
           Apri
         </Button>
       )}
-      <Button size="sm" variant="secondary" onClick={endDiagnostics} aria-label="Termina la modalità diagnostica">
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={endDiagnostics}
+        aria-label="Termina la modalità diagnostica"
+      >
         <X /> Termina
       </Button>
     </div>

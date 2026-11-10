@@ -192,7 +192,9 @@ export class RelayTransport implements Transport {
     this.failures++;
     if (this.failures >= this.maxFailures) {
       this.stopped = true;
-      recordEvent("relay.unavailable", { reason: reason === "closed" ? "unreachable" : reason.replace(/\s+/g, "_") });
+      recordEvent("relay.unavailable", {
+        reason: reason === "closed" ? "unreachable" : reason.replace(/\s+/g, "_"),
+      });
       this.ev.onUnavailable(reason === "closed" ? "unreachable" : reason);
       return;
     }
@@ -228,7 +230,8 @@ export class RelayTransport implements Transport {
     return new Promise<boolean>((res) => {
       const timer = setTimeout(() => this.resolve(id, false), this.sendTimeoutMs);
       this.waiters.set(id, { resolve: res, timer });
-      if (!this.raw(ws, { t: "send", id, to: toRoom, payload: raw, ttl: ttlSec })) this.resolve(id, false);
+      if (!this.raw(ws, { t: "send", id, to: toRoom, payload: raw, ttl: ttlSec }))
+        this.resolve(id, false);
     });
   }
 

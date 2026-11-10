@@ -53,7 +53,9 @@ export class RelayHub extends DurableObject<Env> {
       id TEXT PRIMARY KEY, to_room TEXT NOT NULL, from_room TEXT NOT NULL,
       payload TEXT NOT NULL, expires INTEGER NOT NULL)`);
     this.sql.exec(`CREATE INDEX IF NOT EXISTS pending_to ON pending(to_room)`);
-    this.sql.exec(`CREATE TABLE IF NOT EXISTS seen (id TEXT PRIMARY KEY, expires INTEGER NOT NULL)`);
+    this.sql.exec(
+      `CREATE TABLE IF NOT EXISTS seen (id TEXT PRIMARY KEY, expires INTEGER NOT NULL)`,
+    );
     // Pings are answered without waking the object (keeps usage inside the free quota).
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}'));
   }
@@ -90,11 +92,14 @@ export class RelayHub extends DurableObject<Env> {
 
   private cleanRooms(list: unknown): string[] {
     if (!Array.isArray(list)) return [];
-    return [...new Set(list.filter((r): r is string => typeof r === "string" && ROOM_RE.test(r)))].slice(0, MAX_WATCH);
+    return [
+      ...new Set(list.filter((r): r is string => typeof r === "string" && ROOM_RE.test(r))),
+    ].slice(0, MAX_WATCH);
   }
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer) {
-    if (typeof raw !== "string" || raw.length > MAX_PAYLOAD + 1024) return ws.close(1009, "too big");
+    if (typeof raw !== "string" || raw.length > MAX_PAYLOAD + 1024)
+      return ws.close(1009, "too big");
     let msg: ClientMsg;
     try {
       msg = JSON.parse(raw) as ClientMsg;
@@ -110,12 +115,18 @@ export class RelayHub extends DurableObject<Env> {
       ws.serializeAttachment({ room: msg.room, watch } satisfies Attachment);
       const wasOnline = this.roomSockets(msg.room).length > 1;
       if (!wasOnline) this.broadcastPresence(msg.room, true);
-      for (const r of watch) this.send(ws, { t: "presence", room: r, online: this.roomSockets(r).length > 0 });
+      for (const r of watch)
+        this.send(ws, { t: "presence", room: r, online: this.roomSockets(r).length > 0 });
       // Flush pending envelopes for this room.
       const rows = this.sql
-        .exec("SELECT id, from_room, payload FROM pending WHERE to_room = ? AND expires > ?", msg.room, now)
+        .exec(
+          "SELECT id, from_room, payload FROM pending WHERE to_room = ? AND expires > ?",
+          msg.room,
+          now,
+        )
         .toArray();
-      for (const r of rows) this.send(ws, { t: "msg", id: r.id, from: r.from_room, payload: r.payload });
+      for (const r of rows)
+        this.send(ws, { t: "msg", id: r.id, from: r.from_room, payload: r.payload });
       this.send(ws, { t: "ready" });
       return;
     }
@@ -132,20 +143,27 @@ export class RelayHub extends DurableObject<Env> {
     if (msg.t === "send") {
       if (!ID_RE.test(msg.id) || !ROOM_RE.test(msg.to) || typeof msg.payload !== "string")
         return this.send(ws, { t: "error", id: msg.id, code: "invalid" });
-      if (msg.payload.length > MAX_PAYLOAD) return this.send(ws, { t: "error", id: msg.id, code: "too_big" });
+      if (msg.payload.length > MAX_PAYLOAD)
+        return this.send(ws, { t: "error", id: msg.id, code: "too_big" });
       // Deduplication: an id already queued or already delivered is acknowledged, not re-sent.
       const dupe =
         this.sql.exec("SELECT 1 FROM pending WHERE id = ?", msg.id).toArray().length > 0 ||
-        this.sql.exec("SELECT 1 FROM seen WHERE id = ? AND expires > ?", msg.id, now).toArray().length > 0;
+        this.sql.exec("SELECT 1 FROM seen WHERE id = ? AND expires > ?", msg.id, now).toArray()
+          .length > 0;
       if (dupe) return this.send(ws, { t: "stored", id: msg.id, dupe: true });
       const count = Number(
         this.sql.exec("SELECT COUNT(*) AS n FROM pending WHERE to_room = ?", msg.to).one().n,
       );
-      if (count >= MAX_PENDING_PER_ROOM) return this.send(ws, { t: "error", id: msg.id, code: "inbox_full" });
+      if (count >= MAX_PENDING_PER_ROOM)
+        return this.send(ws, { t: "error", id: msg.id, code: "inbox_full" });
       const ttl = Math.min(Math.max(Number(msg.ttl) || DEFAULT_TTL, 60), MAX_TTL);
       this.sql.exec(
         "INSERT INTO pending (id, to_room, from_room, payload, expires) VALUES (?, ?, ?, ?, ?)",
-        msg.id, msg.to, a.room, msg.payload, now + ttl * 1000,
+        msg.id,
+        msg.to,
+        a.room,
+        msg.payload,
+        now + ttl * 1000,
       );
       for (const target of this.roomSockets(msg.to))
         this.send(target, { t: "msg", id: msg.id, from: a.room, payload: msg.payload });
@@ -160,8 +178,13 @@ export class RelayHub extends DurableObject<Env> {
         .toArray()[0];
       if (!row) return;
       this.sql.exec("DELETE FROM pending WHERE id = ?", msg.id);
-      this.sql.exec("INSERT OR REPLACE INTO seen (id, expires) VALUES (?, ?)", msg.id, now + SEEN_TTL);
-      for (const s of this.roomSockets(String(row.from_room))) this.send(s, { t: "delivered", id: msg.id });
+      this.sql.exec(
+        "INSERT OR REPLACE INTO seen (id, expires) VALUES (?, ?)",
+        msg.id,
+        now + SEEN_TTL,
+      );
+      for (const s of this.roomSockets(String(row.from_room)))
+        this.send(s, { t: "delivered", id: msg.id });
     }
   }
 
@@ -197,7 +220,11 @@ export class RelayHub extends DurableObject<Env> {
       const a = this.att(ws);
       if (a && last && now - last > PRESENCE_TIMEOUT) {
         this.handleGone(ws);
-        try { ws.close(4008, "presence expired"); } catch { /* ignore */ }
+        try {
+          ws.close(4008, "presence expired");
+        } catch {
+          /* ignore */
+        }
       }
     }
     // Pending requests expire automatically.

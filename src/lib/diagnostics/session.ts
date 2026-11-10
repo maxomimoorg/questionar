@@ -56,7 +56,8 @@ export function useDiagState() {
 
 function attachListeners() {
   if (typeof window === "undefined") return;
-  const onError = (e: ErrorEvent) => recordEvent("app.error", { kind: "error", code: normalizeError(e.error) });
+  const onError = (e: ErrorEvent) =>
+    recordEvent("app.error", { kind: "error", code: normalizeError(e.error) });
   const onRejection = (e: PromiseRejectionEvent) =>
     recordEvent("app.error", { kind: "unhandled_rejection", code: normalizeError(e.reason) });
   const onOnline = () => recordEvent("net.online");
@@ -84,7 +85,13 @@ export function startDiagnostics() {
   if (state.active) return setDiagState({ panelOpen: true });
   startBuffer();
   attachListeners();
-  setDiagState({ ...initial, active: true, panelOpen: true, sessionId: newId(), startedAt: Date.now() });
+  setDiagState({
+    ...initial,
+    active: true,
+    panelOpen: true,
+    sessionId: newId(),
+    startedAt: Date.now(),
+  });
 }
 
 /** Ends the session and wipes all local diagnostic data. */

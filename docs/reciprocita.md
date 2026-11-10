@@ -64,13 +64,13 @@ il numero di persone che ha segnato la domanda come critica conta su tutti i par
 
 Esempi:
 
-| A (Fare/Ricevere) | B (Fare/Ricevere) | A ➔ B | B ➔ A | Domanda |
-| --- | --- | --- | --- | --- |
-| 90 / 20 | 20 / 90 | 100% | 100% | **100%** |
-| 100 / 0 | 100 / 0 | 0% | 0% | **0%** |
-| 100 / 0 (critica) | 100 / 0 | −25% | −25% | **−25%** |
-| 80 / – | 20 / 70 | 90% | in attesa | **90% ±45%** (stima) |
-| 80 / – | 40 / – | in attesa | in attesa | non confrontabile |
+| A (Fare/Ricevere) | B (Fare/Ricevere) | A ➔ B     | B ➔ A     | Domanda              |
+| ----------------- | ----------------- | --------- | --------- | -------------------- |
+| 90 / 20           | 20 / 90           | 100%      | 100%      | **100%**             |
+| 100 / 0           | 100 / 0           | 0%        | 0%        | **0%**               |
+| 100 / 0 (critica) | 100 / 0           | −25%      | −25%      | **−25%**             |
+| 80 / –            | 20 / 70           | 90%       | in attesa | **90% ±45%** (stima) |
+| 80 / –            | 40 / –            | in attesa | in attesa | non confrontabile    |
 
 ## Risposte parziali
 

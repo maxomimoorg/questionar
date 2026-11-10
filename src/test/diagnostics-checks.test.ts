@@ -17,7 +17,12 @@ describe("diagnostic checks", () => {
         },
       },
       { id: "b", title: "B", category: "browser", run: async () => ({ status: "pass" }) },
-      { id: "c", title: "C", category: "network", run: async () => ({ status: "skip", code: "no_safe_test_endpoint" }) },
+      {
+        id: "c",
+        title: "C",
+        category: "network",
+        run: async () => ({ status: "skip", code: "no_safe_test_endpoint" }),
+      },
       { id: "d", title: "D", category: "pwa", run: async () => ({ status: "not_applicable" }) },
     ];
     let t = 0;

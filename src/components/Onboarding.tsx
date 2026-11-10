@@ -51,7 +51,13 @@ export function Onboarding() {
   return (
     <div className="app-shell safe-top safe-bottom flex min-h-screen flex-col justify-center gap-5 py-10">
       <div className="text-center">
-        <img src="/logo.png" alt="Logo QuestionAR" width={88} height={88} className="mx-auto mb-3 size-[88px] rounded-lg object-contain" />
+        <img
+          src="/logo.png"
+          alt="Logo QuestionAR"
+          width={88}
+          height={88}
+          className="mx-auto mb-3 size-[88px] rounded-lg object-contain"
+        />
         <h1 className="text-2xl">QuestionAR</h1>
         <p className="mt-1 text-[12px] text-muted-foreground">
           Compatibilità tra profili, tutto salvato solo sul tuo dispositivo.
@@ -81,17 +87,15 @@ export function Onboarding() {
             placeholder="username"
           />
           {username !== cleanUser && (
-            <span className="text-[12px] text-muted-foreground">
-              Diventerà: {cleanUser || "—"}
-            </span>
+            <span className="text-[12px] text-muted-foreground">Diventerà: {cleanUser || "—"}</span>
           )}
         </label>
       </div>
 
       <div className="section-card">
         <p className="text-center text-[12px] text-muted-foreground">
-          Scegli 3 emoji: verranno associate al tuo username e saranno le prime ad entrare
-          nella tua collezione.
+          Scegli 3 emoji: verranno associate al tuo username e saranno le prime ad entrare nella tua
+          collezione.
         </p>
         <div className="mx-auto mt-3 grid w-fit grid-cols-3 gap-2">
           {grid.map((e) => {
@@ -110,12 +114,17 @@ export function Onboarding() {
           })}
         </div>
         <p className="mt-3 text-center text-[14px]">
-          Handle: <span className="font-bold text-accent">@{cleanUser}{picked.join("")}</span>
+          Handle:{" "}
+          <span className="font-bold text-accent">
+            @{cleanUser}
+            {picked.join("")}
+          </span>
         </p>
       </div>
 
       <div className="flex gap-2">
-        <Button variant="secondary"
+        <Button
+          variant="secondary"
           onClick={() => setInfoOpen(true)}
           className="h-auto rounded-2xl px-5 py-3"
         >

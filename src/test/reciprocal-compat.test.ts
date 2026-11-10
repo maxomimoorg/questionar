@@ -60,9 +60,9 @@ describe("reciprocal questions (Fare / Ricevere)", () => {
     expect(pair(RECIPROCAL, ans(90, 20, { critical: true }), ans(20, 90))).toBe(110);
     expect(pair(RECIPROCAL, ans(100, 0, { critical: true }), ans(100, 0))).toBe(-25);
     // both critical: gap 100 -> -30
-    expect(
-      pair(RECIPROCAL, ans(100, 0, { critical: true }), ans(100, 0, { critical: true })),
-    ).toBe(-30);
+    expect(pair(RECIPROCAL, ans(100, 0, { critical: true }), ans(100, 0, { critical: true }))).toBe(
+      -30,
+    );
     // mixed flows: gap 0 (110) and gap 55 (25) -> mean 68 (rounded)
     expect(reciprocalFlows(ans(80, 25), ans(80, 80), 1)).toEqual({
       aToB: 110,
@@ -108,7 +108,12 @@ describe("reciprocal questions (Fare / Ricevere)", () => {
       updatedAt: 1,
       answers: {
         [RECIPROCAL]: { value: 55, answered: true, giveValue: 90, receiveValue: 20 },
-        "F-regali": { value: 40, answered: true, giveValue: "x", receiveValue: 180 } as unknown as Answer,
+        "F-regali": {
+          value: 40,
+          answered: true,
+          giveValue: "x",
+          receiveValue: 180,
+        } as unknown as Answer,
         [SIMILARITY]: { value: 30, answered: true, comment: "ok", critical: true },
       },
     });
@@ -159,10 +164,12 @@ describe("reciprocal questions (Fare / Ricevere)", () => {
         partial: true,
         margin: 45,
       });
-      expect(multiCompatDetail(RECIPROCAL, [
-        { answers: { [RECIPROCAL]: onlyGive(80) } },
-        { answers: { [RECIPROCAL]: ans(20, 70) } },
-      ])).toEqual({ score: 90, partial: true, margin: 45 });
+      expect(
+        multiCompatDetail(RECIPROCAL, [
+          { answers: { [RECIPROCAL]: onlyGive(80) } },
+          { answers: { [RECIPROCAL]: ans(20, 70) } },
+        ]),
+      ).toEqual({ score: 90, partial: true, margin: 45 });
     });
 
     it("the unanswered side is never treated as 50%", () => {
@@ -187,8 +194,12 @@ describe("reciprocal questions (Fare / Ricevere)", () => {
     });
 
     it("totals include estimates and count them", () => {
-      const me = { answers: { [RECIPROCAL]: onlyGive(80), [SIMILARITY]: { value: 70, answered: true } } };
-      const luna = { answers: { [RECIPROCAL]: ans(20, 70), [SIMILARITY]: { value: 40, answered: true } } };
+      const me = {
+        answers: { [RECIPROCAL]: onlyGive(80), [SIMILARITY]: { value: 70, answered: true } },
+      };
+      const luna = {
+        answers: { [RECIPROCAL]: ans(20, 70), [SIMILARITY]: { value: 40, answered: true } },
+      };
       const total = averageCompatDetail([RECIPROCAL, SIMILARITY], [me, luna]);
       // margins: reciprocal 45, similarity 0 -> mean 23 (rounded)
       expect(total).toEqual({ score: 80, partialCount: 1, margin: 23 });

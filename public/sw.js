@@ -4,17 +4,18 @@
 //   fast, so they always point to scripts that exist on the server.
 // - Hashed build files (/assets/…): cache first; their name changes whenever their content does.
 // - Other local static files (icons, manifest, logo): stale-while-revalidate.
-const CACHE = "questionar-v7";
+const CACHE = "questionar-v8";
 const NAV_TIMEOUT_MS = 2500;
 const PRECACHE = [
   "/",
   "/rubrica",
+  "/erotismo",
   "/manifest.json",
   "/favicon.png",
   "/logo.png",
   "/apple-touch-icon.png",
   "/icon-192.png",
-  "/icon-512.png"
+  "/icon-512.png",
 ];
 
 const isDevAsset = (url) =>
@@ -29,7 +30,10 @@ const isHashedAsset = (url) => url.pathname.startsWith("/assets/");
 const putInCache = (req, res) => {
   if (!res || !res.ok || res.type === "opaque") return;
   const copy = res.clone();
-  caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => undefined);
+  caches
+    .open(CACHE)
+    .then((c) => c.put(req, copy))
+    .catch(() => undefined);
 };
 
 self.addEventListener("install", (event) => {
@@ -47,7 +51,9 @@ self.addEventListener("activate", (event) => {
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((k) => k.startsWith("questionar-") && k !== CACHE).map((k) => caches.delete(k)),
+          keys
+            .filter((k) => k.startsWith("questionar-") && k !== CACHE)
+            .map((k) => caches.delete(k)),
         ),
       )
       .then(() => self.clients.claim()),

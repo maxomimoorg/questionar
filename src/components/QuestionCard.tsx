@@ -51,7 +51,11 @@ export function QuestionCard({ question, hiddenByCategory }: Props) {
       className={`rounded-2xl px-3 py-3 transition-colors ${
         answer.hidden || hiddenByCategory ? "opacity-50 grayscale" : ""
       } ${answer.critical ? "bg-surface-2 ring-2" : "bg-surface"}`}
-      style={answer.critical ? ({ "--tw-ring-color": color } as import("react").CSSProperties) : undefined}
+      style={
+        answer.critical
+          ? ({ "--tw-ring-color": color } as import("react").CSSProperties)
+          : undefined
+      }
     >
       <div className="flex items-start gap-2">
         <div className="flex-1">
@@ -70,7 +74,9 @@ export function QuestionCard({ question, hiddenByCategory }: Props) {
             aria-label="Aggiungi un commento"
             onClick={() => setCommentOpen((v) => !v)}
             className={`grid size-8 place-items-center rounded-full ${
-              answer.comment ? "bg-accent text-accent-foreground" : "bg-background text-muted-foreground"
+              answer.comment
+                ? "bg-accent text-accent-foreground"
+                : "bg-background text-muted-foreground"
             }`}
           >
             <MessageSquare size={15} />
@@ -81,13 +87,20 @@ export function QuestionCard({ question, hiddenByCategory }: Props) {
               const hidden = !answer.hidden;
               setAnswer(question.id, { hidden });
               const catHidden = isCategoryHidden(state, categoryOfId(question.id));
-              toast(hidden ? "Domanda nascosta" : catHidden ? "Domanda ripristinata" : "Domanda visibile", {
-                description: hidden
-                  ? "Non apparirà nei confronti e non influisce sulla compatibilità."
+              toast(
+                hidden
+                  ? "Domanda nascosta"
                   : catHidden
-                    ? "Resta nascosta finché la sua categoria è nascosta."
-                    : "Torna nei confronti e nel calcolo della compatibilità.",
-              });
+                    ? "Domanda ripristinata"
+                    : "Domanda visibile",
+                {
+                  description: hidden
+                    ? "Non apparirà nei confronti e non influisce sulla compatibilità."
+                    : catHidden
+                      ? "Resta nascosta finché la sua categoria è nascosta."
+                      : "Torna nei confronti e nel calcolo della compatibilità.",
+                },
+              );
             }}
             className="grid size-8 place-items-center rounded-full bg-background text-muted-foreground"
           >
@@ -139,8 +152,8 @@ export function QuestionCard({ question, hiddenByCategory }: Props) {
           />
           {partial && (
             <p className="text-[12px] text-muted-foreground">
-              Risposta parziale: rispondi anche a “{give === undefined ? "Fare" : "Ricevere"}”
-              per un confronto completo. Intanto i confronti mostrano una stima.
+              Risposta parziale: rispondi anche a “{give === undefined ? "Fare" : "Ricevere"}” per
+              un confronto completo. Intanto i confronti mostrano una stima.
             </p>
           )}
         </div>

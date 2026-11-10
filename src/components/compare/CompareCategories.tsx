@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowRightCircle, Zap } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Avatar } from "@/components/Avatar";
 import { CategoryHeader, ExpandAllPill } from "@/components/CategoryControls";
@@ -15,6 +15,7 @@ import {
   typeAmong,
   type Participant,
 } from "@/lib/compat";
+import { visibleToAll } from "@/lib/compat-map";
 import { isEroticQuestionId } from "@/lib/questions";
 import { useStore } from "@/lib/store";
 import { giveOf, receiveOf, type Answer, type Question } from "@/lib/types";
@@ -157,8 +158,7 @@ export function CompareRow({
   const compat = compatDetail?.score ?? null;
   const criticalBy = rows.filter((r) => r.answer?.critical).map((r) => r.person);
   // Same rule as the profile: critical questions use the percentage colour, not the theme.
-  const criticalColor =
-    compat !== null ? percentColor(compat) : "var(--color-muted-foreground)";
+  const criticalColor = compat !== null ? percentColor(compat) : "var(--color-muted-foreground)";
   const reciprocal = type === "reciprocal";
   const needsMyAnswer = !mine.answer?.answered;
   const allAnswered = rows.every((r) => r.answer?.answered);
@@ -196,7 +196,6 @@ export function CompareRow({
       </div>
     );
   }
-
 
   return (
     <div
@@ -268,11 +267,11 @@ export function CompareRow({
           Compatibilità:{" "}
           <b
             style={{
-              color:
-                compat === null ? "var(--color-muted-foreground)" : percentColor(compat),
+              color: compat === null ? "var(--color-muted-foreground)" : percentColor(compat),
             }}
           >
-            {formatCompat(compatDetail)}<MarginText result={compatDetail} />
+            {formatCompat(compatDetail)}
+            <MarginText result={compatDetail} />
           </b>
         </span>
       </div>
@@ -306,17 +305,35 @@ export function CompareCategories({
   allQuestions,
   people,
   defaultOpen,
+  reveal,
 }: {
   categories: { key: string; label: string }[];
   allQuestions: Question[];
   people: Person[];
   defaultOpen: boolean;
+  /** Category to open and scroll to (e.g. a tapped chart bar); `n` changes on every request. */
+  reveal?: { key: string; n: number } | null;
 }) {
   const { questions } = useStore();
   const [openCats, setOpenCats] = useState<Record<string, boolean>>({});
   const participants: Participant[] = people.map(participantOf);
-  const visibleTo = (q: Question) =>
-    people.every((p) => !p.answers[q.id]?.hidden && !p.hiddenCategories.includes(q.category));
+  const visibleTo = (q: Question) => visibleToAll(q, people);
+
+  useEffect(() => {
+    if (!reveal) return;
+    setOpenCats((cur) => ({ ...cur, [reveal.key]: true }));
+    // Wait for the drawer to render open before scrolling its header into view.
+    const id = requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-category="${reveal.key}"]`);
+      if (!el) return;
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      el.classList.remove("compat-flash");
+      void el.offsetWidth;
+      el.classList.add("compat-flash");
+    });
+    return () => cancelAnimationFrame(id);
+  }, [reveal]);
   const shown = categories
     .map((cat) => ({
       cat,
@@ -338,9 +355,7 @@ export function CompareCategories({
     <>
       <ExpandAllPill
         openStates={shown.map((x) => isOpen(x.cat.key))}
-        onSet={(open) =>
-          setOpenCats(Object.fromEntries(shown.map((x) => [x.cat.key, open])))
-        }
+        onSet={(open) => setOpenCats(Object.fromEntries(shown.map((x) => [x.cat.key, open])))}
       />
       {shown.length === 0 && (
         <p className="section-card text-[14px] text-muted-foreground">
@@ -348,19 +363,31 @@ export function CompareCategories({
         </p>
       )}
       {shown.map(({ cat, items }) => {
-        const catDetail = averageCompatDetail(items.map((q) => q.id), participants);
+        const catDetail = averageCompatDetail(
+          items.map((q) => q.id),
+          participants,
+        );
         const open = isOpen(cat.key);
         return (
-          <section key={cat.key} className="rounded-3xl bg-surface-2/60 p-2" data-category={cat.key}>
+          <section
+            key={cat.key}
+            className="scroll-mt-20 rounded-3xl bg-surface-2/60 p-2"
+            data-category={cat.key}
+            onAnimationEnd={(e) => e.currentTarget.classList.remove("compat-flash")}
+          >
             <CategoryHeader
               label={cat.label}
               open={open}
-              onToggle={() => setOpenCats((cur) => ({ ...cur, [cat.key]: !(cur[cat.key] ?? defaultOpen) }))}
+              onToggle={() =>
+                setOpenCats((cur) => ({ ...cur, [cat.key]: !(cur[cat.key] ?? defaultOpen) }))
+              }
               right={
                 <span
                   className="text-[14px] font-bold"
                   style={{
-                    color: catDetail ? percentColor(catDetail.score) : "var(--color-muted-foreground)",
+                    color: catDetail
+                      ? percentColor(catDetail.score)
+                      : "var(--color-muted-foreground)",
                   }}
                 >
                   {formatCompat(catDetail)}

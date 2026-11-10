@@ -13,11 +13,14 @@ import { useStore } from "@/lib/store";
 import { MarginText } from "@/components/MarginText";
 import { NavPill } from "@/components/CategoryControls";
 import { CompareCategories } from "@/components/compare/CompareCategories";
+import { CompatibilityMap } from "@/components/compare/CompatibilityMap";
+import { categoryBreakdown, sortByAffinity } from "@/lib/compat-map";
 import { useComparePeople } from "@/lib/compare-people";
 import { handleOf } from "@/lib/types";
 
 export const Route = createFileRoute("/confronto")({
-  validateSearch: z.object({ b: z.string(), c: z.string().optional() }),
+  // `b` is optional so an address without it shows the "not in your address book" message, not a crash.
+  validateSearch: z.object({ b: z.string().optional(), c: z.string().optional() }),
   head: () => ({
     meta: [
       { title: "Confronto profili — QuestionAR" },
@@ -65,6 +68,16 @@ function ComparePage() {
   const eroticIds = allQuestions.filter((q) => isEroticQuestionId(q.id)).map((q) => q.id);
   const eroticDetail = averageCompatDetail(eroticIds, participants);
   const overallNote = partialNote(overallDetail);
+  const [reveal, setReveal] = useState<{ key: string; n: number } | null>(null);
+  const EROTISMO_KEY = "erotismo";
+  const hasErotic = eroticIds.length > 0;
+  const bars = sortByAffinity([
+    ...categoryBreakdown(CATEGORIES, allQuestions, participants),
+    // Erotismo is one more bar (its questions already count once in the total); it opens its own page.
+    ...(hasErotic && eroticDetail
+      ? [{ key: EROTISMO_KEY, label: EROTISMO_LABEL, detail: eroticDetail }]
+      : []),
+  ]);
 
   const others = people.filter((p) => !p.mine);
 
@@ -102,8 +115,7 @@ function ComparePage() {
       <section
         className="section-card border-2"
         style={{
-          borderColor:
-            overall === null ? "var(--color-border)" : percentColor(overall),
+          borderColor: overall === null ? "var(--color-border)" : percentColor(overall),
         }}
       >
         <div className="mb-3 flex items-center gap-3">
@@ -112,15 +124,19 @@ function ComparePage() {
             <div
               className="text-[16px] font-bold"
               style={{
-                color:
-                  overall === null ? "var(--color-muted-foreground)" : percentColor(overall),
+                color: overall === null ? "var(--color-muted-foreground)" : percentColor(overall),
               }}
             >
-              {overall === null ? "dati insufficienti" : <>{formatCompat(overallDetail)}<MarginText result={overallDetail} /></>}
+              {overall === null ? (
+                "dati insufficienti"
+              ) : (
+                <>
+                  {formatCompat(overallDetail)}
+                  <MarginText result={overallDetail} />
+                </>
+              )}
             </div>
-            {overallNote && (
-              <p className="text-[12px] text-muted-foreground">{overallNote}</p>
-            )}
+            {overallNote && <p className="text-[12px] text-muted-foreground">{overallNote}</p>}
           </div>
           <button
             onClick={() => {
@@ -134,9 +150,7 @@ function ComparePage() {
             aria-label={contactB.favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
             title={contactB.favorite ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
             className={`grid size-10 shrink-0 place-items-center rounded-full ${
-              contactB.favorite
-                ? "bg-accent text-accent-foreground"
-                : "bg-background text-accent"
+              contactB.favorite ? "bg-accent text-accent-foreground" : "bg-background text-accent"
             }`}
           >
             <Star size={18} fill={contactB.favorite ? "currentColor" : "none"} />
@@ -192,8 +206,7 @@ function ComparePage() {
                 style={
                   showPair
                     ? {
-                        borderColor:
-                          pair === null ? "var(--color-border)" : percentColor(pair),
+                        borderColor: pair === null ? "var(--color-border)" : percentColor(pair),
                       }
                     : undefined
                 }
@@ -211,16 +224,30 @@ function ComparePage() {
                   <span
                     className="shrink-0 text-[14px] font-bold"
                     style={{
-                      color:
-                        pair === null ? "var(--color-muted-foreground)" : percentColor(pair),
+                      color: pair === null ? "var(--color-muted-foreground)" : percentColor(pair),
                     }}
                   >
-                    {formatCompat(pairDetail)}<MarginText result={pairDetail} />
+                    {formatCompat(pairDetail)}
+                    <MarginText result={pairDetail} />
                   </span>
                 ) : null}
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-3 border-t border-border pt-3">
+          <CompatibilityMap
+            overall={overallDetail}
+            bars={bars}
+            onSelect={(key) => {
+              if (key === EROTISMO_KEY) {
+                void navigate({ to: "/confronto/erotismo", search: { b, ...(c ? { c } : {}) } });
+              } else {
+                setReveal((cur) => ({ key, n: (cur?.n ?? 0) + 1 }));
+              }
+            }}
+          />
         </div>
 
         <p className="mt-2 text-[12px] text-muted-foreground">
@@ -304,11 +331,16 @@ function ComparePage() {
                       : percentColor(expandedProfile.compatibility.score),
                 }}
               >
-                {expandedProfile.mine
-                  ? "ME!"
-                  : expandedProfile.compatibility === null
-                    ? "dati insufficienti"
-                    : <>{formatCompat(expandedProfile.compatibility)}<MarginText result={expandedProfile.compatibility} /></>}
+                {expandedProfile.mine ? (
+                  "ME!"
+                ) : expandedProfile.compatibility === null ? (
+                  "dati insufficienti"
+                ) : (
+                  <>
+                    {formatCompat(expandedProfile.compatibility)}
+                    <MarginText result={expandedProfile.compatibility} />
+                  </>
+                )}
               </div>
               {!expandedProfile.mine && partialNote(expandedProfile.compatibility) && (
                 <p className="text-[12px] text-muted-foreground">
@@ -331,7 +363,11 @@ function ComparePage() {
         ) : (
           <p className="mt-1 text-[12px] text-muted-foreground">Nessuna bio.</p>
         )}
-        <CompactProfileTags tags={contactB.snapshot?.tags} compareWith={state.tags} className="mt-2" />
+        <CompactProfileTags
+          tags={contactB.snapshot?.tags}
+          compareWith={state.tags}
+          className="mt-2"
+        />
         {contactC && (
           <>
             <hr className="my-3 border-border" />
@@ -344,7 +380,11 @@ function ComparePage() {
             ) : (
               <p className="mt-1 text-[12px] text-muted-foreground">Nessuna bio.</p>
             )}
-            <CompactProfileTags tags={contactC.snapshot?.tags} compareWith={state.tags} className="mt-2" />
+            <CompactProfileTags
+              tags={contactC.snapshot?.tags}
+              compareWith={state.tags}
+              className="mt-2"
+            />
           </>
         )}
       </section>
@@ -355,6 +395,7 @@ function ComparePage() {
         allQuestions={allQuestions}
         people={people}
         defaultOpen
+        reveal={reveal}
       />
       <NavPill
         to="/confronto/erotismo"
@@ -363,7 +404,9 @@ function ComparePage() {
         right={
           <span
             style={{
-              color: eroticDetail ? percentColor(eroticDetail.score) : "var(--color-muted-foreground)",
+              color: eroticDetail
+                ? percentColor(eroticDetail.score)
+                : "var(--color-muted-foreground)",
             }}
           >
             {formatCompat(eroticDetail)}

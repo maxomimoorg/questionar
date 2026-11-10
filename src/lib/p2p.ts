@@ -196,7 +196,11 @@ export class P2P {
       onUnavailable: (reason) => {
         if (this.mode !== mode) return;
         this.issue =
-          reason === "quota" ? "quota" : reason === "not_configured" ? "not_configured" : "unreachable";
+          reason === "quota"
+            ? "quota"
+            : reason === "not_configured"
+              ? "not_configured"
+              : "unreachable";
         this.use("offline");
         if (this.issue !== "not_configured") this.scheduleRelayRetry();
       },
@@ -239,7 +243,8 @@ export class P2P {
   private markSeen(id: string) {
     const now = Date.now();
     if (this.seen.size > SEEN_MAX)
-      for (const [k, t] of this.seen) if (now - t > SEEN_MS || this.seen.size > SEEN_MAX) this.seen.delete(k);
+      for (const [k, t] of this.seen)
+        if (now - t > SEEN_MS || this.seen.size > SEEN_MAX) this.seen.delete(k);
     this.seen.set(id, now);
   }
 

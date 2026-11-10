@@ -14,20 +14,30 @@ describe("Self-contained PWA assets", () => {
     const worker = readFileSync("public/sw.js", "utf8");
     const precache = worker.match(/const PRECACHE = (\[[\s\S]*?\]);/)?.[1];
     expect(precache).toBeDefined();
-    const resources: string[] = JSON.parse(precache ?? "[]");
+    // Formatting adds a trailing comma, which JSON does not allow.
+    const resources: string[] = JSON.parse((precache ?? "[]").replace(/,\s*\]$/, "]"));
     expect(resources).toEqual([
-      "/", "/rubrica", "/manifest.json", "/favicon.png", "/logo.png",
-      "/apple-touch-icon.png", "/icon-192.png", "/icon-512.png",
+      "/",
+      "/rubrica",
+      "/erotismo",
+      "/manifest.json",
+      "/favicon.png",
+      "/logo.png",
+      "/apple-touch-icon.png",
+      "/icon-192.png",
+      "/icon-512.png",
     ]);
-    for (const resource of resources.slice(2)) expect(existsSync(`public${resource}`)).toBe(true);
+    for (const resource of resources.slice(3)) expect(existsSync(`public${resource}`)).toBe(true);
   });
 
   it("loads Nunito and Quicksand from the app, not from Google Fonts", () => {
     const root = readFileSync("src/routes/__root.tsx", "utf8");
     expect(root).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
     const css = readFileSync("src/styles.css", "utf8");
-    for (const weight of [400, 600, 700]) expect(css).toContain(`@fontsource/nunito/latin-${weight}.css`);
-    for (const weight of [500, 600, 700]) expect(css).toContain(`@fontsource/quicksand/latin-${weight}.css`);
+    for (const weight of [400, 600, 700])
+      expect(css).toContain(`@fontsource/nunito/latin-${weight}.css`);
+    for (const weight of [500, 600, 700])
+      expect(css).toContain(`@fontsource/quicksand/latin-${weight}.css`);
   });
 
   it("shows the saved page after a short wait and serves build files from the cache", () => {

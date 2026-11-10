@@ -69,7 +69,10 @@ export async function importBackupPng(file: File): Promise<BackupPayload> {
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
   const ctx = canvas.getContext("2d");
-  if (!ctx) { bitmap.close(); throw new Error("Canvas non disponibile"); }
+  if (!ctx) {
+    bitmap.close();
+    throw new Error("Canvas non disponibile");
+  }
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
   const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
@@ -87,8 +90,11 @@ export async function importBackupPng(file: File): Promise<BackupPayload> {
 
   const magic = String.fromCharCode(byteAt(0), byteAt(1), byteAt(2), byteAt(3));
   if (magic !== MAGIC) throw new Error("Nessun backup trovato in questa immagine");
-  const length = new DataView(Uint8Array.from([byteAt(4), byteAt(5), byteAt(6), byteAt(7)]).buffer).getUint32(0);
-  if (length <= 0 || length > 5_000_000 || (length + 8) * 8 > bits.length) throw new Error("Backup illeggibile");
+  const length = new DataView(
+    Uint8Array.from([byteAt(4), byteAt(5), byteAt(6), byteAt(7)]).buffer,
+  ).getUint32(0);
+  if (length <= 0 || length > 5_000_000 || (length + 8) * 8 > bits.length)
+    throw new Error("Backup illeggibile");
   const bytes = new Uint8Array(length);
   for (let i = 0; i < length; i++) bytes[i] = byteAt(8 + i);
   return JSON.parse(new TextDecoder().decode(bytes)) as BackupPayload;

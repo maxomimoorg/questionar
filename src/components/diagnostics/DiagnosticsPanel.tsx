@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { CHECKS, runChecks } from "@/lib/diagnostics/checks";
 import { SCENARIOS } from "@/lib/diagnostics/scenarios";
-import { buildReport, reportFilename, summarize } from "@/lib/diagnostics/report";
-import { getEvents } from "@/lib/diagnostics/buffer";
+import { exportReport } from "@/lib/diagnostics/export";
+import { summarize } from "@/lib/diagnostics/report";
 import { NOTE_MAX } from "@/lib/diagnostics/redact";
 import {
   clearDiagnosticData,
@@ -28,40 +28,6 @@ const MANUAL: { v: ManualStatus; label: string }[] = [
   { v: "not_applicable", label: "N/A" },
 ];
 
-export function downloadJson(data: unknown, filename: string) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30_000);
-}
-
-/** Injected at build time from package.json (vite.config.ts). */
-export function appVersion(): string {
-  const v = import.meta.env["VITE_APP_VERSION"] as string | undefined;
-  return v && v.trim() ? v : "unknown";
-}
-
-export function exportReport() {
-  const s = getDiagState();
-  const report = buildReport({
-    sessionId: s.sessionId,
-    startedAt: s.startedAt,
-    endedAt: Date.now(),
-    appVersion: appVersion(),
-    buildMode: import.meta.env.MODE,
-    userAgent: navigator.userAgent,
-    checks: s.checks,
-    scenarios: Object.values(s.scenarios),
-    events: getEvents(),
-  });
-  downloadJson(report, reportFilename(s.startedAt));
-}
-
 function scenario(id: string): ScenarioResult {
   return getDiagState().scenarios[id] ?? { id, status: "not_run", stepsDone: [] };
 }
@@ -75,7 +41,8 @@ export function DiagnosticsPanel() {
   const started = useRef("");
 
   useEffect(() => {
-    if (!s.active || s.stage !== "checks" || s.checks.length || started.current === s.sessionId) return;
+    if (!s.active || s.stage !== "checks" || s.checks.length || started.current === s.sessionId)
+      return;
     started.current = s.sessionId;
     void runChecks(CHECKS, (done, runningId) => setDiagState({ checks: done, runningId }));
   }, [s.active, s.stage, s.checks.length, s.sessionId]);
@@ -93,7 +60,9 @@ export function DiagnosticsPanel() {
         className="info-scroll mt-4 mb-14 max-h-[82dvh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-surface p-5 shadow-2xl ring-1 ring-border"
       >
         <div className="mb-3 flex items-center gap-2">
-          <h1 id="diag-title" className="flex-1 text-xl">Diagnostica locale</h1>
+          <h1 id="diag-title" className="flex-1 text-xl">
+            Diagnostica locale
+          </h1>
           <Button variant="secondary" size="sm" onClick={() => setDiagState({ panelOpen: false })}>
             Riduci
           </Button>
@@ -119,23 +88,35 @@ export function DiagnosticsPanel() {
         {s.stage === "checks" && (
           <section className="mt-4">
             <p className="text-[13px]" aria-live="polite">
-              {running ? `Controlli in corso… ${s.checks.length}/${CHECKS.length}` : "Controlli completati."}
+              {running
+                ? `Controlli in corso… ${s.checks.length}/${CHECKS.length}`
+                : "Controlli completati."}
             </p>
             <ul className="mt-2 space-y-1">
               {CHECKS.map((c) => {
                 const r = s.checks.find((x) => x.id === c.id);
                 return (
-                  <li key={c.id} className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-[13px]">
+                  <li
+                    key={c.id}
+                    className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-[13px]"
+                  >
                     <span className="flex-1">{c.title}</span>
                     {r?.code && <code className="text-[11px] text-muted-foreground">{r.code}</code>}
-                    <span data-status={r?.status ?? (s.runningId === c.id ? "running" : "pending")} className="font-semibold">
+                    <span
+                      data-status={r?.status ?? (s.runningId === c.id ? "running" : "pending")}
+                      className="font-semibold"
+                    >
                       {r ? CHECK_LABEL[r.status] : s.runningId === c.id ? "In corso…" : "In attesa"}
                     </span>
                   </li>
                 );
               })}
             </ul>
-            <Button className="mt-3" disabled={running} onClick={() => setDiagState({ stage: "manual" })}>
+            <Button
+              className="mt-3"
+              disabled={running}
+              onClick={() => setDiagState({ stage: "manual" })}
+            >
               Vai alla checklist manuale
             </Button>
           </section>
@@ -147,12 +128,18 @@ export function DiagnosticsPanel() {
               Nelle note non inserire dati personali, contatti, risposte o segreti.
             </p>
             {SCENARIOS.map((def) => {
-              const r = s.scenarios[def.id] ?? { id: def.id, status: "not_run" as const, stepsDone: [] };
+              const r = s.scenarios[def.id] ?? {
+                id: def.id,
+                status: "not_run" as const,
+                stepsDone: [],
+              };
               return (
                 <fieldset key={def.id} className="rounded-2xl bg-surface-2 p-3 text-[13px]">
                   <legend className="font-semibold">{def.title}</legend>
                   {def.prerequisites.length > 0 && (
-                    <p className="text-muted-foreground">Prerequisiti: {def.prerequisites.join("; ")}</p>
+                    <p className="text-muted-foreground">
+                      Prerequisiti: {def.prerequisites.join("; ")}
+                    </p>
                   )}
                   <ol className="mt-1 space-y-1">
                     {def.steps.map((step, i) => (
@@ -175,7 +162,11 @@ export function DiagnosticsPanel() {
                     ))}
                   </ol>
                   <p className="mt-1">Atteso: {def.expected}</p>
-                  <div className="mt-2 flex flex-wrap gap-1" role="radiogroup" aria-label={`Esito: ${def.title}`}>
+                  <div
+                    className="mt-2 flex flex-wrap gap-1"
+                    role="radiogroup"
+                    aria-label={`Esito: ${def.title}`}
+                  >
                     {MANUAL.map((m) => (
                       <Button
                         key={m.v}
@@ -207,21 +198,25 @@ export function DiagnosticsPanel() {
         {s.stage === "summary" && (
           <section className="mt-4 space-y-2 text-[13px]">
             <p>
-              Automatici: {sum.automatic.pass} superati, {sum.automatic.fail} falliti, {sum.automatic.skip} non
-              verificati, {sum.automatic.not_applicable} non applicabili.
+              Automatici: {sum.automatic.pass} superati, {sum.automatic.fail} falliti,{" "}
+              {sum.automatic.skip} non verificati, {sum.automatic.not_applicable} non applicabili.
             </p>
             <p>
-              Manuali (dichiarati): {sum.manual.passed} superati, {sum.manual.failed} falliti, {sum.manual.not_run} non
-              eseguiti, {sum.manual.not_applicable} non applicabili.
+              Manuali (dichiarati): {sum.manual.passed} superati, {sum.manual.failed} falliti,{" "}
+              {sum.manual.not_run} non eseguiti, {sum.manual.not_applicable} non applicabili.
             </p>
             <p className="text-muted-foreground">
-              Il report vale solo per questa sessione e questo dispositivo; non attesta altri browser né lo stato
-              interno del relay.
+              Il report vale solo per questa sessione e questo dispositivo; non attesta altri
+              browser né lo stato interno del relay.
             </p>
             <div className="flex flex-wrap gap-2 pt-2">
               <Button onClick={exportReport}>Esporta report diagnostico</Button>
-              <Button variant="secondary" onClick={clearDiagnosticData}>Cancella dati diagnostici</Button>
-              <Button variant="destructive" onClick={endDiagnostics}>Termina diagnostica</Button>
+              <Button variant="secondary" onClick={clearDiagnosticData}>
+                Cancella dati diagnostici
+              </Button>
+              <Button variant="destructive" onClick={endDiagnostics}>
+                Termina diagnostica
+              </Button>
             </div>
           </section>
         )}

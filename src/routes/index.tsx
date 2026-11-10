@@ -4,7 +4,8 @@ import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { BioEditor } from "@/components/BioEditor";
-import { CompactProfileTags, PROFILE_TAGS } from "@/components/ProfileTags";
+import { CompactProfileTags } from "@/components/ProfileTags";
+import { PROFILE_TAGS } from "@/lib/profile-tags";
 import { NavPill } from "@/components/CategoryControls";
 import { Questionnaire } from "@/components/Questionnaire";
 import { CATEGORIES, EROTISMO_LABEL } from "@/lib/questions";
@@ -87,12 +88,7 @@ function ProfilePage() {
         afterCategories={<NavPill to="/erotismo" label={EROTISMO_LABEL} />}
       />
 
-      {editing && (
-        <BioEditor
-          {...(tag ? { initialTag: tag } : {})}
-          onClose={closeEditor}
-        />
-      )}
+      {editing && <BioEditor {...(tag ? { initialTag: tag } : {})} onClose={closeEditor} />}
     </div>
   );
 }

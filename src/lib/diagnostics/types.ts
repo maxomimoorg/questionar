@@ -21,7 +21,8 @@ export type CheckResult = {
   facts?: Record<string, string | number | boolean> | undefined;
 };
 
-export type CheckCategory = "browser" | "storage" | "pwa" | "crypto" | "backup" | "network" | "errors";
+export type CheckCategory =
+  "browser" | "storage" | "pwa" | "crypto" | "backup" | "network" | "errors";
 
 export type ScenarioDef = {
   id: string;

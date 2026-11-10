@@ -3,7 +3,12 @@
 
 import { emojisFromHandle } from "./handle";
 import type { Envelope, MessageMeta, P2P, P2PHandlers } from "./p2p";
-import { sanitizeSnapshot, type Contact, type ConnectionRequest, type ProfileSnapshot } from "./types";
+import {
+  sanitizeSnapshot,
+  type Contact,
+  type ConnectionRequest,
+  type ProfileSnapshot,
+} from "./types";
 
 export type ConnStore = {
   contacts: () => Contact[];
@@ -53,7 +58,11 @@ export class Connections {
     this.contact(handle)?.publicKey ?? this.request(handle)?.publicKey ?? this.keyCache.get(handle);
 
   private profile(): Omit<Extract<Envelope, { type: "profile" }>, "type"> {
-    return { from: this.me, name: this.store.myName(), snapshot: sanitizeSnapshot(this.store.mySnapshot()) };
+    return {
+      from: this.me,
+      name: this.store.myName(),
+      snapshot: sanitizeSnapshot(this.store.mySnapshot()),
+    };
   }
 
   private send(h: string, msg: Envelope) {

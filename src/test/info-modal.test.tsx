@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { InfoModal } from "@/components/InfoModal";
-import { DemoCategories, DemoCritical, DemoProfileTags, DemoSimilarity } from "@/components/tutorial/demos";
+import {
+  DemoCategories,
+  DemoCritical,
+  DemoProfileTags,
+  DemoSimilarity,
+} from "@/components/tutorial/demos";
 import { questionCompat } from "@/lib/compat";
 import { CATEGORIES } from "@/lib/questions";
 import {
@@ -30,7 +35,13 @@ const CHAPTERS: { title: RegExp; features: string[]; text?: string[] }[] = [
   },
   {
     title: /I tuoi spazi/,
-    features: ["Tag del profilo", "Domande nascoste", "Categorie: aprire, contare, nascondere", "Preferiti", "Erotismo, se vuoi"],
+    features: [
+      "Tag del profilo",
+      "Domande nascoste",
+      "Categorie: aprire, contare, nascondere",
+      "Preferiti",
+      "Erotismo, se vuoi",
+    ],
   },
   {
     title: /I tuoi dati restano tuoi/,
@@ -42,7 +53,9 @@ const CHAPTERS: { title: RegExp; features: string[]; text?: string[] }[] = [
 describe("QuestionAR tutorial", () => {
   it("demonstrates the complete three-state tag cycle without touching saved data", () => {
     render(<DemoProfileTags />);
-    expect(screen.getByRole("button", { name: "tabacco: divieto" }).querySelector(".lucide-ban")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "tabacco: divieto" }).querySelector(".lucide-ban"),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "vegan: spunta" }));
     fireEvent.click(screen.getByRole("button", { name: "vegan: divieto" }));
     fireEvent.click(screen.getByRole("button", { name: "vegan: senza risposta" }));
@@ -90,14 +103,22 @@ describe("QuestionAR tutorial", () => {
 
   it("every category quoted by the demos is a real main-questionnaire category", () => {
     const keys = CATEGORIES.map((c) => c.key as string);
-    for (const key of [...TUTORIAL_MAP_CATEGORIES, ...TUTORIAL_LIST_CATEGORIES, TUTORIAL_CUSTOM_CATEGORY]) {
+    for (const key of [
+      ...TUTORIAL_MAP_CATEGORIES,
+      ...TUTORIAL_LIST_CATEGORIES,
+      TUTORIAL_CUSTOM_CATEGORY,
+    ]) {
       expect(keys).toContain(key);
     }
   });
 
   it("the categories demo shows real names and real question counts", () => {
     render(<DemoCategories />);
-    expect(screen.getByRole("button", { name: "Apri la categoria Impegno per la stabilità" })).toHaveTextContent("13 ✓");
-    expect(screen.getByRole("button", { name: "Apri la categoria Tempo di qualità" })).toHaveTextContent("4/10");
+    expect(
+      screen.getByRole("button", { name: "Apri la categoria Impegno per la stabilità" }),
+    ).toHaveTextContent("13 ✓");
+    expect(
+      screen.getByRole("button", { name: "Apri la categoria Tempo di qualità" }),
+    ).toHaveTextContent("4/10");
   });
 });

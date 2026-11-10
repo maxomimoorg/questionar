@@ -125,10 +125,7 @@ export function AnswerSlider({ value, answered, onCommit, label }: SliderProps) 
           )}
         </button>
       </div>
-      <span
-        className="w-11 text-right text-[14px] font-bold tabular-nums"
-        style={{ color }}
-      >
+      <span className="w-11 text-right text-[14px] font-bold tabular-nums" style={{ color }}>
         {shown}%
       </span>
     </div>

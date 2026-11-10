@@ -6,7 +6,11 @@ import { getEvents, recordEvent } from "./buffer";
 
 export const DIAG_DB_NAME = "questionar-diagnostics";
 
-type Outcome = { status: CheckStatus; code?: string | undefined; facts?: Record<string, unknown> | undefined };
+type Outcome = {
+  status: CheckStatus;
+  code?: string | undefined;
+  facts?: Record<string, unknown> | undefined;
+};
 
 export type CheckDef = {
   id: string;
@@ -61,8 +65,20 @@ async function cryptoCheck(): Promise<Outcome> {
   const a = await subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, false, ["deriveKey"]);
   const b = await subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, false, ["deriveKey"]);
   const aes = { name: "AES-GCM", length: 256 } as const;
-  const kA = await subtle.deriveKey({ name: "ECDH", public: b.publicKey }, a.privateKey, aes, false, ["encrypt", "decrypt"]);
-  const kB = await subtle.deriveKey({ name: "ECDH", public: a.publicKey }, b.privateKey, aes, false, ["encrypt", "decrypt"]);
+  const kA = await subtle.deriveKey(
+    { name: "ECDH", public: b.publicKey },
+    a.privateKey,
+    aes,
+    false,
+    ["encrypt", "decrypt"],
+  );
+  const kB = await subtle.deriveKey(
+    { name: "ECDH", public: a.publicKey },
+    b.privateKey,
+    aes,
+    false,
+    ["encrypt", "decrypt"],
+  );
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const plain = new TextEncoder().encode("synthetic-probe");
   const ct = await subtle.encrypt({ name: "AES-GCM", iv }, kA, plain);
@@ -157,11 +173,17 @@ async function browserCheck(): Promise<Outcome> {
       typeof matchMedia !== "undefined" && matchMedia("(display-mode: standalone)").matches,
   };
   const required = facts.indexeddb && facts.subtle_crypto && facts.websocket;
-  return { status: required ? "pass" : "fail", code: required ? undefined : "required_api_missing", facts };
+  return {
+    status: required ? "pass" : "fail",
+    code: required ? undefined : "required_api_missing",
+    facts,
+  };
 }
 
 async function networkCheck(): Promise<Outcome> {
-  const ev = getEvents().filter((e) => e.type.startsWith("relay.") || e.type.startsWith("p2p.") || e.type.startsWith("net."));
+  const ev = getEvents().filter(
+    (e) => e.type.startsWith("relay.") || e.type.startsWith("p2p.") || e.type.startsWith("net."),
+  );
   const facts: Record<string, unknown> = {
     navigator_online: typeof navigator !== "undefined" ? navigator.onLine : "unknown",
     observed_events: ev.length,
@@ -171,7 +193,12 @@ async function networkCheck(): Promise<Outcome> {
   };
   if (ev.length === 0) return { status: "skip", code: "no_observation_yet", facts };
   const unavailable = ev.find((e) => e.type === "relay.unavailable");
-  if (unavailable) return { status: "fail", code: `relay_${String(unavailable.data?.["reason"] ?? "unavailable")}`, facts };
+  if (unavailable)
+    return {
+      status: "fail",
+      code: `relay_${String(unavailable.data?.["reason"] ?? "unavailable")}`,
+      facts,
+    };
   return { status: "pass", facts };
 }
 
@@ -192,13 +219,38 @@ async function errorsCheck(): Promise<Outcome> {
 
 export const CHECKS: CheckDef[] = [
   { id: "browser.capabilities", title: "API del browser", category: "browser", run: browserCheck },
-  { id: "storage.indexeddb_roundtrip", title: "IndexedDB (spazio separato)", category: "storage", run: idbRoundTrip },
+  {
+    id: "storage.indexeddb_roundtrip",
+    title: "IndexedDB (spazio separato)",
+    category: "storage",
+    run: idbRoundTrip,
+  },
   { id: "pwa.service_worker", title: "Service worker", category: "pwa", run: swCheck },
-  { id: "pwa.essential_resources", title: "Risorse locali essenziali", category: "pwa", run: resourcesCheck },
-  { id: "crypto.ephemeral_roundtrip", title: "Crittografia (chiavi effimere)", category: "crypto", run: cryptoCheck },
+  {
+    id: "pwa.essential_resources",
+    title: "Risorse locali essenziali",
+    category: "pwa",
+    run: resourcesCheck,
+  },
+  {
+    id: "crypto.ephemeral_roundtrip",
+    title: "Crittografia (chiavi effimere)",
+    category: "crypto",
+    run: cryptoCheck,
+  },
   { id: "backup.png_roundtrip", title: "Backup PNG sintetico", category: "backup", run: pngCheck },
-  { id: "network.observed", title: "Rete e relay osservati", category: "network", run: networkCheck },
-  { id: "network.relay_active_probe", title: "Prova attiva relay", category: "network", run: relayActiveCheck },
+  {
+    id: "network.observed",
+    title: "Rete e relay osservati",
+    category: "network",
+    run: networkCheck,
+  },
+  {
+    id: "network.relay_active_probe",
+    title: "Prova attiva relay",
+    category: "network",
+    run: relayActiveCheck,
+  },
   { id: "errors.session", title: "Errori della sessione", category: "errors", run: errorsCheck },
 ];
 

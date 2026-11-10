@@ -38,8 +38,6 @@ import type { BackupPayload } from "./stego";
 import { emojisFromHandle } from "./handle";
 import { normalizeTheme } from "./theme";
 
-
-
 type Ctx = {
   state: AppState;
   ready: boolean;
@@ -88,7 +86,9 @@ export function buildSnapshot(state: AppState, now = Date.now()): ProfileSnapsho
 
 // Keep one context instance across hot-module reloads: when a dependency (e.g. questions.ts)
 // changes, this module re-runs and a fresh createContext would orphan the mounted provider.
-const ctxHolder = globalThis as unknown as { __questionarStoreCtx?: import("react").Context<Ctx | null> };
+const ctxHolder = globalThis as unknown as {
+  __questionarStoreCtx?: import("react").Context<Ctx | null>;
+};
 const StoreContext = (ctxHolder.__questionarStoreCtx ??= createContext<Ctx | null>(null));
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -295,8 +295,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             c.handle === handle ? { ...c, favorite: !c.favorite } : c,
           ),
         })),
-      mySnapshot: () =>
-        buildSnapshot(state),
+      mySnapshot: () => buildSnapshot(state),
       applyBackup: (payload) =>
         setState((s) => {
           // Identity, emoji, avatar, keys, collection and contacts stay untouched.

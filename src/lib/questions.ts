@@ -1,16 +1,6 @@
 // Default questionnaire. Category letters are only used to build question ids.
 
-export type CategoryKey =
-  | "A"
-  | "B"
-  | "C"
-  | "D"
-  | "E"
-  | "F"
-  | "G"
-  | "H"
-  | "I"
-  | "J";
+export type CategoryKey = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J";
 
 export const CATEGORIES: { key: CategoryKey; label: string }[] = [
   { key: "A", label: "Impegno per la stabilità" },
@@ -51,7 +41,12 @@ export type QuestionType = "similarity" | "reciprocal";
  */
 type DefaultEntry =
   | string
-  | { text: string; legacy?: string; reciprocal?: true; /** Full id it had in another category. */ from?: string };
+  | {
+      text: string;
+      legacy?: string;
+      reciprocal?: true;
+      /** Full id it had in another category. */ from?: string;
+    };
 
 /** A question moved from another category: same text/type, old id remapped to the new one. */
 const moved = (from: string, entry: DefaultEntry): DefaultEntry =>
@@ -284,16 +279,16 @@ export type Question = {
 
 function buildDefaults(cats: { key: AnyCategoryKey }[], table: Record<string, DefaultEntry[]>) {
   return cats.flatMap((cat) =>
-  (table[cat.key] ?? []).map((entry) => {
-    const e = typeof entry === "string" ? { text: entry } : entry;
-    return {
-      id: questionId(cat.key, e.legacy ?? e.text),
-      category: cat.key,
-      text: e.text,
-      custom: false,
-      type: e.reciprocal ? ("reciprocal" as const) : ("similarity" as const),
-    };
-  }),
+    (table[cat.key] ?? []).map((entry) => {
+      const e = typeof entry === "string" ? { text: entry } : entry;
+      return {
+        id: questionId(cat.key, e.legacy ?? e.text),
+        category: cat.key,
+        text: e.text,
+        custom: false,
+        type: e.reciprocal ? ("reciprocal" as const) : ("similarity" as const),
+      };
+    }),
   );
 }
 
@@ -305,12 +300,14 @@ export const DEFAULT_QUESTIONS: Question[] = [
 
 /** Old id → current id of questions moved between categories (saved answers, older peers). */
 export const MOVED_QUESTION_IDS: Record<string, string> = Object.fromEntries(
-  [...CATEGORIES, ...EROTISMO_CATEGORIES].flatMap((cat) =>
-    (({ ...DEFAULTS, ...EROTISMO_DEFAULTS }) as Record<string, DefaultEntry[]>)[cat.key]?.flatMap((entry) =>
-      typeof entry !== "string" && entry.from
-        ? [[entry.from, questionId(cat.key, entry.legacy ?? entry.text)]]
-        : [],
-    ) ?? [],
+  [...CATEGORIES, ...EROTISMO_CATEGORIES].flatMap(
+    (cat) =>
+      (({ ...DEFAULTS, ...EROTISMO_DEFAULTS }) as Record<string, DefaultEntry[]>)[cat.key]?.flatMap(
+        (entry) =>
+          typeof entry !== "string" && entry.from
+            ? [[entry.from, questionId(cat.key, entry.legacy ?? entry.text)]]
+            : [],
+      ) ?? [],
   ),
 );
 

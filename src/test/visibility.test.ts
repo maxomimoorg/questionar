@@ -29,7 +29,9 @@ describe("completion counts", () => {
 
   it("hiding an unanswered question gives 3/12, then an answered one 2/11", () => {
     const answers: Record<string, Answer> = {
-      "A-q0": done, "A-q1": done, "A-q2": done,
+      "A-q0": done,
+      "A-q1": done,
+      "A-q2": done,
       "A-q5": { value: 50, answered: false, hidden: true },
     };
     expect(completionLabel(completionOf(qs, { answers }, () => false))).toBe("3/12");
@@ -39,7 +41,9 @@ describe("completion counts", () => {
 
   it("all visible complete shows 11 ✓; nothing visible shows no check", () => {
     const answers: Record<string, Answer> = {};
-    qs.forEach((q, i) => (answers[q.id] = i < 2 ? { value: 50, answered: false, hidden: true } : done));
+    qs.forEach(
+      (q, i) => (answers[q.id] = i < 2 ? { value: 50, answered: false, hidden: true } : done),
+    );
     expect(completionLabel(completionOf(qs, { answers }, () => false))).toBe("11 ✓");
     expect(completionLabel({ done: 0, total: 0 })).toBe("0");
   });
@@ -68,10 +72,16 @@ describe("category and question hiding", () => {
 
   it("restoring a question while its category is hidden keeps it in the category group", () => {
     const cats = [{ key: "A", label: "Cat A" }];
-    const before = hiddenSection(cats, qs, { answers: { "A-q1": { ...done, hidden: true } }, hiddenCategories: ["A"] });
+    const before = hiddenSection(cats, qs, {
+      answers: { "A-q1": { ...done, hidden: true } },
+      hiddenCategories: ["A"],
+    });
     expect(before.individual.map((q) => q.id)).toEqual(["A-q1"]);
     expect(before.groups[0]!.questions.some((q) => q.id === "A-q1")).toBe(false);
-    const after = hiddenSection(cats, qs, { answers: { "A-q1": { ...done, hidden: false } }, hiddenCategories: ["A"] });
+    const after = hiddenSection(cats, qs, {
+      answers: { "A-q1": { ...done, hidden: false } },
+      hiddenCategories: ["A"],
+    });
     expect(after.individual).toEqual([]);
     expect(after.groups[0]!.questions.some((q) => q.id === "A-q1")).toBe(true);
     expect(isEffectivelyHidden({ answers: {}, hiddenCategories: ["A"] }, "A-q1")).toBe(true);
@@ -81,21 +91,32 @@ describe("category and question hiding", () => {
 describe("comparisons", () => {
   it("a category hidden by one participant is left out of compatibility", () => {
     const a = { answers: { "A-q0": done, "B-x": done } };
-    const b = { answers: { "A-q0": { value: 0, answered: true }, "B-x": done }, hiddenCategories: ["A"] };
+    const b = {
+      answers: { "A-q0": { value: 0, answered: true }, "B-x": done },
+      hiddenCategories: ["A"],
+    };
     expect(multiCompatDetail("A-q0", [a, b])).toBeNull();
     expect(averageCompatDetail(["A-q0", "B-x"], [a, b])?.score).toBe(100);
   });
 
   it("Erotismo questions count once in the overall average", () => {
-    const a = { answers: { "A-q0": { value: 100, answered: true }, "XA-y": { value: 0, answered: true } } };
-    const b = { answers: { "A-q0": { value: 100, answered: true }, "XA-y": { value: 100, answered: true } } };
+    const a = {
+      answers: { "A-q0": { value: 100, answered: true }, "XA-y": { value: 0, answered: true } },
+    };
+    const b = {
+      answers: { "A-q0": { value: 100, answered: true }, "XA-y": { value: 100, answered: true } },
+    };
     // A: 100, XA: 0 → mean 50 (not weighted twice).
     expect(averageCompatDetail(["A-q0", "XA-y"], [a, b])?.score).toBe(50);
   });
 
   it("hidden categories survive snapshot sanitising; junk is dropped", () => {
     const snap = sanitizeSnapshot({
-      name: "n", bio: "", answers: {}, customQuestions: [], updatedAt: 1,
+      name: "n",
+      bio: "",
+      answers: {},
+      customQuestions: [],
+      updatedAt: 1,
       hiddenCategories: ["A", "XA", "A", "<script>", 3] as unknown as string[],
     });
     expect(snap.hiddenCategories).toEqual(["A", "XA"]);

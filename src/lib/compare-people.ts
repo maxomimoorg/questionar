@@ -7,9 +7,9 @@ import { useStore } from "./store";
 import { handleOf, type Contact, type Question } from "./types";
 
 /** People, participants and the union of questions of a 2- or 3-way comparison. */
-export function useComparePeople(b: string, c?: string) {
+export function useComparePeople(b?: string, c?: string) {
   const { state, questions } = useStore();
-  const contactB: Contact | undefined = state.contacts.find((x) => x.handle === b);
+  const contactB: Contact | undefined = b ? state.contacts.find((x) => x.handle === b) : undefined;
   const contactC: Contact | undefined = c ? state.contacts.find((x) => x.handle === c) : undefined;
 
   const people: Person[] = [

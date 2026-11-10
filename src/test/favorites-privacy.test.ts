@@ -24,7 +24,15 @@ describe("favorites stay local, recommendations are gone", () => {
       contacts,
     };
     const snap = buildSnapshot(state, 5);
-    expect(Object.keys(snap).sort()).toEqual(["answers", "bio", "customQuestions", "hiddenCategories", "name", "tags", "updatedAt"]);
+    expect(Object.keys(snap).sort()).toEqual([
+      "answers",
+      "bio",
+      "customQuestions",
+      "hiddenCategories",
+      "name",
+      "tags",
+      "updatedAt",
+    ]);
     expect(JSON.stringify(snap)).not.toContain("luna");
     expect(snap).not.toHaveProperty("recommends");
   });
@@ -49,7 +57,14 @@ describe("favorites stay local, recommendations are gone", () => {
       name: "Luna",
       emojis: ["🦊", "🌊", "⭐"],
       recommended: true,
-      snapshot: { name: "Luna", bio: "", answers: {}, customQuestions: [], updatedAt: 1, recommends: ["x"] },
+      snapshot: {
+        name: "Luna",
+        bio: "",
+        answers: {},
+        customQuestions: [],
+        updatedAt: 1,
+        recommends: ["x"],
+      },
     } as unknown as Contact;
     const migrated = migrateContact(old);
     expect(migrated.favorite).toBe(true);
