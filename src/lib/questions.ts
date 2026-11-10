@@ -166,7 +166,6 @@ const DEFAULTS: Record<CategoryKey, DefaultEntry[]> = {
  * Erotismo: optional separate questionnaire, treated as a special category of the main one
  * (same answers map, same snapshot/backup). Its sub-category keys always start with "X" and
  * never contain "-", so question ids stay `<key>-<text>` like every other question.
- * No content is defined yet: the author will add sub-categories and questions here, e.g.
  *   { key: "XA", label: "…" } in EROTISMO_CATEGORIES and XA: ["…", r("…")] in EROTISMO_DEFAULTS.
  */
 export type EroticCategoryKey = `X${string}`;
@@ -176,10 +175,11 @@ export const EROTISMO_LABEL = "Erotismo";
 
 export const EROTISMO_CATEGORIES: { key: EroticCategoryKey; label: string }[] = [
   { key: "XA", label: "Vanilla" },
-  { key: "XB", label: "BD" },
-  { key: "XC", label: "DS" },
-  { key: "XD", label: "SM" },
-  { key: "XE", label: "Fet" },
+  { key: "XB", label: "Bondage e Disciplina" },
+  { key: "XC", label: "Dominazione e Sottomissione" },
+  { key: "XD", label: "Sadismo e Masochismo" },
+  { key: "XE", label: "Feticismo" },
+  { key: "XF", label: "Altro" },
 ];
 
 const EROTISMO_DEFAULTS: Record<EroticCategoryKey, DefaultEntry[]> = {
