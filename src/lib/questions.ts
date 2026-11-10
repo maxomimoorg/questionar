@@ -180,7 +180,7 @@ export const EROTISMO_CATEGORIES: { key: EroticCategoryKey; label: string }[] = 
   { key: "XC", label: "Dominazione e Sottomissione" },
   { key: "XD", label: "Sadismo e Masochismo" },
   { key: "XE", label: "Feticismo" },
-  { key: "XF", label: "Altro" },
+  { key: "XF", label: "Altre dinamiche" },
 ];
 
 const EROTISMO_DEFAULTS: Record<EroticCategoryKey, DefaultEntry[]> = {
@@ -193,17 +193,12 @@ const EROTISMO_DEFAULTS: Record<EroticCategoryKey, DefaultEntry[]> = {
     moved("D-masturbazionereciproca", r("Masturbazione")),
     moved("D-usodigiocattolisessuali", "Uso di giocattoli sessuali"),
     moved("D-penetrazioneconoggetti", r("Penetrazione con oggetti")),
-    "Esibizionismo",
-    r("Voyeurismo"),
-    "Scambismo",
-    moved("D-sessoa3opiu", "Sesso a 3 o più"),
-    moved("D-chemsexsessoconsostanze", "Chem-sex (sesso con sostanze)"),
   ],
   XB: [
     r("Shibari"),
     r("Mummificazione"),
     r("Sospensione"),
-    "Protocolli fissi",
+    "Formalità",
     r("Routine"),
     r("Punizioni correttive"),
   ],
@@ -235,17 +230,29 @@ const EROTISMO_DEFAULTS: Record<EroticCategoryKey, DefaultEntry[]> = {
     "Mani",
     "Seno",
     "Bocca",
+    "Sperma",
+    "Squirt"
+    "Saliva",
+    "Sangue",
     "Piedi",
     "Ascelle",
     "Peli",
+    "Sudore",
+    "Urina",
+    "Feci",
     "Odori",
     "Sapori",
-    "Urina",
     "Materiali specifici",
     "Oggetti specifici",
     "Luoghi specifici",
   ],
-  XF: [],
+  XF: [
+    "Esibizionismo",
+    r("Voyeurismo"),
+    "Scambismo",
+    moved("D-sessoa3opiu", "Sesso a 3 o più"),
+    moved("D-chemsexsessoconsostanze", "Chem-sex (sesso con sostanze)"),
+  ],
 };
 
 export function isEroticCategory(key: string): key is EroticCategoryKey {
