@@ -383,7 +383,7 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
             variant="secondary"
             className="h-auto flex-1 rounded-2xl px-4 py-3 text-[16px]"
           >
-            <a href="https://t.me/maxomimo" target="_blank" rel="noreferrer">
+            <a href="https://t.me/questionardate?direct" target="_blank" rel="noreferrer">
               Feedback
             </a>
           </Button>
