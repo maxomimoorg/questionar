@@ -16,6 +16,7 @@ import {
   migrateContact,
   migrateRequest,
   sanitizeAnswers,
+  sanitizeProtection,
   type AppState,
   type Answer,
   type Contact,
@@ -31,8 +32,11 @@ import {
   sanitizeCustomQuestions,
   type AnyCategoryKey,
   type Question,
+  type ProtectedSection,
   type QuestionType,
 } from "./questions";
+import { protectSnapshot, withPassword, withoutPassword, type SectionPayload } from "./protection";
+import { idbUnlockStorage } from "./unlock-db";
 import { sanitizeHiddenCategories, toggleCategory } from "./visibility";
 import type { BackupPayload } from "./stego";
 import { emojisFromHandle } from "./handle";
@@ -66,12 +70,31 @@ type Ctx = {
   removeContact: (handle: string) => void;
   /** Local-only favorite star (never shared). */
   toggleFavorite: (handle: string) => void;
-  mySnapshot: () => ProfileSnapshot;
-  applyBackup: (payload: BackupPayload) => void;
+  /**
+   * The profile as it leaves the device (P2P, PNG): password-protected sections are encrypted.
+   * Always async, so nothing can share an unencrypted protected section by mistake.
+   */
+  mySnapshot: () => Promise<ProfileSnapshot>;
+  /** Sets or changes the password of one questionnaire (new salt and keyVersion). */
+  setSectionPassword: (section: ProtectedSection, password: string) => void;
+  removeSectionPassword: (section: ProtectedSection) => void;
+  /**
+   * `restored`: protected sections of my own backup opened with my password; their data is
+   * merged and the same password (salt, keyVersion) becomes active again on this device.
+   */
+  applyBackup: (payload: BackupPayload, restored?: RestoredSection[]) => void;
   resetProfile: () => Promise<void>;
 };
 
-/** The shareable profile: contacts and favorites are never included. */
+export type RestoredSection = {
+  section: ProtectedSection;
+  password: string;
+  salt: string;
+  keyVersion: number;
+  payload: SectionPayload;
+};
+
+/** The shareable profile in clear: contacts, favorites and passwords are never included. */
 export function buildSnapshot(state: AppState, now = Date.now()): ProfileSnapshot {
   return {
     name: state.identity?.name ?? "",
@@ -113,6 +136,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           contacts: (saved.contacts ?? []).map(migrateContact),
           requests: (saved.requests ?? []).map(migrateRequest),
           network: {},
+          protection: sanitizeProtection(saved.protection),
         });
       }
       loaded.current = true;
@@ -295,19 +319,43 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             c.handle === handle ? { ...c, favorite: !c.favorite } : c,
           ),
         })),
-      mySnapshot: () => buildSnapshot(state),
-      applyBackup: (payload) =>
+      mySnapshot: () => protectSnapshot(buildSnapshot(state), state.protection, questions),
+      setSectionPassword: (section, password) =>
+        setState((s) => ({ ...s, protection: withPassword(s.protection, section, password) })),
+      removeSectionPassword: (section) =>
+        setState((s) => ({ ...s, protection: withoutPassword(s.protection, section) })),
+      applyBackup: (payload, restored = []) =>
         setState((s) => {
           // Identity, emoji, avatar, keys, collection and contacts stay untouched.
           const custom = [...s.customQuestions];
           // Only valid definitions and types are accepted; a question already on this
           // profile keeps its own definition (and type).
-          for (const q of sanitizeCustomQuestions(payload.customQuestions)) {
+          const restoredQuestions = restored.flatMap((r) => r.payload.customQuestions);
+          for (const q of [
+            ...sanitizeCustomQuestions(payload.customQuestions),
+            ...restoredQuestions,
+          ]) {
             if (!custom.some((x) => x.id === q.id)) custom.push(q);
+          }
+          let protection = s.protection;
+          for (const r of restored) {
+            protection = {
+              ...protection,
+              [r.section]: { password: r.password, salt: r.salt, keyVersion: r.keyVersion },
+              lastVersion: {
+                ...protection.lastVersion,
+                [r.section]: Math.max(protection.lastVersion?.[r.section] ?? 0, r.keyVersion),
+              },
+            };
           }
           return {
             ...s,
-            answers: { ...s.answers, ...sanitizeAnswers(payload.answers) },
+            protection,
+            answers: {
+              ...s.answers,
+              ...sanitizeAnswers(payload.answers),
+              ...Object.assign({}, ...restored.map((r) => r.payload.answers)),
+            },
             ...(Array.isArray(payload.hiddenCategories)
               ? { hiddenCategories: sanitizeHiddenCategories(payload.hiddenCategories) }
               : {}),
@@ -317,6 +365,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }),
       resetProfile: async () => {
         await clearState();
+        await idbUnlockStorage.clear();
         setState(EMPTY_STATE);
       },
     };

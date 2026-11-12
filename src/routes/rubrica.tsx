@@ -6,13 +6,16 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Avatar } from "@/components/Avatar";
+import { BackupRestoreDialog } from "@/components/BackupRestoreDialog";
 import { EmojiCollection } from "@/components/EmojiCollection";
 import { percentColor } from "@/lib/color";
 import { qrColors } from "@/lib/qr-colors";
 import { averageCompatDetail, formatCompat } from "@/lib/compat";
 import { usePeer } from "@/lib/peer";
 import { captureInvite } from "@/lib/qr-invite";
-import { exportBackupPng, importBackupPng } from "@/lib/stego";
+import { boxesOf, protectedFieldsOf, protectedSectionsOf, resolveSnapshot } from "@/lib/protection";
+import { exportBackupPng, importBackupPng, type BackupPayload } from "@/lib/stego";
+import { useUnlocks } from "@/lib/unlocks";
 import { useStore } from "@/lib/store";
 import { MarginText } from "@/components/MarginText";
 import { emojisFromHandle, isValidHandle } from "@/lib/handle";
@@ -68,6 +71,8 @@ function RubricaPage() {
     mode,
     issue,
   } = usePeer();
+  const { unlocked } = useUnlocks();
+  const [pendingBackup, setPendingBackup] = useState<BackupPayload | null>(null);
   const navigate = useNavigate();
   const { handle: inviteHandle } = Route.useSearch();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -119,8 +124,9 @@ function RubricaPage() {
   const compatOf = (handle: string) => {
     const contact = state.contacts.find((c) => c.handle === handle);
     if (!contact?.snapshot) return null;
+    const view = resolveSnapshot(contact.snapshot, unlocked[handle]);
     const ids = new Set(questions.map((q) => q.id));
-    for (const q of contact.snapshot.customQuestions ?? []) ids.add(q.id);
+    for (const q of view.customQuestions) ids.add(q.id);
     return averageCompatDetail(
       [...ids],
       [
@@ -130,9 +136,10 @@ function RubricaPage() {
           customQuestions: state.customQuestions,
         },
         {
-          answers: contact.snapshot.answers,
-          hiddenCategories: contact.snapshot.hiddenCategories ?? [],
-          customQuestions: contact.snapshot.customQuestions ?? [],
+          answers: view.answers,
+          hiddenCategories: view.hiddenCategories,
+          customQuestions: view.customQuestions,
+          ...(view.locked.length ? { locked: view.locked, averages: view.averages } : {}),
         },
       ],
     );
@@ -141,7 +148,8 @@ function RubricaPage() {
   const doExport = async () => {
     setBusy(true);
     try {
-      const snap = mySnapshot();
+      // Protected questionnaires are already encrypted here: the PNG never holds a password.
+      const snap = await mySnapshot();
       const blob = await exportBackupPng({
         v: 1,
         name: snap.name,
@@ -153,6 +161,7 @@ function RubricaPage() {
         customQuestions: snap.customQuestions,
         savedAt: Date.now(),
         ...(state.identity?.keys?.publicKey ? { pub: state.identity.keys.publicKey } : {}),
+        ...protectedFieldsOf(snap),
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -172,6 +181,10 @@ function RubricaPage() {
     setBusy(true);
     try {
       const payload = await importBackupPng(file);
+      if (protectedSectionsOf(payload).length > 0) {
+        setPendingBackup(payload);
+        return;
+      }
       applyBackup(payload);
       toast.success("Backup aggiunto al tuo questionario");
     } catch {
@@ -200,6 +213,7 @@ function RubricaPage() {
           ...(payload.hiddenCategories ? { hiddenCategories: payload.hiddenCategories } : {}),
           customQuestions: payload.customQuestions,
           updatedAt: payload.savedAt,
+          ...protectedFieldsOf(payload),
         },
         payload.pub,
       );
@@ -553,6 +567,22 @@ function RubricaPage() {
       </section>
 
       <EmojiCollection />
+
+      {pendingBackup && (
+        <BackupRestoreDialog
+          boxes={boxesOf(pendingBackup)}
+          onCancel={() => setPendingBackup(null)}
+          onDone={(restored) => {
+            applyBackup(pendingBackup, restored);
+            setPendingBackup(null);
+            toast.success(
+              restored.length > 0
+                ? "Backup aggiunto, questionari protetti compresi"
+                : "Backup aggiunto: i questionari protetti non sono stati ripristinati",
+            );
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -84,6 +84,7 @@ function ProfilePage() {
         categories={CATEGORIES}
         defaultOpen
         hiddenKey="hidden"
+        section="main"
         {...(focus ? { focus } : {})}
         afterCategories={<NavPill to="/erotismo" label={EROTISMO_LABEL} />}
       />

@@ -2,13 +2,29 @@ import { useMemo } from "react";
 
 import type { Person } from "@/components/compare/CompareCategories";
 import type { Participant } from "./compat";
+import { resolveSnapshot } from "./protection";
 import { resolveQuestionType } from "./questions";
 import { useStore } from "./store";
 import { handleOf, type Contact, type Question } from "./types";
+import { useUnlocks } from "./unlocks";
 
-/** People, participants and the union of questions of a 2- or 3-way comparison. */
+/** A participant built from a person, protected sections included. */
+export function participantOf(p: Person): Participant {
+  return {
+    answers: p.answers,
+    hiddenCategories: p.hiddenCategories,
+    customQuestions: p.customQuestions ?? [],
+    ...(p.locked?.length ? { locked: p.locked, averages: p.averages ?? {} } : {}),
+  };
+}
+
+/**
+ * People, participants and the union of questions of a 2- or 3-way comparison. Each contact's
+ * protected questionnaires are opened independently: unlocking B never unlocks C.
+ */
 export function useComparePeople(b?: string, c?: string) {
   const { state, questions } = useStore();
+  const { unlocked } = useUnlocks();
   const contactB: Contact | undefined = b ? state.contacts.find((x) => x.handle === b) : undefined;
   const contactC: Contact | undefined = c ? state.contacts.find((x) => x.handle === c) : undefined;
 
@@ -23,18 +39,24 @@ export function useComparePeople(b?: string, c?: string) {
     },
     ...[contactB, contactC]
       .filter((x): x is Contact => Boolean(x))
-      .map((x) => ({
-        handle: x.handle,
-        name: x.name,
-        answers: x.snapshot?.answers ?? {},
-        hiddenCategories: x.snapshot?.hiddenCategories ?? [],
-        customQuestions: x.snapshot?.customQuestions ?? [],
-        mine: false,
-      })),
+      .map((x) => {
+        const view = resolveSnapshot(x.snapshot, unlocked[x.handle]);
+        return {
+          handle: x.handle,
+          name: x.name,
+          answers: view.answers,
+          hiddenCategories: view.hiddenCategories,
+          customQuestions: view.customQuestions,
+          locked: view.locked,
+          averages: view.averages,
+          mine: false,
+        };
+      }),
   ];
 
+  const contactDefs = people.filter((p) => !p.mine).flatMap((p) => p.customQuestions ?? []);
+  const defsKey = contactDefs.map((q) => `${q.id}:${q.type ?? ""}`).join("|");
   const allQuestions: Question[] = useMemo(() => {
-    const contactDefs = [contactB, contactC].flatMap((x) => x?.snapshot?.customQuestions ?? []);
     const definitions = [...questions.filter((q) => q.custom), ...contactDefs];
     const map = new Map<string, Question>();
     for (const q of questions) map.set(q.id, q);
@@ -45,13 +67,10 @@ export function useComparePeople(b?: string, c?: string) {
     return [...map.values()].map((q) =>
       q.custom ? { ...q, type: resolveQuestionType(q.id, definitions) } : q,
     );
-  }, [questions, contactB, contactC]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions, defsKey]);
 
-  const participants: Participant[] = people.map((p) => ({
-    answers: p.answers,
-    hiddenCategories: p.hiddenCategories,
-    customQuestions: p.customQuestions ?? [],
-  }));
+  const participants: Participant[] = people.map(participantOf);
 
   return { contactB, contactC, people, participants, allQuestions };
 }

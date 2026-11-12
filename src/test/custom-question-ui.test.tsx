@@ -29,7 +29,7 @@ function renderApp() {
   return render(
     <StoreProvider>
       <Probe />
-      <Questionnaire categories={J} defaultOpen hiddenKey="hidden-main" />
+      <Questionnaire categories={J} defaultOpen hiddenKey="hidden-main" section="main" />
     </StoreProvider>,
   );
 }
@@ -89,7 +89,7 @@ describe("custom question type selection", () => {
         ["J-ballare", "similarity"],
       ]),
     );
-    expect(api!.mySnapshot().customQuestions.map((q) => q.type)).toEqual([
+    expect((await api!.mySnapshot()).customQuestions.map((q) => q.type)).toEqual([
       "reciprocal",
       "similarity",
     ]);

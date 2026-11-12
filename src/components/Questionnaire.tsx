@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { CategoryHeader, ExpandAllPill } from "@/components/CategoryControls";
+import { PasswordControl } from "@/components/PasswordProtection";
 import { QuestionCard } from "@/components/QuestionCard";
 
 import {
@@ -10,6 +11,7 @@ import {
   categoryOfId,
   isReciprocal,
   type AnyCategoryKey,
+  type ProtectedSection,
   type QuestionType,
 } from "@/lib/questions";
 import { useStore } from "@/lib/store";
@@ -33,6 +35,8 @@ type Props = {
   afterCategories?: ReactNode;
   /** Shown instead of the category list when no category is configured. */
   emptyText?: string;
+  /** Which password this questionnaire's pill manages (Generale on /, Erotismo on /erotismo). */
+  section: ProtectedSection;
 };
 
 /** Categories, counts, hide/restore, custom questions and the hidden section of one questionnaire. */
@@ -43,6 +47,7 @@ export function Questionnaire({
   focus,
   afterCategories,
   emptyText,
+  section,
 }: Props) {
   const { state, questions, toggleDrawer, setDrawers, toggleCategoryHidden, addCustomQuestion } =
     useStore();
@@ -87,6 +92,7 @@ export function Questionnaire({
   return (
     <>
       <ExpandAllPill
+        leading={<PasswordControl section={section} />}
         openStates={visibleCats.map((c) => isOpen(c.key))}
         onSet={(open) =>
           setDrawers(

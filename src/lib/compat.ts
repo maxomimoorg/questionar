@@ -7,6 +7,8 @@
 import {
   categoryOfId,
   resolveQuestionType,
+  sectionOfCategory,
+  type ProtectedSection,
   type QuestionDefinition,
   type QuestionType,
 } from "./questions";
@@ -167,7 +169,14 @@ export type Participant = {
   answers: Record<string, Answer>;
   hiddenCategories?: string[];
   customQuestions?: QuestionDefinition[];
+  /** Password-protected sections not unlocked by the viewer: only `averages` are known there. */
+  locked?: ProtectedSection[];
+  /** Clear per-category means of the answers in the locked sections. */
+  averages?: Record<string, number>;
 };
+
+const isLockedFor = (p: Participant, category: string) =>
+  Boolean(p.locked?.length && p.locked.includes(sectionOfCategory(category)));
 
 /** Comparison mode of a question among these participants (defaults keep their built-in type). */
 export function typeAmong(questionId: string, participants: Participant[]): QuestionType {
@@ -222,13 +231,100 @@ export type AverageResult = {
   partialCount: number;
   /** Worst-case error of the average: mean of the per-question margins. */
   margin: number;
+  /**
+   * True when some category was estimated from the clear per-category means of a
+   * password-protected questionnaire instead of the single answers.
+   */
+  estimated?: boolean;
 };
 
-/** Average over a list of question ids, partial estimates included; null when nothing comparable. */
+/** Mean answer of one person in a category: the clear mean when locked, else from the answers. */
+function categoryMean(p: Participant, category: string, ids: string[]): number | undefined {
+  if (isLockedFor(p, category)) return p.averages?.[category];
+  const values = ids
+    .map((id) => p.answers[id])
+    .filter((a): a is Answer => Boolean(a?.answered && !a.hidden))
+    .map((a) => a.value);
+  return values.length ? values.reduce((s, v) => s + v, 0) / values.length : undefined;
+}
+
+/**
+ * Category in which some participant is locked: each pair is compared on its single answers
+ * when both are readable, otherwise on the two category means (100 − gap). The score is the
+ * mean of the comparable pairs; `weight` approximates how many questions the category holds.
+ */
+function lockedCategoryEstimate(
+  category: string,
+  ids: string[],
+  participants: Participant[],
+): { score: number; weight: number } | null {
+  if (participants.some((p) => p.hiddenCategories?.includes(category))) return null;
+  const scores: number[] = [];
+  for (let i = 0; i < participants.length; i++) {
+    for (let j = i + 1; j < participants.length; j++) {
+      const a = participants[i]!;
+      const b = participants[j]!;
+      if (!isLockedFor(a, category) && !isLockedFor(b, category)) {
+        const exact = plainAverage(ids, [a, b]);
+        if (exact) scores.push(exact.score);
+        continue;
+      }
+      const ma = categoryMean(a, category, ids);
+      const mb = categoryMean(b, category, ids);
+      if (ma !== undefined && mb !== undefined) scores.push(questionCompat(ma, mb, 0));
+    }
+  }
+  if (scores.length === 0) return null;
+  const readable = participants.filter((p) => !isLockedFor(p, category));
+  const weight = ids.filter((id) =>
+    readable.every((p) => p.answers[id]?.answered && !p.answers[id]?.hidden),
+  ).length;
+  return { score: mean(scores), weight: Math.max(1, weight) };
+}
+
+/**
+ * Average over a list of question ids, partial estimates included; null when nothing comparable.
+ * Categories where a participant's questionnaire is still password-protected are estimated
+ * from the clear category means and weighted by their number of questions.
+ */
 export function averageCompatDetail(
   questionIds: string[],
   participants: Participant[],
 ): AverageResult | null {
+  if (!participants.some((p) => p.locked?.length)) return plainAverage(questionIds, participants);
+  const byCategory = new Map<string, string[]>();
+  for (const id of questionIds) {
+    const cat = categoryOfId(id);
+    byCategory.set(cat, [...(byCategory.get(cat) ?? []), id]);
+  }
+  const parts: { score: number; weight: number; margin: number; partial: boolean }[] = [];
+  let estimated = false;
+  for (const [cat, ids] of byCategory) {
+    if (participants.some((p) => isLockedFor(p, cat))) {
+      const est = lockedCategoryEstimate(cat, ids, participants);
+      if (est) {
+        parts.push({ ...est, margin: 0, partial: false });
+        estimated = true;
+      }
+      continue;
+    }
+    for (const id of ids) {
+      const r = multiCompatDetail(id, participants);
+      if (r) parts.push({ score: r.score, weight: 1, margin: r.margin, partial: r.partial });
+    }
+  }
+  if (parts.length === 0) return null;
+  const total = parts.reduce((s, p) => s + p.weight, 0);
+  return {
+    score: Math.round(parts.reduce((s, p) => s + p.score * p.weight, 0) / total),
+    partialCount: parts.filter((p) => p.partial).length,
+    margin: Math.round(parts.reduce((s, p) => s + p.margin * p.weight, 0) / total),
+    ...(estimated ? { estimated: true } : {}),
+  };
+}
+
+/** Plain per-question average (no protected sections involved). */
+function plainAverage(questionIds: string[], participants: Participant[]): AverageResult | null {
   const results = questionIds
     .map((id) => multiCompatDetail(id, participants))
     .filter((v): v is CompatResult => v !== null);
@@ -246,8 +342,15 @@ export function averageCompat(questionIds: string[], participants: Participant[]
 }
 
 /** Display text for a score (the coloured part); the margin is shown apart by formatMargin. */
-export function formatCompat(result: { score: number } | null): string {
-  return result ? `${result.score}%` : "–";
+export function formatCompat(result: { score: number; estimated?: boolean } | null): string {
+  if (!result) return "–";
+  return `${result.estimated ? "≈" : ""}${result.score}%`;
+}
+
+/** Short note under a total partly estimated from password-protected category means. */
+export function estimateNote(result: AverageResult | null): string | null {
+  if (!result?.estimated) return null;
+  return "≈ Stima dalle medie per categoria: i dettagli protetti da password non sono ancora sbloccati.";
 }
 
 /** Uncoloured error margin of an estimate, e.g. "±23%"; empty for exact scores. */

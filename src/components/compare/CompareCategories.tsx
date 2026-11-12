@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { CategoryHeader, ExpandAllPill } from "@/components/CategoryControls";
 import { MarginText } from "@/components/MarginText";
+import { PasswordUnlockCard } from "@/components/compare/PasswordUnlockCard";
+import { participantOf } from "@/lib/compare-people";
 import { percentColor } from "@/lib/color";
 import {
   averageCompatDetail,
@@ -16,7 +18,7 @@ import {
   type Participant,
 } from "@/lib/compat";
 import { visibleToAll } from "@/lib/compat-map";
-import { isEroticQuestionId } from "@/lib/questions";
+import { isEroticQuestionId, type ProtectedSection } from "@/lib/questions";
 import { useStore } from "@/lib/store";
 import { giveOf, receiveOf, type Answer, type Question } from "@/lib/types";
 
@@ -27,14 +29,12 @@ export type Person = {
   hiddenCategories: string[];
   /** This person's custom question definitions (their type decides Normale/Complementare). */
   customQuestions?: Question[];
+  /** Password-protected questionnaires of this person that the viewer has not unlocked. */
+  locked?: ProtectedSection[];
+  /** Clear per-category means of those locked questionnaires. */
+  averages?: Record<string, number>;
   mine: boolean;
 };
-
-const participantOf = (p: Person): Participant => ({
-  answers: p.answers,
-  hiddenCategories: p.hiddenCategories,
-  customQuestions: p.customQuestions ?? [],
-});
 
 /** Marker on a comparison track: a dot for me, the avatar for everyone else. */
 function PersonThumb({ person, value }: { person: Person; value: number }) {
@@ -306,8 +306,11 @@ export function CompareCategories({
   people,
   defaultOpen,
   reveal,
+  section,
 }: {
   categories: { key: string; label: string }[];
+  /** Questionnaire shown here (Generale or Erotismo): decides which passwords are asked. */
+  section: ProtectedSection;
   allQuestions: Question[];
   people: Person[];
   defaultOpen: boolean;
@@ -318,6 +321,10 @@ export function CompareCategories({
   const [openCats, setOpenCats] = useState<Record<string, boolean>>({});
   const participants: Participant[] = people.map(participantOf);
   const visibleTo = (q: Question) => visibleToAll(q, people);
+  // Each protected participant is handled on their own: the others stay readable.
+  const lockedPeople = people.filter((p) => !p.mine && p.locked?.includes(section));
+  const readable = people.filter((p) => p.mine || !p.locked?.includes(section));
+  const readableParticipants = readable.map(participantOf);
 
   useEffect(() => {
     if (!reveal) return;
@@ -339,7 +346,7 @@ export function CompareCategories({
       cat,
       items: allQuestions
         .filter((q) => q.category === cat.key && visibleTo(q))
-        .map((q, i) => ({ q, i, c: multiCompat(q.id, participants) }))
+        .map((q, i) => ({ q, i, c: multiCompat(q.id, readableParticipants) }))
         .sort((x, y) => {
           if (x.c === null && y.c === null) return x.i - y.i;
           if (x.c === null) return 1;
@@ -357,6 +364,9 @@ export function CompareCategories({
         openStates={shown.map((x) => isOpen(x.cat.key))}
         onSet={(open) => setOpenCats(Object.fromEntries(shown.map((x) => [x.cat.key, open])))}
       />
+      {lockedPeople.map((p) => (
+        <PasswordUnlockCard key={p.handle} handle={p.handle} name={p.name} section={section} />
+      ))}
       {shown.length === 0 && (
         <p className="section-card text-[14px] text-muted-foreground">
           Nessuna domanda da confrontare qui.
@@ -397,14 +407,24 @@ export function CompareCategories({
             />
             {open && (
               <div className="space-y-2">
-                {items.map((q) => (
-                  <CompareRow
-                    key={q.id}
-                    question={q}
-                    people={people}
-                    known={questions.some((x) => x.id === q.id)}
-                  />
-                ))}
+                {readable.length < 2 ? (
+                  <p className="px-2 pb-2 text-[12px] text-muted-foreground">
+                    Le risposte di {lockedPeople.map((p) => p.name).join(" e ")} sono protette da
+                    password
+                    {lockedPeople.some((p) => p.averages?.[cat.key] !== undefined)
+                      ? ": la percentuale è una stima dalle medie della categoria."
+                      : " e in questa categoria non c’è ancora una media da confrontare."}
+                  </p>
+                ) : (
+                  items.map((q) => (
+                    <CompareRow
+                      key={q.id}
+                      question={q}
+                      people={readable}
+                      known={questions.some((x) => x.id === q.id)}
+                    />
+                  ))
+                )}
               </div>
             )}
           </section>

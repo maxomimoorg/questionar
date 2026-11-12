@@ -242,6 +242,18 @@ export function isEroticQuestionId(id: string): boolean {
   return isEroticCategory(categoryOfId(id));
 }
 
+/** The two independently password-protectable questionnaires: Generale (/) and Erotismo. */
+export type ProtectedSection = "main" | "erotic";
+export const PROTECTED_SECTIONS: readonly ProtectedSection[] = ["main", "erotic"];
+
+export function sectionOfCategory(key: string): ProtectedSection {
+  return isEroticCategory(key) ? "erotic" : "main";
+}
+
+export function sectionOfQuestionId(id: string): ProtectedSection {
+  return sectionOfCategory(categoryOfId(id));
+}
+
 export const ALL_CATEGORIES: { key: AnyCategoryKey; label: string }[] = [
   ...CATEGORIES,
   ...EROTISMO_CATEGORIES,

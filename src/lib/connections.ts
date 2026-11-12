@@ -14,7 +14,8 @@ export type ConnStore = {
   contacts: () => Contact[];
   requests: () => ConnectionRequest[];
   myName: () => string;
-  mySnapshot: () => ProfileSnapshot;
+  /** May be async: protected sections are encrypted before sending. */
+  mySnapshot: () => ProfileSnapshot | Promise<ProfileSnapshot>;
   addRequest: (r: ConnectionRequest) => void;
   updateRequest: (handle: string, p: Partial<ConnectionRequest>) => void;
   removeRequest: (handle: string) => void;
@@ -57,11 +58,11 @@ export class Connections {
   peerKey = (handle: string): JsonWebKey | undefined =>
     this.contact(handle)?.publicKey ?? this.request(handle)?.publicKey ?? this.keyCache.get(handle);
 
-  private profile(): Omit<Extract<Envelope, { type: "profile" }>, "type"> {
+  private async profile(): Promise<Omit<Extract<Envelope, { type: "profile" }>, "type">> {
     return {
       from: this.me,
       name: this.store.myName(),
-      snapshot: sanitizeSnapshot(this.store.mySnapshot()),
+      snapshot: sanitizeSnapshot(await this.store.mySnapshot()),
     };
   }
 
@@ -105,7 +106,7 @@ export class Connections {
         void this.send(h, { type: "keyx", from: this.me });
       } else {
         void this.p2p.upgrade(h);
-        void this.send(h, { type: "profile", ...this.profile() });
+        void this.profile().then((p) => this.send(h, { type: "profile", ...p }));
       }
     },
     onMessage: (msg, meta) => this.onMessage(msg, meta),
@@ -122,7 +123,7 @@ export class Connections {
           if (!this.peerKey(from)) this.keyCache.set(from, meta.pub);
           s.updateContact(from, { roomKey: from });
           await this.p2p?.track(from);
-          await this.send(from, { type: "accept", ...this.profile() });
+          await this.send(from, { type: "accept", ...(await this.profile()) });
           return;
         }
         if (!this.request(from, "incoming")) {
@@ -144,10 +145,10 @@ export class Connections {
       }
       case "keyx": {
         if (this.request(from, "outgoing"))
-          await this.send(from, { type: "preview", ...this.profile() });
+          await this.send(from, { type: "preview", ...(await this.profile()) });
         else if (this.contact(from)) {
           s.updateContact(from, { roomKey: from });
-          await this.send(from, { type: "profile", ...this.profile() });
+          await this.send(from, { type: "profile", ...(await this.profile()) });
         }
         return;
       }
@@ -173,7 +174,7 @@ export class Connections {
         });
         await this.p2p?.track(from);
         // Make sure the other side also has our profile (the preview may have been missed).
-        await this.send(from, { type: "profile", ...this.profile() });
+        await this.send(from, { type: "profile", ...(await this.profile()) });
         if (out) this.notify("success", `${msg.name} ha accettato la connessione`, `acc-${from}`);
         return;
       }
@@ -230,7 +231,7 @@ export class Connections {
     if (!this.request(handle, "incoming")) return false;
     this.store.acceptRequest(handle);
     await this.p2p?.track(handle); // follow the requester's presence from now on
-    const ok = await this.send(handle, { type: "accept", ...this.profile() });
+    const ok = await this.send(handle, { type: "accept", ...(await this.profile()) });
     if (this.p2p?.isOnline(handle)) void this.p2p.upgrade(handle);
     return ok;
   }

@@ -36,6 +36,7 @@ import {
   DemoFavorite,
   DemoHidden,
   DemoOfflineRequest,
+  DemoPasswordProtection,
   DemoProfileTags,
   DemoReciprocal,
   DemoSimilarity,
@@ -322,11 +323,18 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
               È il backup del tuo profilo e la tua carta d’identità. Inviala come file originale,
               senza comprimerla. Chi la riceve vede il confronto anche offline.
             </Feature>
+            <Feature title="Proteggi con password" demo={<DemoPasswordProtection />}>
+              Con il lucchetto accanto a «Espandi tutte» dai una password al questionario generale e
+              una, separata, a Erotismo. Le medie per categoria restano consultabili; risposte,
+              commenti e domande personalizzate viaggiano cifrati e si aprono solo con la password
+              che comunichi tu.
+            </Feature>
             <div role="note" className="tutorial-warning">
               <ShieldAlert size={18} className="shrink-0" aria-hidden="true" />
               <p className="text-[13px]">
-                <strong>Nascondere non significa cifrare.</strong> Chi riceve la scheda può leggerla
-                e inoltrarla: condividila solo con persone fidate.
+                <strong>Nascondere non significa cifrare.</strong> Chi riceve la scheda o il tuo
+                profilo può leggere e inoltrare ciò che viaggia in chiaro: per mantenere riservate
+                le risposte inoltrate imposta una password.
               </p>
             </div>
             <Feature title="La tua collezione emoji" demo={<DemoEmojiCollection />}>

@@ -106,6 +106,7 @@ function EroticPage() {
         categories={EROTISMO_CATEGORIES}
         defaultOpen={false}
         hiddenKey="hidden-erotismo"
+        section="erotic"
         {...(focus ? { focus } : {})}
         emptyText="Questa sezione facoltativa non ha ancora categorie: verranno aggiunte in un prossimo aggiornamento."
       />

@@ -10,6 +10,7 @@ import {
   Heading,
   Inbox,
   Italic,
+  KeyRound,
   Link2,
   Lock,
   Mail,
@@ -27,7 +28,7 @@ import { useEffect, useState } from "react";
 
 import { AnswerSlider } from "@/components/AnswerSlider";
 import { Avatar } from "@/components/Avatar";
-import { CategoryHeader, ExpandAllPill } from "@/components/CategoryControls";
+import { CategoryHeader, ExpandAllPill, PasswordPill } from "@/components/CategoryControls";
 import { MarginText } from "@/components/MarginText";
 import { ProfileTagChip } from "@/components/ProfileTags";
 import { percentColor } from "@/lib/color";
@@ -38,6 +39,7 @@ import {
   TUTORIAL_CUSTOM_CATEGORY,
   TUTORIAL_LIST_CATEGORIES,
   TUTORIAL_MAP_CATEGORIES,
+  TUTORIAL_PASSWORD_DEMO,
   TUTORIAL_QUESTIONS,
   categoryLabel,
   categoryQuestionCount,
@@ -773,6 +775,64 @@ export function DemoZeroServer() {
             <Cloud size={26} />
           </span>
           <span className="text-[11px] text-muted-foreground">nessun server</span>
+        </div>
+      </div>
+    </Stage>
+  );
+}
+
+/**
+ * Password protection: the category mean (real maths, 100 − gap of the two clear means) is
+ * always visible; the single answer stays encrypted until the example password is entered.
+ */
+export function DemoPasswordProtection() {
+  const demo = TUTORIAL_PASSWORD_DEMO;
+  const ref = TUTORIAL_QUESTIONS[demo.question];
+  const [active, setActive] = useState(true);
+  const [unlocked, setUnlocked] = useState(false);
+  const categoryScore = questionCompat(demo.averages.mine, demo.averages.theirs, 0);
+  const questionScore = questionCompat(demo.answers.mine, demo.answers.theirs, 0);
+  const locked = active && !unlocked;
+  return (
+    <Stage hint="tocca">
+      <div className="space-y-2">
+        <div className="flex justify-end">
+          <PasswordPill
+            active={active}
+            onClick={() => {
+              setActive((a) => !a);
+              setUnlocked(false);
+            }}
+          />
+        </div>
+        <div className="flex items-center justify-between rounded-xl bg-surface px-3 py-2 text-[13px]">
+          <span className="font-semibold text-brand">{categoryLabel(ref.category)}</span>
+          <span data-testid="demo-password-category">
+            {active && !unlocked ? "≈" : ""}
+            <Percent value={active && !unlocked ? categoryScore : questionScore} />
+          </span>
+        </div>
+        <div className="rounded-xl bg-surface px-3 py-2" data-testid="demo-password-question">
+          <p className="text-[13px] leading-snug">{ref.text}</p>
+          {locked ? (
+            <div className="mt-1 flex items-center justify-between gap-2 text-[12px] text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Lock size={12} aria-hidden="true" /> risposte cifrate
+              </span>
+              <button
+                type="button"
+                onClick={() => setUnlocked(true)}
+                className="flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground"
+              >
+                <KeyRound size={12} aria-hidden="true" /> Sblocca con «{demo.password}»
+              </button>
+            </div>
+          ) : (
+            <p className="mt-1 text-[12px]">
+              io <Percent value={demo.answers.mine} /> · Luna{" "}
+              <Percent value={demo.answers.theirs} /> · <Percent value={questionScore} />
+            </p>
+          )}
         </div>
       </div>
     </Stage>

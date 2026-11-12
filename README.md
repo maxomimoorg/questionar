@@ -2,6 +2,9 @@
 
 L'anti-dating app per connessioni reali: questionario di compatibilità, 100% zero-server
 (dati in IndexedDB, scambio P2P cifrato tramite il relay Cloudflare in `relay/`, backup PNG steganografici).
+Il questionario generale ed Erotismo si possono proteggere con due password indipendenti: gli altri
+vedono le medie per categoria, mentre risposte, commenti e domande personalizzate viaggiano cifrati
+(PBKDF2 + AES-256-GCM).
 
 ## Documentazione
 
@@ -10,6 +13,8 @@ L'anti-dating app per connessioni reali: questionario di compatibilità, 100% ze
 - [Preferiti locali e griglia emoji dell'onboarding](docs/preferiti.md)
 - [Avvio rapido, caratteri inclusi e offline](docs/avvio-rapido.md)
 - [Domande a reciprocità Fare/Ricevere e calcolo incrociato](docs/reciprocita.md)
+- [Categorie, elementi nascosti ed Erotismo](docs/categorie-ed-erotismo.md)
+- [Protezione con password (Generale ed Erotismo)](docs/protezione-password.md)
 
 ## Sviluppo
 

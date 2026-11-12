@@ -18,6 +18,7 @@ export const TUTORIAL_QUESTIONS = {
   similarity: { category: "B", text: "Programmare delle vacanze di coppia", type: "similarity" },
   reciprocal: { category: "F", text: "Contatto fisico", type: "reciprocal" },
   hidden: { category: "A", text: "Procreazione", type: "similarity" },
+  protected: { category: "I", text: "Contribuire equamente alle spese", type: "similarity" },
 } as const satisfies Record<string, { category: AnyCategoryKey; text: string; type: QuestionType }>;
 
 export type TutorialQuestionKey = keyof typeof TUTORIAL_QUESTIONS;
@@ -27,6 +28,24 @@ export const TUTORIAL_MAP_CATEGORIES: AnyCategoryKey[] = ["A", "E", "I"];
 export const TUTORIAL_LIST_CATEGORIES: AnyCategoryKey[] = ["A", "B", "C"];
 /** Category a custom question is filed under in the "Domande personalizzate" demo. */
 export const TUTORIAL_CUSTOM_CATEGORY: AnyCategoryKey = "B";
+
+/**
+ * "Proteggi con password" demo (DemoPasswordProtection): a protected Finanze category whose
+ * clear means stay visible, and the example password that opens the single answer.
+ */
+export const TUTORIAL_PASSWORD_DEMO = {
+  question: "protected",
+  password: "girasole",
+  /** Category means as they travel in clear (io / Luna). */
+  averages: { mine: 72, theirs: 58 },
+  /** The single answers, readable only once unlocked. */
+  answers: { mine: 80, theirs: 65 },
+} as const satisfies {
+  question: TutorialQuestionKey;
+  password: string;
+  averages: { mine: number; theirs: number };
+  answers: { mine: number; theirs: number };
+};
 
 export function categoryLabel(key: AnyCategoryKey): string {
   return ALL_CATEGORIES.find((c) => c.key === key)?.label ?? key;

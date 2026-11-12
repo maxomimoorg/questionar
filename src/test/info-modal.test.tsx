@@ -45,8 +45,13 @@ const CHAPTERS: { title: RegExp; features: string[]; text?: string[] }[] = [
   },
   {
     title: /I tuoi dati restano tuoi/,
-    features: ["Zero-server", "La scheda avatar", "La tua collezione emoji"],
-    text: ["IndexedDB", "Nascondere non significa cifrare"],
+    features: [
+      "Zero-server",
+      "La scheda avatar",
+      "Proteggi con password",
+      "La tua collezione emoji",
+    ],
+    text: ["IndexedDB", "Nascondere non significa cifrare", "imposta una password"],
   },
 ];
 

@@ -9,7 +9,7 @@ import { categoryBreakdown } from "@/lib/compat-map";
 import { MarginText } from "@/components/MarginText";
 import { percentColor } from "@/lib/color";
 import { useComparePeople } from "@/lib/compare-people";
-import { averageCompatDetail, formatCompat, partialNote } from "@/lib/compat";
+import { averageCompatDetail, estimateNote, formatCompat, partialNote } from "@/lib/compat";
 import { EROTISMO_CATEGORIES, EROTISMO_LABEL, isEroticQuestionId } from "@/lib/questions";
 
 export const Route = createFileRoute("/confronto_/erotismo")({
@@ -44,6 +44,7 @@ function EroticComparePage() {
     participants,
   );
   const note = partialNote(detail);
+  const estimate = estimateNote(detail);
   const [reveal, setReveal] = useState<{ key: string; n: number } | null>(null);
   const bars = categoryBreakdown(EROTISMO_CATEGORIES, eroticQuestions, participants);
 
@@ -87,6 +88,7 @@ function EroticComparePage() {
           )}
         </div>
         {note && <p className="text-[12px] text-muted-foreground">{note}</p>}
+        {estimate && <p className="text-[12px] text-muted-foreground">{estimate}</p>}
         <p className="mt-1 text-[12px] text-muted-foreground">
           Con{" "}
           {people
@@ -110,6 +112,7 @@ function EroticComparePage() {
         people={people}
         defaultOpen={false}
         reveal={reveal}
+        section="erotic"
       />
     </div>
   );

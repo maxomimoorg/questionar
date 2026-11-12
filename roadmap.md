@@ -32,3 +32,4 @@
 - [x] Tutorial demos quote only real questions and categories (with real counts), verified by tests.
 - [x] Comparison chart on /confronto and /confronto/erotismo: overall ring plus category bars always sorted by affinity; tapping a bar opens and scrolls to that category (Erotismo bar opens its page); tests.
 - [x] Fix review findings: /confronto without ?b= no longer errors, QR colours from theme tokens, /erotismo precached offline, Fast Refresh splits, handle check rewritten, project formatted (127 tests pass).
+- [x] Password protection per questionnaire (Generale on /, Erotismo on /erotismo): PBKDF2/AES-GCM compartments in snapshot, P2P and PNG; owner pill + modal; protected comparison with clear category averages, unlock card, progressive delay, IndexedDB unlock persistence per keyVersion, 3-way independence; tutorial feature + demo; docs; tests (153 tests pass; set/unlock/reload verified in browser).

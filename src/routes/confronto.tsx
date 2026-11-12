@@ -7,7 +7,13 @@ import { z } from "zod";
 import { Avatar } from "@/components/Avatar";
 import { CompactProfileTags } from "@/components/ProfileTags";
 import { percentColor } from "@/lib/color";
-import { averageCompatDetail, formatCompat, partialNote, type AverageResult } from "@/lib/compat";
+import {
+  averageCompatDetail,
+  estimateNote,
+  formatCompat,
+  partialNote,
+  type AverageResult,
+} from "@/lib/compat";
 import { CATEGORIES, EROTISMO_LABEL, isEroticQuestionId } from "@/lib/questions";
 import { useStore } from "@/lib/store";
 import { MarginText } from "@/components/MarginText";
@@ -15,7 +21,7 @@ import { NavPill } from "@/components/CategoryControls";
 import { CompareCategories } from "@/components/compare/CompareCategories";
 import { CompatibilityMap } from "@/components/compare/CompatibilityMap";
 import { categoryBreakdown, sortByAffinity } from "@/lib/compat-map";
-import { useComparePeople } from "@/lib/compare-people";
+import { participantOf, useComparePeople } from "@/lib/compare-people";
 import { handleOf } from "@/lib/types";
 
 export const Route = createFileRoute("/confronto")({
@@ -68,6 +74,7 @@ function ComparePage() {
   const eroticIds = allQuestions.filter((q) => isEroticQuestionId(q.id)).map((q) => q.id);
   const eroticDetail = averageCompatDetail(eroticIds, participants);
   const overallNote = partialNote(overallDetail);
+  const overallEstimate = estimateNote(overallDetail);
   const [reveal, setReveal] = useState<{ key: string; n: number } | null>(null);
   const EROTISMO_KEY = "erotismo";
   const hasErotic = eroticIds.length > 0;
@@ -137,6 +144,9 @@ function ComparePage() {
               )}
             </div>
             {overallNote && <p className="text-[12px] text-muted-foreground">{overallNote}</p>}
+            {overallEstimate && (
+              <p className="text-[12px] text-muted-foreground">{overallEstimate}</p>
+            )}
           </div>
           <button
             onClick={() => {
@@ -178,10 +188,7 @@ function ComparePage() {
               ? null
               : averageCompatDetail(
                   allQuestions.map((q) => q.id),
-                  [
-                    { answers: state.answers, hiddenCategories: state.hiddenCategories },
-                    { answers: p.answers, hiddenCategories: p.hiddenCategories },
-                  ],
+                  [participantOf(people[0]!), participantOf(p)],
                 );
             const pair = pairDetail?.score ?? null;
             const showPair = Boolean(contactC && !p.mine);
@@ -347,6 +354,11 @@ function ComparePage() {
                   {partialNote(expandedProfile.compatibility)}
                 </p>
               )}
+              {!expandedProfile.mine && estimateNote(expandedProfile.compatibility) && (
+                <p className="text-[12px] text-muted-foreground">
+                  {estimateNote(expandedProfile.compatibility)}
+                </p>
+              )}
             </div>
           </section>
         </div>
@@ -396,6 +408,7 @@ function ComparePage() {
         people={people}
         defaultOpen
         reveal={reveal}
+        section="main"
       />
       <NavPill
         to="/confronto/erotismo"

@@ -21,6 +21,7 @@ import { DiagnosticsBadge } from "../components/diagnostics/DiagnosticsBadge";
 import { PeerProvider } from "../lib/peer";
 import { captureInvite } from "../lib/qr-invite";
 import { StoreProvider, useStore } from "../lib/store";
+import { UnlockProvider } from "../lib/unlocks";
 import { setupServiceWorker } from "../lib/sw-register";
 
 function NotFoundComponent() {
@@ -160,10 +161,12 @@ function AppFrame() {
 
   return (
     <PeerProvider>
-      <Header />
-      <main className="pb-10">
-        <Outlet />
-      </main>
+      <UnlockProvider>
+        <Header />
+        <main className="pb-10">
+          <Outlet />
+        </main>
+      </UnlockProvider>
     </PeerProvider>
   );
 }

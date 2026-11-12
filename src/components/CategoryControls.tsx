@@ -7,6 +7,8 @@ import {
   ChevronsUpDown,
   Eye,
   EyeOff,
+  KeyRound,
+  LockOpen,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -16,14 +18,18 @@ import { expandAllAction } from "@/lib/visibility";
 export function ExpandAllPill({
   openStates,
   onSet,
+  leading,
 }: {
   openStates: boolean[];
   onSet: (open: boolean) => void;
+  /** Rendered just to the left of the pill (e.g. the questionnaire's password pill). */
+  leading?: ReactNode;
 }) {
   const action = expandAllAction(openStates);
   const disabled = openStates.length === 0;
   return (
-    <div className="flex justify-end">
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {leading}
       <button
         type="button"
         disabled={disabled}
@@ -34,6 +40,34 @@ export function ExpandAllPill({
         {action === "expand" ? "Espandi tutte" : "Comprimi tutte"}
       </button>
     </div>
+  );
+}
+
+/**
+ * Password pill of one questionnaire: neutral with an open padlock when off, highlighted with a
+ * key when a password is active. It only opens the management dialog.
+ */
+export function PasswordPill({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-haspopup="dialog"
+      data-active={active ? "true" : "false"}
+      data-testid="password-pill"
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+        active
+          ? "bg-accent text-accent-foreground shadow-action-glow"
+          : "bg-surface-2 text-foreground"
+      }`}
+    >
+      {active ? (
+        <KeyRound size={14} aria-hidden="true" />
+      ) : (
+        <LockOpen size={14} aria-hidden="true" />
+      )}
+      {active ? "Password attiva" : "Proteggi con password"}
+    </button>
   );
 }
 

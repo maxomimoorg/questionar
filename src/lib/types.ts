@@ -1,5 +1,11 @@
-import type { CategoryKey, Question } from "./questions";
-import { MOVED_QUESTION_IDS, sanitizeCustomQuestions } from "./questions";
+import type { CategoryKey, ProtectedSection, Question } from "./questions";
+import {
+  ALL_CATEGORIES,
+  MOVED_QUESTION_IDS,
+  sanitizeCustomQuestions,
+  sectionOfCategory,
+} from "./questions";
+import { sanitizeBox, type ProtectedBox } from "./password-crypto";
 import type { KeyPairJwk } from "./keys";
 import type { ProfileTags } from "./profile-tags";
 
@@ -112,7 +118,33 @@ export type ProfileSnapshot = {
   hiddenCategories?: string[];
   customQuestions: Question[];
   updatedAt: number;
+  /**
+   * Generale protected by password: per-category means of the owner's answers stay readable,
+   * while its answers, comments and custom questions travel only inside `mainProtected`.
+   */
+  mainAverages?: Record<string, number>;
+  mainProtected?: ProtectedBox;
+  /** Same two fields for the Erotismo questionnaire, with its own independent password. */
+  eroticAverages?: Record<string, number>;
+  eroticProtected?: ProtectedBox;
 };
+
+const CATEGORY_KEYS = new Set<string>(ALL_CATEGORIES.map((c) => c.key));
+
+/** Clear per-category means of one protected section: known keys of that section, 0–100. */
+export function sanitizeAverages(
+  raw: unknown,
+  section: ProtectedSection,
+): Record<string, number> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!CATEGORY_KEYS.has(k) || sectionOfCategory(k) !== section) continue;
+    const value = percent(v);
+    if (value !== undefined) out[k] = value;
+  }
+  return out;
+}
 
 /**
  * Keeps only the shareable fields of a snapshot. Older app versions also sent a public
@@ -128,7 +160,62 @@ export function sanitizeSnapshot(snap: ProfileSnapshot): ProfileSnapshot {
     hiddenCategories: sanitizeHiddenCategories(raw.hiddenCategories),
     customQuestions: sanitizeCustomQuestions(raw.customQuestions),
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : 0,
+    ...protectedFields(raw, "main"),
+    ...protectedFields(raw, "erotic"),
   };
+}
+
+/** A protected section is kept only with a well-formed box; passwords are never copied. */
+function protectedFields(raw: Record<string, unknown>, section: ProtectedSection) {
+  const box = sanitizeBox(raw[`${section}Protected`]);
+  if (!box) return {};
+  return {
+    [`${section}Averages`]: sanitizeAverages(raw[`${section}Averages`], section) ?? {},
+    [`${section}Protected`]: box,
+  };
+}
+
+/** The owner's password of one section, kept only in this device's IndexedDB. */
+export type OwnerSecret = { password: string; salt: string; keyVersion: number };
+
+/**
+ * Password protection of the owner's two questionnaires. `lastVersion` remembers the highest
+ * keyVersion ever used per section, so a removed and re-set password never reuses a version.
+ */
+export type OwnerProtection = {
+  main?: OwnerSecret;
+  erotic?: OwnerSecret;
+  lastVersion?: Partial<Record<ProtectedSection, number>>;
+};
+
+/** Keeps only well-formed owner secrets (IndexedDB load). */
+export function sanitizeProtection(raw: unknown): OwnerProtection {
+  if (!raw || typeof raw !== "object") return {};
+  const r = raw as Partial<Record<keyof OwnerProtection, unknown>>;
+  const out: OwnerProtection = {};
+  for (const section of ["main", "erotic"] as const) {
+    const s = r[section] as Partial<OwnerSecret> | undefined;
+    if (
+      s &&
+      typeof s.password === "string" &&
+      s.password.length > 0 &&
+      typeof s.salt === "string" &&
+      typeof s.keyVersion === "number" &&
+      Number.isInteger(s.keyVersion) &&
+      s.keyVersion > 0
+    )
+      out[section] = { password: s.password, salt: s.salt, keyVersion: s.keyVersion };
+  }
+  const lv = r.lastVersion as Record<string, unknown> | undefined;
+  if (lv && typeof lv === "object") {
+    const last: Partial<Record<ProtectedSection, number>> = {};
+    for (const section of ["main", "erotic"] as const) {
+      const v = lv[section];
+      if (typeof v === "number" && Number.isInteger(v) && v > 0) last[section] = v;
+    }
+    out.lastVersion = last;
+  }
+  return out;
 }
 
 export type Contact = {
@@ -177,6 +264,8 @@ export type AppState = {
   requests: ConnectionRequest[];
   tags: ProfileTags;
   network: NetworkPrefs;
+  /** Local only: never part of ProfileSnapshot, P2P messages, backups or diagnostics. */
+  protection: OwnerProtection;
 };
 
 export const EMPTY_STATE: AppState = {
@@ -191,6 +280,7 @@ export const EMPTY_STATE: AppState = {
   contacts: [],
   requests: [],
   network: {},
+  protection: {},
   tags: {
     vegan: false,
     animali: false,
