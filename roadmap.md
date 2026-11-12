@@ -1,8 +1,8 @@
 # QuestionAR — requested changes
 
 - [x] Restore original local graphics and icon-generation source from questionar-fixed.zip; remove CDN asset pointers and verify local PWA references without changing app logic (original bytes verified, local resources return 200, logos render, 28 tests pass).
-- [ ] Apply the requested fuchsia/teal day and night tokens, primary/focus glow and coherent controls.
-- [ ] Verify day/night switching, palette fidelity, readability, tag appearance and existing tests.
+- [x] Apply the requested fuchsia/teal day and night tokens, primary/focus glow and coherent controls (tokens in src/styles.css: teal in light mode, neon fuchsia in dark mode, glow tokens for primary/focus).
+- [x] Verify day/night switching, palette fidelity, readability, tag appearance and existing tests (palette verified in browser across theme modes; tests pass).
 - [x] Import the uploaded app while preserving its zero-server behavior and existing appearance.
 - [x] Replace negative-tag X icons and labels with Ban/divieto; use destructive red without the white separator.
 - [x] Expand the tutorial with interactive tags, custom questions, rich bio, three-way/category comparisons, local privacy, PNG steganography and emoji collections.
@@ -23,7 +23,7 @@
 - [x] Error margin "±N%" (uncoloured) on partial estimates: questions, categories, totals, address book, tutorial, docs.
 - [x] Categories: expand/collapse all, completion counts, category hiding with independent per-question state, hidden sections (main + Erotismo).
 - [x] Erotismo: empty structure, discreet access pill, own page and comparison page, counted once in totals; tutorial, docs, diagnostics checklist, tests (90 pass).
-- [ ] Erotismo content: sub-categories and questions to be supplied by the author.
+- [x] Erotismo content: 6 sub-categories (XA–XF) with 36 questions present in src/lib/questions.ts; author may still expand sparse categories (e.g. Feticismo) later.
 - [x] Missing icon files: logo-questionar.png saved as src/logo.png; favicon, logo, apple-touch-icon and icon-192/512 generated with scripts/generate-icons.mjs.
 - [x] Question counts confirmed by the author as current (43 Fare/Ricevere, 9 moved, Intimità fisica 7, Vanilla 8); tests and docs updated.
 - [x] Custom question type Normale/Complementare: chosen at creation, saved on the definition, carried through IndexedDB, snapshot, P2P, PNG backup and import (legacy/invalid = Normale); questionnaire, comparisons and per-question/category/total scores; tutorial, docs and tests.

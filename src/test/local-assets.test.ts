@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -46,5 +47,17 @@ describe("Self-contained PWA assets", () => {
     expect(worker).toMatch(/req\.mode === "navigate"[\s\S]*networkFirstWithTimeout/);
     expect(worker).toMatch(/isHashedAsset\(url\)[\s\S]*cacheFirst/);
     expect(worker).not.toContain("notificationclick");
+  });
+
+  it("ships the QuestionAR favicon.ico, not the Lovable template icon", () => {
+    const ico = readFileSync("public/favicon.ico");
+    const LOVABLE_DEFAULT_FAVICON =
+      "dd821076a9b03adc2173c93956226aea3d92482d7578fc4339c5d3a2e9c24586";
+    expect(createHash("sha256").update(ico).digest("hex")).not.toBe(LOVABLE_DEFAULT_FAVICON);
+    // ICO header: reserved 0, type 1 (icon), then the image count.
+    expect(ico.readUInt16LE(0)).toBe(0);
+    expect(ico.readUInt16LE(2)).toBe(1);
+    const sizes = Array.from({ length: ico.readUInt16LE(4) }, (_, i) => ico[6 + i * 16] || 256);
+    expect(sizes).toEqual(expect.arrayContaining([16, 32, 48]));
   });
 });

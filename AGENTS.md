@@ -35,6 +35,7 @@ use the editor.
 - Keep heading/structural brand tokens separate from primary actions; use the shared Button default variant for solid CTAs so both theme modes retain consistent action colors and glow.
 - Resolve QR ink from semantic CSS tokens into a hex canvas color for the QR library; use high-contrast structural ink rather than decorative accents to preserve scanning.
 - Keep original graphics in public/ and the icon-generation master and script in src/logo.png and scripts/generate-icons.mjs; local static references keep GitHub/Cloudflare Pages deployments independent of Lovable asset hosting.
+- Every app icon (public/favicon.ico, favicon.png, apple-touch-icon.png, icon-192.png, icon-512.png, logo.png) must derive from the QuestionAR logo master in src/logo.png, never from the Lovable template; check them whenever icons, the logo, the manifest or an imported archive change, because the template's default favicon.ico silently survives imports and remixes.
 - Diagnostic mode lives in src/lib/diagnostics and is a no-op unless activated; app code may only call recordEvent with allow-listed technical events, keeping user data out of reports.
 - The app version comes only from package.json, injected as VITE_APP_VERSION by vite.config.ts (and vitest.config.ts); never hardcode it in source.
 - Everything sent or saved as ProfileSnapshot passes through sanitizeSnapshot in src/lib/types.ts; address-book data such as Contact.favorite must stay local and never enter snapshots, P2P messages or backups.
