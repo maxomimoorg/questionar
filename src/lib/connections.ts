@@ -218,6 +218,14 @@ export class Connections {
     return "sent";
   }
 
+  /** Re-sends the request message of an existing outgoing request (receiver dedupes by handle). */
+  async resendRequest(handle: string) {
+    const p2p = this.p2p;
+    if (!p2p || p2p.getMode() === "offline" || !this.request(handle, "outgoing")) return false;
+    await p2p.track(handle);
+    return p2p.sendWithRetry(handle, { type: "request", from: this.me });
+  }
+
   async accept(handle: string) {
     if (!this.request(handle, "incoming")) return false;
     this.store.acceptRequest(handle);

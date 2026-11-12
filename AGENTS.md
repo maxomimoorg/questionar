@@ -47,3 +47,5 @@ use the editor.
 - Do not import components/ui/button into components shared by several lazily split routes (e.g. Questionnaire): the dev bundler splits it into a chunk evaluated before the React refresh preamble and the app stays on "Carico i tuoi dati…".
 - The comparison chart (CompatibilityMap) gets its bars only from categoryBreakdown/sortByAffinity in src/lib/compat-map.ts, which share visibleToAll and averageCompatDetail with CompareCategories, so every bar equals its drawer header.
 - Component files export only components; shared lists, hooks and helpers live in sibling .ts files or src/lib so Fast Refresh keeps working (shadcn ui and context providers excepted).
+
+- QR invites (`/rubrica?handle=`) are persisted in localStorage by `src/lib/qr-invite.ts` and sent by PeerProvider once the relay is connected; clear them only after relay acceptance, cancel or definitive invalidity, so invites survive onboarding, reloads and offline periods.

@@ -14,6 +14,7 @@ import { Connections } from "./connections";
 import { generateKeyPair } from "./keys";
 import { RELAY_URL, relayWsUrl } from "./transport";
 import { useStore } from "./store";
+import { clearInvite, processInvite } from "./qr-invite";
 import { handleOf, type ProfileSnapshot } from "./types";
 
 type PeerCtx = {
@@ -22,6 +23,8 @@ type PeerCtx = {
   issue: NetIssue;
   relayConfigured: boolean;
   sendRequest: (handle: string) => Promise<void>;
+  /** Re-checks the pending QR invite (after a new one is captured). */
+  checkInvite: () => void;
   accept: (handle: string) => Promise<void>;
   reject: (handle: string) => Promise<void>;
   cancel: (handle: string) => Promise<void>;
@@ -115,6 +118,29 @@ export function PeerProvider({ children }: { children: ReactNode }) {
     };
   }, [myHandle, hasKeys]);
 
+  // QR invite: sends the pending request once the relay is connected; retries on reconnect.
+  const [inviteTick, setInviteTick] = useState(0);
+  useEffect(() => {
+    const conn = connRef.current;
+    if (!connected || !conn || !myHandle) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let alive = true;
+    void processInvite({
+      myHandle,
+      contacts: () => storeRef.current.state.contacts,
+      requests: () => storeRef.current.state.requests,
+      send: (h) => conn.sendRequest(h),
+      resend: (h) => conn.resendRequest(h),
+      notify: (kind, text, id) => toast[kind](text, { id }),
+    }).then((r) => {
+      if (alive && r === "pending") timer = setTimeout(() => setInviteTick((t) => t + 1), 20000);
+    });
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [connected, myHandle, inviteTick]);
+
   const value = useMemo<PeerCtx>(
     () => ({
       connected,
@@ -131,6 +157,7 @@ export function PeerProvider({ children }: { children: ReactNode }) {
           toast.error("Rete non raggiungibile, riprova tra poco", { id: "net-unreachable" });
         else toast.success("Richiesta inviata", { id: `sent-${handle}` });
       },
+      checkInvite: () => setInviteTick((t) => t + 1),
       accept: async (handle) => {
         await connRef.current?.accept(handle);
       },
@@ -138,6 +165,7 @@ export function PeerProvider({ children }: { children: ReactNode }) {
         await connRef.current?.reject(handle);
       },
       cancel: async (handle) => {
+        clearInvite(handle);
         await connRef.current?.cancel(handle);
       },
       linkFromBackup: async (handle, name, snapshot, pub) => {

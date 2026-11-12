@@ -19,6 +19,7 @@ import { Toaster } from "../components/ui/sonner";
 import { DiagnosticsPanel } from "../components/diagnostics/DiagnosticsPanel";
 import { DiagnosticsBadge } from "../components/diagnostics/DiagnosticsBadge";
 import { PeerProvider } from "../lib/peer";
+import { captureInvite } from "../lib/qr-invite";
 import { StoreProvider, useStore } from "../lib/store";
 import { setupServiceWorker } from "../lib/sw-register";
 
@@ -143,6 +144,8 @@ function AppFrame() {
 
   useEffect(() => {
     setupServiceWorker();
+    // A QR link opened before onboarding: keep the handle so the request is sent afterwards.
+    captureInvite(window.location);
   }, []);
 
   if (!ready) {

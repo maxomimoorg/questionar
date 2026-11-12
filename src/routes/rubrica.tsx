@@ -11,6 +11,7 @@ import { percentColor } from "@/lib/color";
 import { qrColors } from "@/lib/qr-colors";
 import { averageCompatDetail, formatCompat } from "@/lib/compat";
 import { usePeer } from "@/lib/peer";
+import { captureInvite } from "@/lib/qr-invite";
 import { exportBackupPng, importBackupPng } from "@/lib/stego";
 import { useStore } from "@/lib/store";
 import { MarginText } from "@/components/MarginText";
@@ -56,11 +57,30 @@ function HandleDisplay({ handle }: { handle: string }) {
 
 function RubricaPage() {
   const { state, questions, resetProfile, removeContact, applyBackup, mySnapshot } = useStore();
-  const { sendRequest, accept, reject, cancel, linkFromBackup, connected, mode, issue } = usePeer();
+  const {
+    sendRequest,
+    checkInvite,
+    accept,
+    reject,
+    cancel,
+    linkFromBackup,
+    connected,
+    mode,
+    issue,
+  } = usePeer();
   const navigate = useNavigate();
-  const { handle: prefill } = Route.useSearch();
-  const [searchOpen, setSearchOpen] = useState(Boolean(prefill));
-  const [query, setQuery] = useState(prefill ?? "");
+  const { handle: inviteHandle } = Route.useSearch();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  // QR link: the request is sent automatically (see qr-invite); the handle leaves the URL so a
+  // refresh does not process it again.
+  useEffect(() => {
+    if (!inviteHandle) return;
+    captureInvite(window.location);
+    checkInvite();
+    void navigate({ to: "/rubrica", search: {}, replace: true });
+  }, [inviteHandle, checkInvite, navigate]);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [busy, setBusy] = useState(false);
