@@ -19,6 +19,23 @@ export function participantOf(p: Person): Participant {
 }
 
 /**
+ * Union of the questions of a comparison: the viewer's own list (defaults + own custom) plus the
+ * contacts' custom questions they don't have. Twin custom questions share one comparison mode,
+ * the same one used by the totals.
+ */
+export function comparisonQuestions(own: Question[], contactDefs: Question[]): Question[] {
+  const definitions = [...own.filter((q) => q.custom), ...contactDefs];
+  const map = new Map<string, Question>();
+  for (const q of own) map.set(q.id, q);
+  for (const q of contactDefs) {
+    if (!map.has(q.id)) map.set(q.id, { ...q, custom: true });
+  }
+  return [...map.values()].map((q) =>
+    q.custom ? { ...q, type: resolveQuestionType(q.id, definitions) } : q,
+  );
+}
+
+/**
  * People, participants and the union of questions of a 2- or 3-way comparison. Each contact's
  * protected questionnaires are opened independently: unlocking B never unlocks C.
  */
@@ -56,19 +73,11 @@ export function useComparePeople(b?: string, c?: string) {
 
   const contactDefs = people.filter((p) => !p.mine).flatMap((p) => p.customQuestions ?? []);
   const defsKey = contactDefs.map((q) => `${q.id}:${q.type ?? ""}`).join("|");
-  const allQuestions: Question[] = useMemo(() => {
-    const definitions = [...questions.filter((q) => q.custom), ...contactDefs];
-    const map = new Map<string, Question>();
-    for (const q of questions) map.set(q.id, q);
-    for (const q of contactDefs) {
-      if (!map.has(q.id)) map.set(q.id, { ...q, custom: true });
-    }
-    // Twin custom questions share one comparison mode, the same one used by the totals.
-    return [...map.values()].map((q) =>
-      q.custom ? { ...q, type: resolveQuestionType(q.id, definitions) } : q,
-    );
+  const allQuestions: Question[] = useMemo(
+    () => comparisonQuestions(questions, contactDefs),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questions, defsKey]);
+    [questions, defsKey],
+  );
 
   const participants: Participant[] = people.map(participantOf);
 

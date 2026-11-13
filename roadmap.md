@@ -36,4 +36,5 @@
 - [x] Technical review fixes: bio allow-list (stored, received and rendered), offline on-device avatars (also on PNG cards), saved-profile read failures never overwrite data (retry screen), profile tags filtered to known values; tests (165 pass).
 - [ ] Sincronizzazione multidispositivo (rimandata a data da destinarsi).
 - [x] Consolidate functional and technical documentation into docs/DOCUMENTAZIONE.md; update README links, source references, security limits and password cost descriptions.
-
+- [x] Trio di collaudo Io/Luna/Sole: punteggi verificati con la matematica reale (corretto Tempo di qualità Io–Luna: 74%, non 84%), matrice delle critiche a tre completata nel laboratorio (Altre dinamiche), test su punteggi, viste bloccate/sbloccate e confronto a tre (200 test passano), regola e capitolo test del manuale.
+- [ ] Decidere come trattare, nel confronto a tre con password, le categorie dove rispondono solo due persone (oggi stimate "≈", spariscono dopo lo sblocco) e il margine ± perso nelle stime (in attesa della scelta dell'autrice).

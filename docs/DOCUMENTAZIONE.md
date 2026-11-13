@@ -41,6 +41,7 @@ Documentazione tecnica e funzionale unica di QuestionAR. Ogni sezione ha un'anco
 7. [Rubrica, preferiti e onboarding](#rubrica)
 8. [Modalità diagnostica](#diagnostica)
 9. [Sviluppo e test](#sviluppo)
+   - [Trio di collaudo: Io, Luna e Sole](#trio-collaudo)
    - [Mappa del codice](#mappa-codice)
 10. [Compatibilità con versioni precedenti (riepilogo)](#compatibilita)
 11. [Come aggiornare questa documentazione](#manutenzione)
@@ -580,6 +581,34 @@ Test principali (`src/test/`):
 | `avatar-offline.test.ts`            | generazione locale degli avatar |
 | `store-load-safety.test.tsx`        | errori di lettura: niente salvataggio del profilo vuoto e possibilità di riprovare |
 | `favorites-privacy.test.ts`         | preferiti locali, esclusione dagli snapshot e migrazione dei vecchi consigliati |
+| `trio.test.ts`                      | punteggi del trio Io/Luna/Sole con la matematica reale: tabelle per categoria a due e a tre, matrici delle critiche, margini, viste bloccate/sbloccate, privacy |
+| `trio-compare-ui.test.tsx`          | schermata di confronto con il trio: scheda password, stime "≈", sblocco, commenti, confronto a tre |
+
+<a id="trio-collaudo"></a>
+
+### Trio di collaudo: Io, Luna e Sole
+
+I test dei flussi complessi (confronti, password, domande personalizzate, privacy) usano tre
+profili completi e fissi definiti in `src/test/fixtures/trio.ts`, invece di inventare profili
+temporanei a ogni test:
+
+- **Io** è il profilo del dispositivo e protegge l'Erotismo; **Luna** protegge il Generale,
+  nasconde Integrazione sociale, ha una bio volutamente ostile e una domanda personalizzata
+  Complementare gemella di quella Normale di Io; **Sole** protegge l'Erotismo, nasconde Vanilla e
+  una domanda di Tempo di qualità.
+- Il trio copre: domande critiche per nessuno, uno, due o tutti e tre (pieno, parziale, nullo;
+  matrice a due in Comunicazione, a tre in Tempo di qualità e Altre dinamiche), categorie oltre il
+  100% e sotto lo 0%, Fare/Ricevere a metà con margine d'errore, commenti privati, tag diversi.
+- La tabella dei punteggi attesi è in cima al file del trio; i valori sono scritti a mano in
+  `src/test/trio.test.ts` e confrontati con le funzioni vere (`categoryBreakdown`,
+  `averageCompatDetail`, `resolveSnapshot`).
+- `trioProfile(nome, modifica)` crea una variante per un solo test senza toccare il trio.
+- **Laboratorio**: quando un test ha bisogno di un caso che il trio non copre, lo si aggiunge
+  nella sezione `LABORATORIO` del file, aggiornando la tabella e i valori attesi. I casi del
+  laboratorio non si tolgono: restano disponibili per gli sviluppi successivi.
+
+I test con password derivano chiavi PBKDF2 reali: con tutta la suite in parallelo il limite per
+test è di 20 secondi (`vitest.config.ts`).
 
 <a id="mappa-codice"></a>
 

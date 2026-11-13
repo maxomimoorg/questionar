@@ -75,8 +75,8 @@
       "capability": "verification",
       "source": "vitest suite in src/test",
       "outcome": "migrate",
-      "status": "partially_verified",
-      "next_action": "115 tests run: 114 pass; 1 pre-existing failure (Voyeurismo not flagged Fare/Ricevere, 42 vs 43)"
+      "status": "verified",
+      "next_action": "Full vitest suite: 200 tests pass (trio included)"
     }
   ]
 }
