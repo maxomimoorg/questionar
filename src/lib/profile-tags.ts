@@ -24,6 +24,23 @@ export function isActiveTag(value: ProfileTagState | undefined) {
 export function nextTagState(value: ProfileTagState | undefined): ProfileTagState {
   return value === true ? "cross" : value === "cross" ? false : true;
 }
+const TAG_IDS = new Set<string>();
+
+/**
+ * Keeps only known tag ids with a valid state (true, false or "cross"); everything else coming
+ * from IndexedDB, peers or PNG cards is dropped. Returns undefined when nothing valid is left.
+ */
+export function sanitizeProfileTags(raw: unknown): ProfileTags | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  if (TAG_IDS.size === 0) for (const tag of PROFILE_TAGS) TAG_IDS.add(tag.id);
+  const out: ProfileTags = {};
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!TAG_IDS.has(id)) continue;
+    if (value === true || value === false || value === "cross") out[id] = value;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 export type ProfileTag = {
   id: string;
   label: string;

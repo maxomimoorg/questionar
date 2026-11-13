@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useStore } from "@/lib/store";
 import { PALETTE } from "@/lib/palette";
+import { sanitizeBio } from "@/lib/bio";
 import { ProfileTagChip } from "@/components/ProfileTags";
 import { isActiveTag, nextTagState, PROFILE_TAGS, type ProfileTags } from "@/lib/profile-tags";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ export function BioEditor({ onClose, initialTag }: { onClose: () => void; initia
 
   useEffect(() => {
     if (editorRef.current) {
-      editorRef.current.innerHTML = state.bio;
+      editorRef.current.innerHTML = sanitizeBio(state.bio);
       setCount(editorRef.current.innerText.length);
     }
   }, [state.bio]);
@@ -44,7 +45,8 @@ export function BioEditor({ onClose, initialTag }: { onClose: () => void; initia
   };
 
   const save = () => {
-    const html = editorRef.current?.innerHTML ?? "";
+    // Pasted content can carry any markup: only what the editor itself produces is kept.
+    const html = sanitizeBio(editorRef.current?.innerHTML ?? "");
     const cleanUser = username
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "")

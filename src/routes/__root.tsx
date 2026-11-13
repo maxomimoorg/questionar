@@ -141,13 +141,33 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function AppFrame() {
-  const { state, ready } = useStore();
+  const { state, ready, loadError, retryLoad } = useStore();
 
   useEffect(() => {
     setupServiceWorker();
     // A QR link opened before onboarding: keep the handle so the request is sent afterwards.
     captureInvite(window.location);
   }, []);
+
+  if (loadError) {
+    return (
+      <div className="dark grid min-h-screen place-items-center bg-background p-6 text-center text-[14px] text-muted-foreground">
+        <div className="max-w-xs space-y-3">
+          <p>
+            Non riesco a leggere i tuoi dati salvati su questo dispositivo. Non è stato cancellato
+            nulla: riprova tra poco o chiudi le altre schede di QuestionAR.
+          </p>
+          <button
+            type="button"
+            onClick={retryLoad}
+            className="rounded-2xl bg-primary px-4 py-2 text-primary-foreground"
+          >
+            Riprova
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!ready) {
     return (

@@ -7,7 +7,8 @@ import {
 } from "./questions";
 import { sanitizeBox, type ProtectedBox } from "./password-crypto";
 import type { KeyPairJwk } from "./keys";
-import type { ProfileTags } from "./profile-tags";
+import { sanitizeProfileTags, type ProfileTags } from "./profile-tags";
+import { sanitizeBio } from "./bio";
 
 export type Answer = {
   /** Single-slider answer; for reciprocal questions the rounded mean of Fare and Ricevere. */
@@ -152,10 +153,12 @@ export function sanitizeAverages(
  */
 export function sanitizeSnapshot(snap: ProfileSnapshot): ProfileSnapshot {
   const raw = snap as ProfileSnapshot & Record<string, unknown>;
+  const tags = sanitizeProfileTags(raw.tags);
   return {
     name: typeof raw.name === "string" ? raw.name : "",
-    bio: typeof raw.bio === "string" ? raw.bio : "",
-    ...(raw.tags ? { tags: raw.tags } : {}),
+    // Contacts' bios are rendered as HTML: only the editor's own tags survive.
+    bio: sanitizeBio(raw.bio),
+    ...(tags ? { tags } : {}),
     answers: sanitizeAnswers(raw.answers),
     hiddenCategories: sanitizeHiddenCategories(raw.hiddenCategories),
     customQuestions: sanitizeCustomQuestions(raw.customQuestions),

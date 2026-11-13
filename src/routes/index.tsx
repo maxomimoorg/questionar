@@ -4,6 +4,7 @@ import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { BioEditor } from "@/components/BioEditor";
+import { BioHtml } from "@/components/BioHtml";
 import { CompactProfileTags } from "@/components/ProfileTags";
 import { PROFILE_TAGS } from "@/lib/profile-tags";
 import { NavPill } from "@/components/CategoryControls";
@@ -59,10 +60,7 @@ function ProfilePage() {
           <div className="min-w-0 flex-1">
             <h2 className="text-[16px]">Bio</h2>
             {state.bio ? (
-              <div
-                className="rte-content mt-1 text-[14px]"
-                dangerouslySetInnerHTML={{ __html: state.bio }}
-              />
+              <BioHtml className="rte-content mt-1 text-[14px]" html={state.bio} />
             ) : (
               <p className="mt-1 text-[12px] text-muted-foreground">
                 Nessuna bio: tocca la matita per scriverne una.

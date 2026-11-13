@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Avatar } from "@/components/Avatar";
+import { BioHtml } from "@/components/BioHtml";
 import { CompactProfileTags } from "@/components/ProfileTags";
 import { percentColor } from "@/lib/color";
 import {
@@ -368,10 +369,7 @@ function ComparePage() {
       <section className="section-card">
         <div className="text-[12px] text-muted-foreground">@{contactB.handle}</div>
         {contactB.snapshot?.bio ? (
-          <div
-            className="rte-content mt-1 text-[14px]"
-            dangerouslySetInnerHTML={{ __html: contactB.snapshot.bio }}
-          />
+          <BioHtml className="rte-content mt-1 text-[14px]" html={contactB.snapshot.bio} />
         ) : (
           <p className="mt-1 text-[12px] text-muted-foreground">Nessuna bio.</p>
         )}
@@ -385,10 +383,7 @@ function ComparePage() {
             <hr className="my-3 border-border" />
             <div className="text-[12px] text-muted-foreground">@{contactC.handle}</div>
             {contactC.snapshot?.bio ? (
-              <div
-                className="rte-content mt-1 text-[14px]"
-                dangerouslySetInnerHTML={{ __html: contactC.snapshot.bio }}
-              />
+              <BioHtml className="rte-content mt-1 text-[14px]" html={contactC.snapshot.bio} />
             ) : (
               <p className="mt-1 text-[12px] text-muted-foreground">Nessuna bio.</p>
             )}

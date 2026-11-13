@@ -1,4 +1,5 @@
 import type { BackupPayload } from "./stego";
+import { avatarDataUri } from "./avatar";
 import { PROFILE_TAGS } from "@/lib/profile-tags";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
@@ -267,9 +268,8 @@ export async function createBackupCard(payload: BackupPayload): Promise<HTMLCanv
   ]);
   await document.fonts.ready;
   const [avatar, logo] = await Promise.all([
-    imageFrom(
-      `https://api.dicebear.com/10.x/critters/svg?size=700&seed=${encodeURIComponent(payload.handle)}`,
-    ),
+    // Generated on the device: the card works offline and the handle is never sent anywhere.
+    imageFrom(avatarDataUri(payload.handle, 700)),
     imageFrom("/logo.png"),
   ]);
   const css = getComputedStyle(document.documentElement);

@@ -1,0 +1,1 @@
+- db.ts loadState rejects on read errors (null = nothing saved); the store keeps auto-save off until a read succeeds, so a failed read never overwrites the profile.

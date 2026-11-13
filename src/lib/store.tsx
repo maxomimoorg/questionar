@@ -41,10 +41,15 @@ import { sanitizeHiddenCategories, toggleCategory } from "./visibility";
 import type { BackupPayload } from "./stego";
 import { emojisFromHandle } from "./handle";
 import { normalizeTheme } from "./theme";
+import { sanitizeBio } from "./bio";
+import { sanitizeProfileTags } from "./profile-tags";
 
 type Ctx = {
   state: AppState;
   ready: boolean;
+  /** The saved profile exists but could not be read: nothing is saved until `retryLoad` works. */
+  loadError: boolean;
+  retryLoad: () => void;
   questions: Question[];
   patch: (p: Partial<AppState>) => void;
   setIdentity: (i: Identity) => void;
@@ -94,6 +99,27 @@ export type RestoredSection = {
   payload: SectionPayload;
 };
 
+const LOAD_FAILED = Symbol("load-failed");
+const LOAD_RETRY_DELAYS = [300, 1000];
+
+/**
+ * Reads the saved state, retrying short transient IndexedDB failures. Resolves null only when
+ * there really is no saved profile, and LOAD_FAILED when every attempt failed.
+ */
+async function readSavedState(
+  alive: () => boolean,
+): Promise<AppState | null | typeof LOAD_FAILED> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await loadState<AppState>();
+    } catch {
+      const wait = LOAD_RETRY_DELAYS[attempt];
+      if (wait === undefined || !alive()) return LOAD_FAILED;
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+}
+
 /** The shareable profile in clear: contacts, favorites and passwords are never included. */
 export function buildSnapshot(state: AppState, now = Date.now()): ProfileSnapshot {
   return {
@@ -117,17 +143,29 @@ const StoreContext = (ctxHolder.__questionarStoreCtx ??= createContext<Ctx | nul
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(EMPTY_STATE);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const loaded = useRef(false);
+  const retryLoad = useCallback(() => {
+    setLoadError(false);
+    setLoadAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     let alive = true;
-    loadState<AppState>().then((saved) => {
+    void readSavedState(() => alive).then((saved) => {
       if (!alive) return;
+      if (saved === LOAD_FAILED) {
+        // Never fall back to an empty profile: saving stays off until a read succeeds.
+        setLoadError(true);
+        return;
+      }
       if (saved) {
         setState({
           ...EMPTY_STATE,
           ...saved,
-          tags: { ...EMPTY_STATE.tags, ...(saved.tags ?? {}) },
+          bio: sanitizeBio(saved.bio),
+          tags: { ...EMPTY_STATE.tags, ...(sanitizeProfileTags(saved.tags) ?? {}) },
           answers: sanitizeAnswers(saved.answers),
           // Custom questions saved before types existed load as Normale.
           customQuestions: sanitizeCustomQuestions(saved.customQuestions),
@@ -145,7 +183,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [loadAttempt]);
 
   useEffect(() => {
     if (!ready || !loaded.current) return;
@@ -168,6 +206,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       state,
       ready,
+      loadError,
+      retryLoad,
       questions,
       patch,
       setIdentity: (identity) => patch({ identity }),
@@ -359,7 +399,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             ...(Array.isArray(payload.hiddenCategories)
               ? { hiddenCategories: sanitizeHiddenCategories(payload.hiddenCategories) }
               : {}),
-            tags: { ...EMPTY_STATE.tags, ...(payload.tags ?? {}) },
+            tags: { ...EMPTY_STATE.tags, ...(sanitizeProfileTags(payload.tags) ?? {}) },
             customQuestions: custom,
           };
         }),
@@ -369,7 +409,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState(EMPTY_STATE);
       },
     };
-  }, [state, ready, patch]);
+  }, [state, ready, loadError, retryLoad, patch]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

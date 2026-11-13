@@ -67,7 +67,7 @@ export function buildReport(input: ReportInput) {
   return {
     schema: REPORT_SCHEMA,
     version: REPORT_VERSION,
-    _doc: "Report diagnostico locale di QuestionAR. Vedi docs/diagnostics.md per il significato dei campi.",
+    _doc: "Report diagnostico locale di QuestionAR. Vedi docs/DOCUMENTAZIONE.md#diagnostica per il significato dei campi.",
     session: {
       id: input.sessionId,
       startedAt: new Date(input.startedAt).toISOString(),
