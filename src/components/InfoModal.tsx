@@ -222,7 +222,7 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
             <Lead>
               Basta con le scelte veloci basate sull'estetica o su algoritmi segreti: <strong>QuestionAR nasce come reazione alla cultura dello swipe</strong>: quell'abitudine frenetica spinta dalle app tradizionali che riduce le persone a una galleria fotografica e a un giudizio rapido. Qui tramite un questionario approfondito puoi riflettere prima di tutto sul tipo di relazione per te ideale, e in secondo luogo confrontarti con altre persone per esplorare più profondamente le possibili affinità.
             </Lead>
-            <Feature title="L’anti-dating app per connessioni reali" demo={<DemoCompatMap />}>
+            <Feature title="L’affinity app per connessioni reali" demo={<DemoCompatMap />}>
               Nel confronto trovi lo stesso grafico con i tuoi dati: totale e categorie, dalla più
               affine. Tocca una barra per aprire le domande: puoi usare le percentuali come incipit per conoscersi di più.
             </Feature>
@@ -255,7 +255,7 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
               Con ⚡ una domanda diventa irrinunciabile: vicinanza e distanza contano molto di più.
             </Feature>
             <Feature title="Domande personalizzate" demo={<DemoCustomQuestion />}>
-              Le domande standard non ti bastano? Con il tasto + crei le tue domande. <strong>Normale</strong> ha un cursore;{" "}
+              Le domande standard non ti bastano? {" "} Con il tasto + crei le tue domande. <strong>Normale</strong> ha un cursore e {" "}
               <strong>Complementare</strong> ne ha due, Fare e Ricevere: usa la modalità più adatta.
             </Feature>
             <Feature title="La tua bio" demo={<DemoBio />}>
