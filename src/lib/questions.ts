@@ -183,6 +183,8 @@ const EROTISMO_DEFAULTS: Record<EroticCategoryKey, DefaultEntry[]> = {
     r("Massaggi sensuali"),
     moved("D-penetrazionegenitale", r("Penetrazione genitale")),
     moved("D-raggiungerelorgasmo", "Raggiungere l'orgasmo"),
+    r("Amorevole e delicata dolcezza"),
+    r("Rude e vigorosa passione"),
     moved("D-sessoorale", r("Sesso orale")),
     moved("D-petting", r("Petting e strusciamenti")),
     moved("D-masturbazionereciproca", r("Masturbazione")),
@@ -219,6 +221,8 @@ const EROTISMO_DEFAULTS: Record<EroticCategoryKey, DefaultEntry[]> = {
   ],
   XE: [
     r("Adorazione di parti del corpo"),
+    "Condizioni di sporcizia corporea",
+    "Fluidi e odori forti",
   ],
   XF: [
     "Esibizionismo",
