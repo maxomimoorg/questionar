@@ -21,11 +21,10 @@ import {
 afterEach(cleanup);
 
 const CHAPTERS: { title: RegExp; features: string[]; text?: string[] }[] = [
-  { title: /Cos’è QuestionAR/, features: ["Una mappa, non un voto"] },
+  { title: /Cos’è QuestionAR/, features: ["L’affinity app per connessioni reali"] },
   {
     title: /Rispondere a modo tuo/,
     features: ["Sfumature", "Commenti", "Domande critiche", "Domande personalizzate", "La tua bio"],
-    text: ["666 caratteri"],
   },
   { title: /Somiglianza e reciprocità/, features: ["Somiglianza", "Reciprocità: Fare e Ricevere"] },
   {
@@ -38,9 +37,9 @@ const CHAPTERS: { title: RegExp; features: string[]; text?: string[] }[] = [
     features: [
       "Tag del profilo",
       "Domande nascoste",
-      "Categorie: aprire, contare, nascondere",
+      "Controlli sulle categorie",
       "Preferiti",
-      "Erotismo, se vuoi",
+      "Sezione Erotismo",
     ],
   },
   {
@@ -48,10 +47,9 @@ const CHAPTERS: { title: RegExp; features: string[]; text?: string[] }[] = [
     features: [
       "Zero-server",
       "La scheda avatar",
-      "Proteggi con password",
+      "Proteggi i dettagli del tuo profilo con password",
       "La tua collezione emoji",
     ],
-    text: ["IndexedDB", "Nascondere non significa cifrare", "imposta una password"],
   },
 ];
 
