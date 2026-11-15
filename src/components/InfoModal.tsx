@@ -255,11 +255,10 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
               Con ⚡ una domanda diventa irrinunciabile: vicinanza e distanza contano molto di più.
             </Feature>
             <Feature title="Domande personalizzate" demo={<DemoCustomQuestion />}>
-              Le domande standard non ti bastano? {" "} Con il tasto + crei le tue domande. <strong>Normale</strong> ha un cursore e {" "}
-              <strong>Complementare</strong> ne ha due, Fare e Ricevere: usa la modalità più adatta.
+              Le domande standard non ti bastano? Con il tasto + crei le tue domande. <strong>Normale</strong> ha un cursore e <strong>Complementare</strong> ne ha due: Fare e Ricevere. <strong>Usa la modalità più adatta</strong>.
             </Feature>
             <Feature title="La tua bio" demo={<DemoBio />}>
-              Fino a 666 caratteri, con titoli, stili, link e colori.
+              Descrivi il tuo carattere, specifica quello che stai cercando o racconta di quello che fai. Puoi usare alcuni strumenti di formattazione del testo, colori, e inserire anche i tuoi link!
             </Feature>
           </Chapter>
 
