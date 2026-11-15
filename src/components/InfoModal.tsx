@@ -220,7 +220,7 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
         >
           <Chapter value="cos-e" number={1} icon={Compass} title="Cos’è QuestionAR">
             <Lead>
-              Basta con le scelte veloci basate sull'estetica o su algoritmi segreti: QuestionAR nasce come reazione alla cultura dello swipe: quell'abitudine frenetica spinta dalle app tradizionali che riduce le persone a una galleria fotografica e a un giudizio rapido. Qui tramite un questionario approfondito puoi riflettere prima di tutto sul tipo di relazione per te ideale, e in secondo luogo confrontarti con altre persone per esplorare più profondamente le possibili affinità.
+              Basta con le scelte veloci basate sull'estetica o su algoritmi segreti: <strong>QuestionAR nasce come reazione alla cultura dello swipe</strong>: quell'abitudine frenetica spinta dalle app tradizionali che riduce le persone a una galleria fotografica e a un giudizio rapido. Qui tramite un questionario approfondito puoi riflettere prima di tutto sul tipo di relazione per te ideale, e in secondo luogo confrontarti con altre persone per esplorare più profondamente le possibili affinità.
             </Lead>
             <Feature title="L’anti-dating app per connessioni reali" demo={<DemoCompatMap />}>
               Nel confronto trovi lo stesso grafico con i tuoi dati: totale e categorie, dalla più
