@@ -220,13 +220,11 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
         >
           <Chapter value="cos-e" number={1} icon={Compass} title="Cos’è QuestionAR">
             <Lead>
-              Un’<strong>anti-dating app</strong>: niente swipe, foto o algoritmi segreti. Rispondi
-              a domande sincere e scopri dove tu e l’altra persona vi incontrate.
+              Basta con le scelte veloci basate sull'estetica o su algoritmi segreti: QuestionAR nasce come reazione alla cultura dello swipe: quell'abitudine frenetica spinta dalle app tradizionali che riduce le persone a una galleria fotografica e a un giudizio rapido. Qui tramite un questionario approfondito puoi riflettere prima di tutto sul tipo di relazione per te ideale, e in secondo luogo confrontarti con altre persone per esplorare più profondamente le possibili affinità.
             </Lead>
-            <Feature title="Una mappa, non un voto" demo={<DemoCompatMap />}>
-              Nel confronto trovi la stessa mappa con i tuoi dati: totale e categorie, dalla più
-              affine. Tocca una barra per aprire le domande: i numeri servono per iniziare a
-              parlare.
+            <Feature title="L’anti-dating app per connessioni reali" demo={<DemoCompatMap />}>
+              Nel confronto trovi lo stesso grafico con i tuoi dati: totale e categorie, dalla più
+              affine. Tocca una barra per aprire le domande: puoi usare le percentuali come incipit per conoscersi di più.
             </Feature>
             <ul className="grid gap-2 sm:grid-cols-3">
               <Point icon={Timer} title="Con calma">
@@ -257,8 +255,8 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
               Con ⚡ una domanda diventa irrinunciabile: vicinanza e distanza contano molto di più.
             </Feature>
             <Feature title="Domande personalizzate" demo={<DemoCustomQuestion />}>
-              Con il tasto + crei le tue domande. <strong>Normale</strong> ha un cursore;{" "}
-              <strong>Complementare</strong> ne ha due, Fare e Ricevere.
+              Le domande standard non ti bastano? Con il tasto + crei le tue domande. <strong>Normale</strong> ha un cursore;{" "}
+              <strong>Complementare</strong> ne ha due, Fare e Ricevere: usa la modalità più adatta.
             </Feature>
             <Feature title="La tua bio" demo={<DemoBio />}>
               Fino a 666 caratteri, con titoli, stili, link e colori.
@@ -286,7 +284,7 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
               Dal vivo con il QR, a distanza con l’handle oppure offline con la scheda avatar.
             </Feature>
             <Feature title="Richieste anche da offline" demo={<DemoOfflineRequest />}>
-              Non serve tenere l’app aperta: le richieste restano in attesa, cifrate, per 72 ore.
+              Non serve tenere l’app aperta: le richieste restano in attesa, cifrate, e verranno ricevute appena si torna online entro 72 ore.
             </Feature>
             <Feature title="Confronto a tre" demo={<DemoThreeWay />}>
               Aggiungi un terzo profilo: c’è spazio anche per le relazioni di gruppo e il poliamore.
@@ -295,51 +293,44 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
 
           <Chapter value="spazi" number={5} icon={Tags} title="I tuoi spazi">
             <Feature title="Tag del profilo" demo={<DemoProfileTags />}>
-              Tocca: spunta → divieto → senza risposta. Non rispondere non significa dire no. I tag
+              Tag nella bio per esprimere alcune caratteristiche già a colpo d'occhio: <strong>spunta</strong> se ti rappresenta → <strong>escludi</strong> se non è di tuo interesse o ti è sgradito → <strong>togli</strong> se non è il tuo caso o ci vuoi pensare. Non rispondere non significa dire no. I tag
               compaiono nel profilo, nei confronti e nella scheda avatar.
             </Feature>
             <Feature title="Domande nascoste" demo={<DemoHidden />}>
-              Con l’occhio una domanda non compare più nei confronti e non conta nel calcolo.
+              Puoi scegliere di nascondere singole domande o intere categorie. In questo modo non saranno visibili nei confronti e non influiranno sul calcolo della compatibilità.
             </Feature>
-            <Feature title="Categorie: aprire, contare, nascondere" demo={<DemoCategories />}>
+            <Feature title="Controlli sulle categorie" demo={<DemoCategories />}>
               Apri o chiudi tutto insieme e segui i progressi (es. 3/{categoryQuestionCount("B")} →{" "}
               {categoryQuestionCount("B")} ✓). Le categorie nascoste si ripristinano da «Categorie e
               domande nascoste».
             </Feature>
             <Feature title="Preferiti" demo={<DemoFavorite />}>
-              La stella resta solo sul tuo dispositivo: non viene inviata né salvata nei backup.
+              Dai una stellina alle tue connessioni preferite. Resteranno evidenziate e in alto ma solo sul tuo dispositivo e fuori dai confronti o dal backup.
             </Feature>
-            <Feature title="Erotismo, se vuoi" demo={<DemoErotismo />}>
-              Un’area facoltativa in fondo al questionario, con categorie chiuse finché non le apri.
-              Ogni risposta conta una volta sola nella compatibilità.
+            <Feature title="Sezione Erotismo" demo={<DemoErotismo />}>
+              Un’area facoltativa in fondo al questionario, con categorie proprie e un confronto mirato che conta anche per la compatibilità generale.
             </Feature>
           </Chapter>
 
           <Chapter value="dati" number={6} icon={Lock} title="I tuoi dati restano tuoi">
             <Feature title="Zero-server" demo={<DemoZeroServer />}>
-              Le risposte restano nel tuo dispositivo. Nessun server centrale le raccoglie.
+              Nessun server centrale raccoglie le tue risposte intime: <strong>Sei tu a decidere con chi condividerli.</strong> 
             </Feature>
             <Feature title="La scheda avatar" demo={<DemoBackupCard />}>
               È il backup del tuo profilo e la tua carta d’identità. Inviala come file originale,
               senza comprimerla. Chi la riceve vede il confronto anche offline.
             </Feature>
-            <Feature title="Proteggi con password" demo={<DemoPasswordProtection />}>
-              Con il lucchetto accanto a «Espandi tutte» dai una password al questionario generale e
-              una, separata, a Erotismo. Le medie per categoria restano consultabili; risposte,
-              commenti e domande personalizzate viaggiano cifrati e si aprono solo con la password
-              che comunichi tu.
+            <Feature title="Proteggi i dettagli del tuo profilo con password" demo={<DemoPasswordProtection />}>
+              Nei confronti, le risposte alle domande e i commenti inseriti si apriranno soltanto con la password che sceglierai: una per il questionario generale e una per la sezione Erotismo. Potrai anche cambiarla per limitare l'accesso alle vecchie connessioni. La percentuale di compatibilità generale, le medie di ogni categoria e la tua bio resteranno sempre visibili alle tue connessioni.
             </Feature>
             <div role="note" className="tutorial-warning">
               <ShieldAlert size={18} className="shrink-0" aria-hidden="true" />
               <p className="text-[13px]">
-                <strong>Nascondere non significa cifrare.</strong> Chi riceve la scheda o il tuo
-                profilo può leggere e inoltrare ciò che viaggia in chiaro: per mantenere riservate
-                le risposte inoltrate imposta una password.
+                <strong>Condividi responsabilmente il tuo profilo.</strong> Favorisci l'utilizzo di un profilo secondario tramite la navigazione in incognito e meno dettagliato se hai intenzione di pubblicarlo nelle tue community o se vuoi condividere un profilo fermo nel tempo, e ricordati che <strong>i profili connessi ricevono gli aggiornamenti reciproci quando sono contemporaneamente online</strong> a patto di mantenere lo stesso username.
               </p>
             </div>
             <Feature title="La tua collezione emoji" demo={<DemoEmojiCollection />}>
-              Parti dalle 3 emoji del tuo handle e raccogli quelle delle persone con cui ti
-              connetti. Le 9 emoji proposte all’inizio non cambiano se ricarichi la pagina.
+              Le 3 emoji scelte all'inizo fanno faranno parte del tuo handle ma saranno anche le prima nella tua collezione. Queste saranno scambiate regiprocamente con <strong>ogni nuova connessione</strong>, andando a completare le rispettive collezioni!
             </Feature>
           </Chapter>
         </AccordionPrimitive.Root>
