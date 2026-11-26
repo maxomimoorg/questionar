@@ -12,7 +12,14 @@ import {
   type QuestionDefinition,
   type QuestionType,
 } from "./questions";
-import { giveOf, receiveOf, type Answer } from "./types";
+import { categoryAverages } from "./protection";
+import {
+  giveOf,
+  receiveOf,
+  type Answer,
+  type CategoryAggregate,
+  type CategoryAverages,
+} from "./types";
 
 type Point = { gap: number; compat: number };
 
@@ -171,8 +178,8 @@ export type Participant = {
   customQuestions?: QuestionDefinition[];
   /** Password-protected sections not unlocked by the viewer: only `averages` are known there. */
   locked?: ProtectedSection[];
-  /** Clear per-category means of the answers in the locked sections. */
-  averages?: Record<string, number>;
+  /** Clear per-category aggregates in the locked sections; old snapshots have scalar means. */
+  averages?: CategoryAverages;
 };
 
 const isLockedFor = (p: Participant, category: string) =>
@@ -238,48 +245,159 @@ export type AverageResult = {
   estimated?: boolean;
 };
 
-/** Mean answer of one person in a category: the clear mean when locked, else from the answers. */
-function categoryMean(p: Participant, category: string, ids: string[]): number | undefined {
-  if (isLockedFor(p, category)) return p.averages?.[category];
-  const values = ids
-    .map((id) => p.answers[id])
-    .filter((a): a is Answer => Boolean(a?.answered && !a.hidden))
-    .map((a) => a.value);
-  return values.length ? values.reduce((s, v) => s + v, 0) / values.length : undefined;
+type EstimateStats = Omit<CategoryAggregate, "stdDev"> & { stdDev: number | null };
+
+/** Legacy scalar means behave exactly as before, but carry no dispersion information. */
+function estimateStats(raw: number | CategoryAggregate | undefined): EstimateStats | undefined {
+  if (typeof raw === "number") {
+    return { mean: raw, simMean: raw, giveMean: raw, recvMean: raw, stdDev: null };
+  }
+  return raw;
+}
+
+function participantStats(
+  p: Participant,
+  category: string,
+  ids: string[],
+  types: Map<string, QuestionType>,
+): EstimateStats | undefined {
+  if (isLockedFor(p, category)) return estimateStats(p.averages?.[category]);
+  const definitions = ids.map((id) => ({ id, category, type: types.get(id) }));
+  const aggregate = categoryAverages(
+    p.answers,
+    definitions,
+    p.hiddenCategories ?? [],
+    sectionOfCategory(category),
+  )[category];
+  return estimateStats(aggregate);
 }
 
 /**
- * Category in which some participant is locked: each pair is compared on its single answers
- * when both are readable, otherwise on the two category means (100 − gap). The score is the
- * mean of the comparable pairs; `weight` approximates how many questions the category holds.
+ * Expected absolute gap of two distributions, using the normal-distribution identity at gap 0
+ * and a smooth RMS approximation elsewhere. Without standard deviations this is the old 100−gap.
+ */
+function dispersedCompat(a: number, b: number, stdA: number | null, stdB: number | null): number {
+  const gap = Math.abs(a - b);
+  if (stdA === null || stdB === null) return 100 - Math.round(gap);
+  const dispersion = (2 / Math.PI) * (stdA ** 2 + stdB ** 2);
+  return 100 - Math.round(Math.min(100, Math.sqrt(gap ** 2 + dispersion)));
+}
+
+/** Every locked estimate has honest uncertainty, even when all visible votes coincide. */
+function estimateMargin(stdA: number | null, stdB: number | null): number {
+  if (stdA === null || stdB === null) return 12;
+  return Math.max(12, Math.round(Math.sqrt(stdA ** 2 + stdB ** 2) / 2));
+}
+
+/** One pair estimated from role means, with reciprocal flows compared crosswise. */
+function estimatedPair(
+  ids: string[],
+  types: Map<string, QuestionType>,
+  a: EstimateStats,
+  b: EstimateStats,
+): { score: number; margin: number } | null {
+  const parts: { score: number; weight: number; margin: number }[] = [];
+  const similarityCount = ids.filter((id) => types.get(id) === "similarity").length;
+  const reciprocalCount = ids.length - similarityCount;
+  const baseMargin = estimateMargin(a.stdDev, b.stdDev);
+
+  const similarityPart = (weight: number) => {
+    if (!weight || a.simMean === null || b.simMean === null) return null;
+    return {
+      score: dispersedCompat(a.simMean, b.simMean, a.stdDev, b.stdDev),
+      weight,
+      margin: baseMargin,
+    };
+  };
+
+  const reciprocalPart = (weight: number, singleValueFallback = false) => {
+    if (!weight) return null;
+    // A locked twin custom question can hide that it is Complementare. The other person's
+    // Normale answer then plays the same single-value role as in pairRange's legacy fallback.
+    const aGive = a.giveMean ?? (singleValueFallback ? a.simMean : null);
+    const aReceive = a.recvMean ?? (singleValueFallback ? a.simMean : null);
+    const bGive = b.giveMean ?? (singleValueFallback ? b.simMean : null);
+    const bReceive = b.recvMean ?? (singleValueFallback ? b.simMean : null);
+    const flows = [
+      aGive !== null && bReceive !== null
+        ? dispersedCompat(aGive, bReceive, a.stdDev, b.stdDev)
+        : null,
+      bGive !== null && aReceive !== null
+        ? dispersedCompat(bGive, aReceive, a.stdDev, b.stdDev)
+        : null,
+    ];
+    const known = flows.filter((value): value is number => value !== null);
+    if (!known.length) return null;
+    const score = mean(known);
+    let margin = baseMargin;
+    if (known.length === 1) {
+      // The unknown direction can still contribute any score from 0 to 100.
+      margin = Math.max(margin, withMargin(score, score / 2, (score + 100) / 2));
+    }
+    return { score, weight, margin };
+  };
+
+  const similarity = similarityPart(similarityCount);
+  const reciprocal = reciprocalPart(reciprocalCount);
+  if (similarity) parts.push(similarity);
+  else if (similarityCount && !reciprocalCount) {
+    const twinCustom = reciprocalPart(similarityCount, true);
+    if (twinCustom) parts.push(twinCustom);
+  }
+  if (reciprocal) parts.push(reciprocal);
+
+  if (!parts.length) return null;
+  const weight = parts.reduce((sum, part) => sum + part.weight, 0);
+  return {
+    score: Math.round(parts.reduce((sum, part) => sum + part.score * part.weight, 0) / weight),
+    margin: Math.round(parts.reduce((sum, part) => sum + part.margin * part.weight, 0) / weight),
+  };
+}
+
+/**
+ * Category with a locked participant: readable pairs retain their exact per-question maths;
+ * other pairs use separate similarity/Fare/Ricevere means and statistical dispersion. Scores
+ * and margins are averaged over comparable pairs; weight approximates the category's length.
  */
 function lockedCategoryEstimate(
   category: string,
   ids: string[],
   participants: Participant[],
-): { score: number; weight: number } | null {
+): { score: number; weight: number; margin: number; partialCount: number } | null {
   if (participants.some((p) => p.hiddenCategories?.includes(category))) return null;
-  const scores: number[] = [];
+  const types = new Map(ids.map((id) => [id, typeAmong(id, participants)]));
+  const pairs: { score: number; margin: number; partialCount: number }[] = [];
   for (let i = 0; i < participants.length; i++) {
     for (let j = i + 1; j < participants.length; j++) {
       const a = participants[i]!;
       const b = participants[j]!;
       if (!isLockedFor(a, category) && !isLockedFor(b, category)) {
         const exact = plainAverage(ids, [a, b]);
-        if (exact) scores.push(exact.score);
+        if (exact)
+          pairs.push({
+            score: exact.score,
+            margin: exact.margin,
+            partialCount: exact.partialCount,
+          });
         continue;
       }
-      const ma = categoryMean(a, category, ids);
-      const mb = categoryMean(b, category, ids);
-      if (ma !== undefined && mb !== undefined) scores.push(questionCompat(ma, mb, 0));
+      const statsA = participantStats(a, category, ids, types);
+      const statsB = participantStats(b, category, ids, types);
+      const estimated = statsA && statsB ? estimatedPair(ids, types, statsA, statsB) : null;
+      if (estimated) pairs.push({ ...estimated, partialCount: 0 });
     }
   }
-  if (scores.length === 0) return null;
+  if (!pairs.length) return null;
   const readable = participants.filter((p) => !isLockedFor(p, category));
   const weight = ids.filter((id) =>
     readable.every((p) => p.answers[id]?.answered && !p.answers[id]?.hidden),
   ).length;
-  return { score: mean(scores), weight: Math.max(1, weight) };
+  return {
+    score: mean(pairs.map((pair) => pair.score)),
+    weight: Math.max(1, weight),
+    margin: mean(pairs.map((pair) => pair.margin)),
+    partialCount: pairs.reduce((sum, pair) => sum + pair.partialCount, 0),
+  };
 }
 
 /**
@@ -297,27 +415,33 @@ export function averageCompatDetail(
     const cat = categoryOfId(id);
     byCategory.set(cat, [...(byCategory.get(cat) ?? []), id]);
   }
-  const parts: { score: number; weight: number; margin: number; partial: boolean }[] = [];
+  const parts: { score: number; weight: number; margin: number; partialCount: number }[] = [];
   let estimated = false;
   for (const [cat, ids] of byCategory) {
     if (participants.some((p) => isLockedFor(p, cat))) {
       const est = lockedCategoryEstimate(cat, ids, participants);
       if (est) {
-        parts.push({ ...est, margin: 0, partial: false });
+        parts.push(est);
         estimated = true;
       }
       continue;
     }
     for (const id of ids) {
       const r = multiCompatDetail(id, participants);
-      if (r) parts.push({ score: r.score, weight: 1, margin: r.margin, partial: r.partial });
+      if (r)
+        parts.push({
+          score: r.score,
+          weight: 1,
+          margin: r.margin,
+          partialCount: r.partial ? 1 : 0,
+        });
     }
   }
   if (parts.length === 0) return null;
   const total = parts.reduce((s, p) => s + p.weight, 0);
   return {
     score: Math.round(parts.reduce((s, p) => s + p.score * p.weight, 0) / total),
-    partialCount: parts.filter((p) => p.partial).length,
+    partialCount: parts.reduce((sum, p) => sum + p.partialCount, 0),
     margin: Math.round(parts.reduce((s, p) => s + p.margin * p.weight, 0) / total),
     ...(estimated ? { estimated: true } : {}),
   };

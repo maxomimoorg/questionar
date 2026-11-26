@@ -106,6 +106,23 @@ export type ThemeState = {
   mode: "light" | "dark";
 };
 
+/** Aggregate statistics shared for one password-protected category. */
+export type CategoryAggregate = {
+  /** Mean of the legacy `value` field, kept for old app versions. */
+  mean: number;
+  /** Mean of similarity answers, or null when the category has none. */
+  simMean: number | null;
+  /** Mean of the Fare values of reciprocal answers, or null when none is known. */
+  giveMean: number | null;
+  /** Mean of the Ricevere values of reciprocal answers, or null when none is known. */
+  recvMean: number | null;
+  /** Population standard deviation of all visible similarity/Fare/Ricevere values. */
+  stdDev: number;
+};
+
+/** New snapshots send aggregates; a scalar is the mean format used by older versions. */
+export type CategoryAverages = Record<string, number | CategoryAggregate>;
+
 /**
  * What leaves the device (P2P preview/profile, PNG backup). It never carries the address book
  * or the "favorite" marks: those stay strictly local.
@@ -123,26 +140,41 @@ export type ProfileSnapshot = {
    * Generale protected by password: per-category means of the owner's answers stay readable,
    * while its answers, comments and custom questions travel only inside `mainProtected`.
    */
-  mainAverages?: Record<string, number>;
+  mainAverages?: CategoryAverages;
   mainProtected?: ProtectedBox;
   /** Same two fields for the Erotismo questionnaire, with its own independent password. */
-  eroticAverages?: Record<string, number>;
+  eroticAverages?: CategoryAverages;
   eroticProtected?: ProtectedBox;
 };
 
 const CATEGORY_KEYS = new Set<string>(ALL_CATEGORIES.map((c) => c.key));
 
-/** Clear per-category means of one protected section: known keys of that section, 0–100. */
+/** Clear aggregates of one protected section: known keys of that section, values 0–100. */
 export function sanitizeAverages(
   raw: unknown,
   section: ProtectedSection,
-): Record<string, number> | undefined {
+): CategoryAverages | undefined {
   if (!raw || typeof raw !== "object") return undefined;
-  const out: Record<string, number> = {};
+  const out: CategoryAverages = {};
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     if (!CATEGORY_KEYS.has(k) || sectionOfCategory(k) !== section) continue;
-    const value = percent(v);
-    if (value !== undefined) out[k] = value;
+    const scalar = percent(v);
+    if (scalar !== undefined) {
+      out[k] = scalar;
+      continue;
+    }
+    if (!v || typeof v !== "object") continue;
+    const aggregate = v as Partial<Record<keyof CategoryAggregate, unknown>>;
+    const mean = percent(aggregate.mean);
+    if (mean === undefined) continue;
+    const nullable = (value: unknown) => (value === null ? null : (percent(value) ?? null));
+    out[k] = {
+      mean,
+      simMean: nullable(aggregate.simMean),
+      giveMean: nullable(aggregate.giveMean),
+      recvMean: nullable(aggregate.recvMean),
+      stdDev: percent(aggregate.stdDev) ?? 0,
+    };
   }
   return out;
 }

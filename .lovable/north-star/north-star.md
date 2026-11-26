@@ -2,8 +2,8 @@
 
 # Stella polare
 
-Le persone scoprono quanto sono davvero compatibili con le persone della loro vita.
+Le persone scoprono quanto sono davvero compatibili con qualcuno che conoscono
 
 ## Metrica
 
-Confronti completati con un contatto ogni settimana
+Confronti di compatibilità mostrati con una persona collegata ogni settimana

@@ -2,7 +2,7 @@
 // The invite is kept in localStorage until it is queued by the relay, cancelled or
 // found definitively invalid, so it survives onboarding, reloads and network drops.
 
-import { isValidHandle } from "./handle";
+import { isValidHandle, normalizeHandle } from "./handle";
 import type { Contact, ConnectionRequest } from "./types";
 
 export const INVITE_KEY = "questionar.pendingInvite";
@@ -53,7 +53,8 @@ export function captureInvite(
   storage = defaultStorage(),
 ): string | null {
   if (loc.pathname.replace(/\/+$/, "") !== "/rubrica") return null;
-  const handle = new URLSearchParams(loc.search).get("handle")?.trim();
+  const raw = new URLSearchParams(loc.search).get("handle");
+  const handle = raw ? normalizeHandle(raw) : "";
   if (!handle) return null;
   if (loadInvite(storage)?.handle !== handle) saveInvite({ handle, savedAt: Date.now() }, storage);
   return handle;
@@ -99,7 +100,7 @@ async function run(d: InviteDeps): Promise<InviteResult> {
   const storage = d.storage === undefined ? defaultStorage() : d.storage;
   const p = loadInvite(storage);
   if (!p || !d.myHandle) return "none";
-  const h = p.handle;
+  const h = normalizeHandle(p.handle);
   const drop = (kind: "info" | "error", text: string): InviteResult => {
     clearInvite(h, storage);
     d.notify(kind, text, `invite-${h}`);
@@ -123,6 +124,7 @@ async function run(d: InviteDeps): Promise<InviteResult> {
     case "self":
       return drop("info", "Questo è il tuo QR");
     case "contact":
+      // Already saved: the invite is removed so it never blocks future sessions.
       return drop("info", `@${h} è già tra le tue connessioni`);
     case "incoming":
       return drop("info", `@${h} ti ha già inviato una richiesta: puoi accettarla qui sotto`);

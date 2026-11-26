@@ -296,12 +296,13 @@ export function InfoModal({ onClose }: { onClose: () => void }) {
               compaiono nel profilo, nei confronti e nella scheda avatar.
             </Feature>
             <Feature title="Domande nascoste" demo={<DemoHidden />}>
-              Puoi scegliere di nascondere singole domande o intere categorie. In questo modo non saranno visibili nei confronti e non influiranno sul calcolo della compatibilità.
+              Puoi scegliere di nascondere singole domande o intere categorie. In questo modo non saranno visibili nei confronti e non influiranno sul calcolo della compatibilità. Con una pressione prolungata sull'icona mostra/nascondi (occhio), previa conferma, puoi cancellare completamente il valore e il commento di una singola domanda o di tutte le domande di un'intera categoria, riportandole allo stato originale come se non avessi mai risposto.
             </Feature>
             <Feature title="Controlli sulle categorie" demo={<DemoCategories />}>
               Apri o chiudi tutto insieme e segui i progressi (es. 3/{categoryQuestionCount("B")} →{" "}
               {categoryQuestionCount("B")} ✓). Le categorie nascoste si ripristinano da «Categorie e
-              domande nascoste».
+              domande nascoste». Tieni premuto l'occhio di una categoria per azzerarne tutte le
+              risposte, dopo una conferma.
             </Feature>
             <Feature title="Preferiti" demo={<DemoFavorite />}>
               Dai una stellina alle tue connessioni preferite. Resteranno evidenziate e in alto ma solo sul tuo dispositivo e fuori dai confronti o dal backup.

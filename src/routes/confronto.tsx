@@ -24,10 +24,14 @@ import { CompatibilityMap } from "@/components/compare/CompatibilityMap";
 import { categoryBreakdown, sortByAffinity } from "@/lib/compat-map";
 import { participantOf, useComparePeople } from "@/lib/compare-people";
 import { handleOf } from "@/lib/types";
+import { normalizeHandle } from "@/lib/handle";
 
 export const Route = createFileRoute("/confronto")({
   // `b` is optional so an address without it shows the "not in your address book" message, not a crash.
-  validateSearch: z.object({ b: z.string().optional(), c: z.string().optional() }),
+  validateSearch: z.object({
+    b: z.string().transform(normalizeHandle).optional(),
+    c: z.string().transform(normalizeHandle).optional(),
+  }),
   head: () => ({
     meta: [
       { title: "Confronto profili — QuestionAR" },

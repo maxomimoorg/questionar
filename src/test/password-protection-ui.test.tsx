@@ -104,7 +104,10 @@ describe("owner password pill", () => {
     expect(input).toHaveValue("prima-pw");
     fireEvent.change(input, { target: { value: "ab" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Salva" }));
-    expect(within(dialog).getByRole("alert")).toHaveTextContent("almeno 4");
+    expect(within(dialog).getByRole("alert")).toHaveTextContent("almeno 8");
+    fireEvent.change(input, { target: { value: "1234567" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Salva" }));
+    expect(within(dialog).getByRole("alert")).toHaveTextContent("almeno 8");
     fireEvent.change(input, { target: { value: "seconda-pw" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Salva" }));
     await waitFor(() => expect(api!.state.protection.main?.password).toBe("seconda-pw"));

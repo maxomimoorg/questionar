@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useStore } from "@/lib/store";
 import { PALETTE } from "@/lib/palette";
-import { sanitizeBio } from "@/lib/bio";
+import { clearBioColorReset, removeBioColor, sanitizeBio } from "@/lib/bio";
 import { ProfileTagChip } from "@/components/ProfileTags";
 import { isActiveTag, nextTagState, PROFILE_TAGS, type ProfileTags } from "@/lib/profile-tags";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,10 @@ export function BioEditor({ onClose, initialTag }: { onClose: () => void; initia
   };
 
   const applyColor = (color: string) => {
-    editorRef.current?.focus();
+    const editor = editorRef.current;
+    if (!editor) return;
+    clearBioColorReset(editor);
+    editor.focus();
     document.execCommand("styleWithCSS", false, "true");
     document.execCommand("foreColor", false, color);
     document.execCommand("styleWithCSS", false, "false");
@@ -131,13 +134,6 @@ export function BioEditor({ onClose, initialTag }: { onClose: () => void; initia
             </button>
             <button
               className={btn}
-              aria-label="Rimuovi colore"
-              onClick={() => applyColor("inherit")}
-            >
-              <Ban size={16} />
-            </button>
-            <button
-              className={btn}
               aria-label="Selettore colore"
               onClick={() => setColorsOpen((v) => !v)}
             >
@@ -151,11 +147,23 @@ export function BioEditor({ onClose, initialTag }: { onClose: () => void; initia
                 <button
                   key={c}
                   aria-label={`Colore ${c}`}
+                  onMouseDown={(event) => event.preventDefault()}
                   onClick={() => applyColor(c)}
                   className="size-7 rounded-full ring-1 ring-border"
                   style={{ backgroundColor: c }}
                 />
               ))}
+              <button
+                aria-label="Colore predefinito (rimuovi colore)"
+                title="Colore predefinito"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  if (editorRef.current) removeBioColor(editorRef.current);
+                }}
+                className="flex size-7 items-center justify-center rounded-full bg-background text-muted-foreground ring-1 ring-border hover:text-foreground"
+              >
+                <Ban size={14} />
+              </button>
             </div>
           )}
 

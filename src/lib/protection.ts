@@ -13,21 +13,27 @@ import {
 } from "./password-crypto";
 import {
   PROTECTED_SECTIONS,
+  resolveQuestionType,
   sanitizeCustomQuestions,
   sectionOfCategory,
   sectionOfQuestionId,
   type ProtectedSection,
   type Question,
+  type QuestionDefinition,
 } from "./questions";
 import {
+  giveOf,
+  receiveOf,
   sanitizeAnswers,
   type Answer,
+  type CategoryAggregate,
+  type CategoryAverages,
   type OwnerProtection,
   type OwnerSecret,
   type ProfileSnapshot,
 } from "./types";
 
-export const MIN_PASSWORD_LENGTH = 4;
+export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 128;
 
 /** Italian error text for an invalid new password, or null when it can be used. */
@@ -87,26 +93,73 @@ function withoutSection(
   };
 }
 
+const roundedMean = (values: number[]) =>
+  Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+
+const nullableMean = (values: number[]) => (values.length ? roundedMean(values) : null);
+
 /**
- * Rounded mean of the owner's answers per category of one section: answered questions only,
- * leaving out hidden questions and hidden categories, exactly as comparisons do.
+ * Aggregate statistics of one section: answered, visible questions only. The overall `mean`
+ * keeps its legacy definition; role means and dispersion let contacts estimate the real maths
+ * without receiving any single answer, comment, critical flag or custom-question definition.
  */
 export function categoryAverages(
   answers: Record<string, Answer>,
-  questions: Pick<Question, "id" | "category">[],
+  questions: (QuestionDefinition & { category: string })[],
   hiddenCategories: string[] = [],
   section: ProtectedSection,
-): Record<string, number> {
-  const sums = new Map<string, { sum: number; n: number }>();
+): Record<string, CategoryAggregate> {
+  const groups = new Map<
+    string,
+    { values: number[]; similarity: number[]; give: number[]; receive: number[]; votes: number[] }
+  >();
   for (const q of questions) {
     if (sectionOfCategory(q.category) !== section || hiddenCategories.includes(q.category))
       continue;
     const a = answers[q.id];
     if (!a?.answered || a.hidden) continue;
-    const cur = sums.get(q.category) ?? { sum: 0, n: 0 };
-    sums.set(q.category, { sum: cur.sum + a.value, n: cur.n + 1 });
+    const cur = groups.get(q.category) ?? {
+      values: [],
+      similarity: [],
+      give: [],
+      receive: [],
+      votes: [],
+    };
+    groups.set(q.category, cur);
+    cur.values.push(a.value);
+    if (resolveQuestionType(q.id, questions) === "reciprocal") {
+      const give = giveOf(a);
+      const receive = receiveOf(a);
+      if (give !== undefined) {
+        cur.give.push(give);
+        cur.votes.push(give);
+      }
+      if (receive !== undefined) {
+        cur.receive.push(receive);
+        cur.votes.push(receive);
+      }
+    } else {
+      cur.similarity.push(a.value);
+      cur.votes.push(a.value);
+    }
   }
-  return Object.fromEntries([...sums.entries()].map(([k, { sum, n }]) => [k, Math.round(sum / n)]));
+  return Object.fromEntries(
+    [...groups.entries()].map(([category, group]) => {
+      const mean = group.votes.reduce((sum, value) => sum + value, 0) / group.votes.length;
+      const variance =
+        group.votes.reduce((sum, value) => sum + (value - mean) ** 2, 0) / group.votes.length;
+      return [
+        category,
+        {
+          mean: roundedMean(group.values),
+          simMean: nullableMean(group.similarity),
+          giveMean: nullableMean(group.give),
+          recvMean: nullableMean(group.receive),
+          stdDev: Math.round(Math.sqrt(variance)),
+        } satisfies CategoryAggregate,
+      ];
+    }),
+  );
 }
 
 /** Next keyVersion of a section: never reused, even after a removal. */
@@ -155,7 +208,7 @@ function ownerKey(secret: OwnerSecret): Promise<CryptoKey> {
 export async function protectSnapshot(
   base: ProfileSnapshot,
   protection: OwnerProtection,
-  questions: Pick<Question, "id" | "category">[],
+  questions: (QuestionDefinition & { category: string })[],
 ): Promise<ProfileSnapshot> {
   let snap: ProfileSnapshot = { ...base };
   for (const section of PROTECTED_SECTIONS) {
@@ -226,8 +279,8 @@ export type ResolvedProfile = {
   hiddenCategories: string[];
   /** Sections still protected for this viewer. */
   locked: ProtectedSection[];
-  /** Clear per-category means of the locked sections. */
-  averages: Record<string, number>;
+  /** Clear per-category aggregates of the locked sections (scalar means in old snapshots). */
+  averages: CategoryAverages;
 };
 
 export function resolveSnapshot(
@@ -237,7 +290,7 @@ export function resolveSnapshot(
   let answers: Record<string, Answer> = { ...(snap?.answers ?? {}) };
   let customQuestions: Question[] = [...(snap?.customQuestions ?? [])];
   const locked: ProtectedSection[] = [];
-  let averages: Record<string, number> = {};
+  let averages: CategoryAverages = {};
   for (const section of PROTECTED_SECTIONS) {
     if (!boxOf(snap, section)) continue;
     // A protected section never mixes with clear data of the same section.

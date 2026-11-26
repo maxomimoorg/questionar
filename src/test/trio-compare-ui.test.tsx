@@ -87,8 +87,8 @@ describe("trio: confronto con Luna (Generale protetto)", () => {
     await renderCompare("main", LUNA);
     await waitFor(() => expect(cards()).toHaveLength(1));
     expect(cardOf(LUNA)).toHaveTextContent("Luna");
-    expect(header("Impegno per la stabilità").parentElement).toHaveTextContent("≈100%");
-    expect(header("Autonomia").parentElement).toHaveTextContent("≈98%");
+    expect(header("Impegno per la stabilità").parentElement).toHaveTextContent("≈70%±19%");
+    expect(header("Autonomia").parentElement).toHaveTextContent("≈91%±12%");
     expect(drawer("G")).toBeNull();
     expect(document.body).not.toHaveTextContent("Commento privato di Luna");
   });
@@ -120,7 +120,7 @@ describe("trio: confronto a tre", () => {
     await renderCompare("main", LUNA, SOLE);
     await waitFor(() => expect(cards()).toHaveLength(1));
     expect(cardOf(LUNA)).toBeTruthy();
-    expect(header("Impegno per la stabilità").parentElement).toHaveTextContent("≈103%");
+    expect(header("Impegno per la stabilità").parentElement).toHaveTextContent("≈83%±13%");
     await unlock(LUNA, "Luna", TRIO_PASSWORDS.luna.main);
     await waitFor(() =>
       expect(header("Impegno per la stabilità").parentElement).toHaveTextContent("114%"),
@@ -134,7 +134,7 @@ describe("trio: confronto a tre", () => {
     await waitFor(() => expect(cards()).toHaveLength(1));
     expect(cardOf(SOLE)).toHaveTextContent("Sole");
     expect(drawer("XA")).toBeNull();
-    expect(header("Sadismo e Masochismo").parentElement).toHaveTextContent("≈27%");
+    expect(header("Sadismo e Masochismo").parentElement).toHaveTextContent("≈27%±8%");
     await unlock(SOLE, "Sole", TRIO_PASSWORDS.sole.erotic);
     await waitFor(() =>
       expect(header("Sadismo e Masochismo").parentElement).toHaveTextContent("22%"),

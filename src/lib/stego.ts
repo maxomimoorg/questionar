@@ -1,7 +1,7 @@
 // Backup hidden inside the avatar PNG with LSB steganography.
 
 import type { ProtectedBox } from "./password-crypto";
-import type { Answer, Question } from "./types";
+import type { Answer, CategoryAverages, Question } from "./types";
 import { createBackupCard } from "./backup-card";
 import type { ProfileTags } from "./profile-tags";
 
@@ -19,9 +19,9 @@ export type BackupPayload = {
   /** Optional (newer backups): the owner's public key, used to verify the first contact. */
   pub?: JsonWebKey;
   /** Optional: password-protected sections, exactly as in ProfileSnapshot (never a password). */
-  mainAverages?: Record<string, number>;
+  mainAverages?: CategoryAverages;
   mainProtected?: ProtectedBox;
-  eroticAverages?: Record<string, number>;
+  eroticAverages?: CategoryAverages;
   eroticProtected?: ProtectedBox;
 };
 

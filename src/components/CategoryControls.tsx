@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { useLongPress } from "@/hooks/use-long-press";
 import { expandAllAction } from "@/lib/visibility";
 
 /** Pill that opens or closes every category at once; its text names the available action. */
@@ -82,6 +83,7 @@ export function CategoryHeader({
   right,
   hidden,
   onToggleHidden,
+  onLongPressHidden,
 }: {
   label: string;
   open: boolean;
@@ -89,7 +91,10 @@ export function CategoryHeader({
   right: ReactNode;
   hidden?: boolean;
   onToggleHidden?: () => void;
+  /** Long press on the eye: e.g. asks to clear every answer of the category. */
+  onLongPressHidden?: () => void;
 }) {
+  const eyePress = useLongPress(() => onToggleHidden?.(), onLongPressHidden);
   return (
     <div className="flex items-center gap-1">
       <button
@@ -116,7 +121,7 @@ export function CategoryHeader({
             hidden ? `Ripristina la categoria ${label}` : `Nascondi la categoria ${label}`
           }
           title={hidden ? "Ripristina categoria" : "Nascondi categoria"}
-          onClick={onToggleHidden}
+          {...eyePress}
           className="grid size-8 shrink-0 place-items-center rounded-full bg-background text-muted-foreground"
         >
           {hidden ? <EyeOff size={15} /> : <Eye size={15} />}

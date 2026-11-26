@@ -20,7 +20,7 @@ import {
 import { visibleToAll } from "@/lib/compat-map";
 import { isEroticQuestionId, type ProtectedSection } from "@/lib/questions";
 import { useStore } from "@/lib/store";
-import { giveOf, receiveOf, type Answer, type Question } from "@/lib/types";
+import { giveOf, receiveOf, type Answer, type CategoryAverages, type Question } from "@/lib/types";
 
 export type Person = {
   handle: string;
@@ -31,8 +31,8 @@ export type Person = {
   customQuestions?: Question[];
   /** Password-protected questionnaires of this person that the viewer has not unlocked. */
   locked?: ProtectedSection[];
-  /** Clear per-category means of those locked questionnaires. */
-  averages?: Record<string, number>;
+  /** Clear per-category aggregate statistics of those locked questionnaires. */
+  averages?: CategoryAverages;
   mine: boolean;
 };
 
