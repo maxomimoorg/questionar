@@ -27,4 +27,9 @@ describe("handle with leading @", () => {
   it("extracts emoji from an @handle", () => {
     expect(emojisFromHandle("@luna🦊🌊⭐")).toEqual(["🦊", "🌊", "⭐"]);
   });
+  it("preserves composite emoji graphemes (skin tones, variation selectors, ZWJ)", () => {
+    expect(emojisFromHandle("luna👍🏽❤️⭐")).toEqual(["👍🏽", "❤️", "⭐"]);
+    expect(emojisFromHandle("@luna👩‍❤️‍👩👍🏽❤️")).toEqual(["👩‍❤️‍👩", "👍🏽", "❤️"]);
+    expect(isValidHandle("@luna👩‍❤️‍👩👍🏽❤️")).toBe(true);
+  });
 });

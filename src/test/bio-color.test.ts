@@ -58,6 +58,29 @@ describe("Bio · rimozione del colore", () => {
     ]);
     expect(exec.mock.calls.flat()).not.toContain("#ff3131");
     expect(exec.mock.calls.flat()).not.toContain("inherit");
+    expect(editor.querySelector("span")?.style.color).toBe("");
+  });
+
+  it("rimuove style.color e attributo color da span e font nella selezione anche se removeFormat li lascia", () => {
+    const editor = document.createElement("div");
+    editor.innerHTML =
+      '<span style="color: #ff3131">uno</span><font color="#0cc0df" style="color: #0cc0df">due</font><span style="color: #38b6ff">fuori</span>';
+    document.body.appendChild(editor);
+    const selection = window.getSelection()!;
+    const range = document.createRange();
+    const [firstSpan, secondFont] = [editor.querySelector("span")!, editor.querySelector("font")!];
+    range.setStart(firstSpan.firstChild!, 0);
+    range.setEnd(secondFont.firstChild!, secondFont.textContent!.length);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    Object.defineProperty(document, "execCommand", { configurable: true, value: vi.fn() });
+
+    removeBioColor(editor);
+
+    expect(firstSpan.style.color).toBe("");
+    expect(secondFont.style.color).toBe("");
+    expect(secondFont.getAttribute("color")).toBeNull();
+    expect(editor.querySelectorAll("span")[1]?.style.color).not.toBe("");
   });
 
   it("il sanitizzatore conserva testo normale e colori validi, ma elimina inherit", () => {

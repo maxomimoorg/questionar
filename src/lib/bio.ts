@@ -209,6 +209,14 @@ export function removeBioColor(editor: HTMLElement): void {
       current = selection.getRangeAt(0);
       colored = coloredAncestor(current.startContainer, editor);
     }
+  } else {
+    const currentRange = selection.rangeCount > 0 ? selection.getRangeAt(0) : range;
+    for (const el of editor.querySelectorAll<HTMLElement>("span, font")) {
+      if (!currentRange.intersectsNode(el)) continue;
+      el.style.removeProperty("color");
+      if (el.getAttribute("style")?.trim() === "") el.removeAttribute("style");
+      if (el.tagName === "FONT") el.removeAttribute("color");
+    }
   }
   installPlainTextInput(editor);
 }
