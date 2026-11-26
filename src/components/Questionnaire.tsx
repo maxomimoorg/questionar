@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CategoryHeader, ExpandAllPill } from "@/components/CategoryControls";
 import { PasswordControl } from "@/components/PasswordProtection";
 import { QuestionCard } from "@/components/QuestionCard";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 import {
   CUSTOM_TYPE_LABELS,
@@ -49,8 +50,16 @@ export function Questionnaire({
   emptyText,
   section,
 }: Props) {
-  const { state, questions, toggleDrawer, setDrawers, toggleCategoryHidden, addCustomQuestion } =
-    useStore();
+  const {
+    state,
+    questions,
+    toggleDrawer,
+    setDrawers,
+    toggleCategoryHidden,
+    addCustomQuestion,
+    clearAnswers,
+  } = useStore();
+  const [clearCat, setClearCat] = useState<{ key: string; label: string } | null>(null);
   const [newText, setNewText] = useState("");
   const [newType, setNewType] = useState<QuestionType>("similarity");
   const [newCat, setNewCat] = useState<AnyCategoryKey | "">(
@@ -129,6 +138,7 @@ export function Questionnaire({
               right={<span data-testid="completion">{completionLabel(completion)}</span>}
               hidden={false}
               onToggleHidden={() => hideCategory(cat.key, cat.label)}
+              onLongPressHidden={() => setClearCat({ key: cat.key, label: cat.label })}
             />
             {open && (
               <div className="space-y-2 pt-1">
@@ -272,6 +282,22 @@ export function Questionnaire({
           </div>
         )}
       </section>
+      <ConfirmDialog
+        open={clearCat !== null}
+        onOpenChange={(o) => !o && setClearCat(null)}
+        title="Eliminare le risposte della categoria?"
+        description={`Eliminare tutte le risposte della categoria «${clearCat?.label ?? ""}»? Tutte le risposte e i commenti salvati in questa categoria torneranno allo stato iniziale.`}
+        confirmLabel="Elimina tutte"
+        onConfirm={() => {
+          if (!clearCat) return;
+          // Default and custom questions of the category share the same list.
+          clearAnswers(questions.filter((q) => q.category === clearCat.key).map((q) => q.id));
+          toast(`Risposte di “${clearCat.label}” eliminate`, {
+            description: "Le domande della categoria sono tornate allo stato non risposto.",
+          });
+          setClearCat(null);
+        }}
+      />
     </>
   );
 }

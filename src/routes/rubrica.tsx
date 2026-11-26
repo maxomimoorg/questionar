@@ -12,13 +12,13 @@ import { percentColor } from "@/lib/color";
 import { qrColors } from "@/lib/qr-colors";
 import { averageCompatDetail, formatCompat } from "@/lib/compat";
 import { usePeer } from "@/lib/peer";
-import { captureInvite } from "@/lib/qr-invite";
+import { captureInvite, clearInvite } from "@/lib/qr-invite";
 import { boxesOf, protectedFieldsOf, protectedSectionsOf, resolveSnapshot } from "@/lib/protection";
 import { exportBackupPng, importBackupPng, type BackupPayload } from "@/lib/stego";
 import { useUnlocks } from "@/lib/unlocks";
 import { useStore } from "@/lib/store";
 import { MarginText } from "@/components/MarginText";
-import { emojisFromHandle, isValidHandle } from "@/lib/handle";
+import { emojisFromHandle, isValidHandle, normalizeHandle } from "@/lib/handle";
 import { handleOf, sortFavoritesFirst } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
@@ -82,10 +82,19 @@ function RubricaPage() {
   // refresh does not process it again.
   useEffect(() => {
     if (!inviteHandle) return;
+    const h = normalizeHandle(inviteHandle);
+    if (h && state.contacts.some((c) => c.handle === h)) {
+      clearInvite(h);
+      toast.info(`@${h} è già tra le tue connessioni: apertura confronto...`, {
+        id: `invite-${h}`,
+      });
+      void navigate({ to: "/confronto", search: { b: h }, replace: true });
+      return;
+    }
     captureInvite(window.location);
     checkInvite();
     void navigate({ to: "/rubrica", search: {}, replace: true });
-  }, [inviteHandle, checkInvite, navigate]);
+  }, [inviteHandle, checkInvite, navigate, state.contacts]);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -243,7 +252,7 @@ function RubricaPage() {
               />
               <Button
                 onClick={() => {
-                  const h = query.trim();
+                  const h = normalizeHandle(query);
                   if (!h) return;
                   if (h === myHandle) {
                     toast.error("Questo è il tuo handle", { id: "handle-self" });
@@ -255,6 +264,15 @@ function RubricaPage() {
                       description:
                         "Serve un handle completo: da 4 a 16 lettere o numeri seguiti dalle sue 3 emoji.",
                     });
+                    return;
+                  }
+                  if (state.contacts.some((c) => c.handle === h)) {
+                    setSearchOpen(false);
+                    setQuery("");
+                    toast.info(`@${h} è già tra le tue connessioni: apertura confronto...`, {
+                      id: `contact-${h}`,
+                    });
+                    void navigate({ to: "/confronto", search: { b: h } });
                     return;
                   }
                   void sendRequest(h);

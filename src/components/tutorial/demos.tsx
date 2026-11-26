@@ -29,6 +29,7 @@ import { useEffect, useState } from "react";
 import { AnswerSlider } from "@/components/AnswerSlider";
 import { Avatar } from "@/components/Avatar";
 import { CategoryHeader, ExpandAllPill, PasswordPill } from "@/components/CategoryControls";
+import { useLongPress } from "@/hooks/use-long-press";
 import { MarginText } from "@/components/MarginText";
 import { ProfileTagChip } from "@/components/ProfileTags";
 import { percentColor } from "@/lib/color";
@@ -599,6 +600,12 @@ export function DemoProfileTags() {
 export function DemoHidden() {
   const cycle = useDemoCycle(2, 2200);
   const hidden = cycle.index === 1;
+  // Demo-only: a long press shows the "answer cleared" state without touching the store.
+  const [cleared, setCleared] = useState(false);
+  const eyePress = useLongPress(
+    () => cycle.select(hidden ? 0 : 1),
+    () => setCleared(true),
+  );
   return (
     <Stage hint="tocca">
       <div
@@ -607,15 +614,24 @@ export function DemoHidden() {
         <div className="flex-1">
           <QuestionLabel example="hidden" />
         </div>
-        {hidden && (
+        {hidden && !cleared && (
           <span className="rounded-full bg-background px-2 py-0.5 text-[11px] text-muted-foreground">
             fuori dal calcolo
           </span>
         )}
+        {cleared && (
+          <button
+            type="button"
+            onClick={() => setCleared(false)}
+            className="demo-enter rounded-full bg-background px-2 py-0.5 text-[11px] text-muted-foreground"
+          >
+            risposta eliminata
+          </button>
+        )}
         <button
           type="button"
           aria-label={hidden ? "Ripristina la domanda" : "Nascondi la domanda"}
-          onClick={() => cycle.select(hidden ? 0 : 1)}
+          {...eyePress}
           className="grid size-8 place-items-center rounded-full bg-background text-muted-foreground"
         >
           {hidden ? <EyeOff size={15} /> : <Eye size={15} />}

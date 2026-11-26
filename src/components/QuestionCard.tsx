@@ -8,6 +8,8 @@ import { CUSTOM_TYPE_LABELS, categoryOfId, isReciprocal, type Question } from "@
 import { isCategoryHidden } from "@/lib/visibility";
 import { giveOf, isPartialAnswer, receiveOf, reciprocalValue } from "@/lib/types";
 import { AnswerSlider } from "./AnswerSlider";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { useLongPress } from "@/hooks/use-long-press";
 
 /** Kept for existing imports; the slider lives in ./AnswerSlider. */
 export { AnswerSlider };
@@ -19,7 +21,8 @@ type Props = {
 };
 
 export function QuestionCard({ question, hiddenByCategory }: Props) {
-  const { state, setAnswer, removeCustomQuestion } = useStore();
+  const { state, setAnswer, removeCustomQuestion, clearAnswers } = useStore();
+  const [confirmClear, setConfirmClear] = useState(false);
   const answer = state.answers[question.id] ?? { value: 50, answered: false };
   const [commentOpen, setCommentOpen] = useState(false);
   const [draftComment, setDraftComment] = useState(answer.comment ?? "");
@@ -39,6 +42,20 @@ export function QuestionCard({ question, hiddenByCategory }: Props) {
       value: reciprocalValue(giveValue, receiveValue),
       answered: true,
     });
+
+  const toggleHidden = () => {
+    const hidden = !answer.hidden;
+    setAnswer(question.id, { hidden });
+    const catHidden = isCategoryHidden(state, categoryOfId(question.id));
+    toast(hidden ? "Domanda nascosta" : catHidden ? "Domanda ripristinata" : "Domanda visibile", {
+      description: hidden
+        ? "Non apparirà nei confronti e non influisce sulla compatibilità."
+        : catHidden
+          ? "Resta nascosta finché la sua categoria è nascosta."
+          : "Torna nei confronti e nel calcolo della compatibilità.",
+    });
+  };
+  const eyePress = useLongPress(toggleHidden, () => setConfirmClear(true));
 
   const commit = () => {
     setCommentOpen(false);
@@ -83,25 +100,8 @@ export function QuestionCard({ question, hiddenByCategory }: Props) {
           </button>
           <button
             aria-label={answer.hidden ? "Ripristina la domanda" : "Nascondi la domanda"}
-            onClick={() => {
-              const hidden = !answer.hidden;
-              setAnswer(question.id, { hidden });
-              const catHidden = isCategoryHidden(state, categoryOfId(question.id));
-              toast(
-                hidden
-                  ? "Domanda nascosta"
-                  : catHidden
-                    ? "Domanda ripristinata"
-                    : "Domanda visibile",
-                {
-                  description: hidden
-                    ? "Non apparirà nei confronti e non influisce sulla compatibilità."
-                    : catHidden
-                      ? "Resta nascosta finché la sua categoria è nascosta."
-                      : "Torna nei confronti e nel calcolo della compatibilità.",
-                },
-              );
-            }}
+            {...eyePress}
+            title="Tocca per nascondere · tieni premuto per eliminare la risposta"
             className="grid size-8 place-items-center rounded-full bg-background text-muted-foreground"
           >
             {answer.hidden ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -185,6 +185,20 @@ export function QuestionCard({ question, hiddenByCategory }: Props) {
           <p className="mt-2 text-[14px] italic text-muted-foreground">{answer.comment}</p>
         )
       )}
+      <ConfirmDialog
+        open={confirmClear}
+        onOpenChange={setConfirmClear}
+        title="Eliminare la risposta?"
+        description="Eliminare la risposta a questa domanda? Il valore e il commento verranno azzerati e la domanda tornerà allo stato non risposto."
+        onConfirm={() => {
+          clearAnswers([question.id]);
+          setDraftComment("");
+          setCommentOpen(false);
+          toast("Risposta eliminata", {
+            description: "La domanda è tornata allo stato non risposto.",
+          });
+        }}
+      />
     </div>
   );
 }

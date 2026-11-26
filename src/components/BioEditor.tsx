@@ -131,13 +131,6 @@ export function BioEditor({ onClose, initialTag }: { onClose: () => void; initia
             </button>
             <button
               className={btn}
-              aria-label="Rimuovi colore"
-              onClick={() => applyColor("inherit")}
-            >
-              <Ban size={16} />
-            </button>
-            <button
-              className={btn}
               aria-label="Selettore colore"
               onClick={() => setColorsOpen((v) => !v)}
             >
@@ -156,6 +149,14 @@ export function BioEditor({ onClose, initialTag }: { onClose: () => void; initia
                   style={{ backgroundColor: c }}
                 />
               ))}
+              <button
+                aria-label="Colore predefinito (rimuovi colore)"
+                title="Colore predefinito"
+                onClick={() => applyColor("inherit")}
+                className="flex size-7 items-center justify-center rounded-full bg-background text-muted-foreground ring-1 ring-border hover:text-foreground"
+              >
+                <Ban size={14} />
+              </button>
             </div>
           )}
 

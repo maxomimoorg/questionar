@@ -1,9 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CHECKS, runChecks } from "@/lib/diagnostics/checks";
 import { SCENARIOS } from "@/lib/diagnostics/scenarios";
 import { exportReport } from "@/lib/diagnostics/export";
 import { summarize } from "@/lib/diagnostics/report";
+import {
+  buildPlainBackup,
+  exportPlainBackup,
+  type PlainFormat,
+} from "@/lib/diagnostics/plain-backup";
+import { useStore } from "@/lib/store";
 import { NOTE_MAX } from "@/lib/diagnostics/redact";
 import {
   clearDiagnosticData,
@@ -34,6 +41,47 @@ function scenario(id: string): ScenarioResult {
 function updateScenario(id: string, patch: Partial<ScenarioResult>) {
   const s = getDiagState();
   setDiagState({ scenarios: { ...s.scenarios, [id]: { ...scenario(id), ...patch } } });
+}
+
+const PLAIN_FORMATS: PlainFormat[] = ["pdf", "docx", "csv", "xlsx"];
+
+/** Clear-text copy of the owner's profile, generated and saved only on this device. */
+function PlainBackupSection() {
+  const { state, questions } = useStore();
+  const [busy, setBusy] = useState<PlainFormat | null>(null);
+  const run = async (f: PlainFormat) => {
+    setBusy(f);
+    try {
+      await exportPlainBackup(buildPlainBackup(state, questions), f);
+    } catch {
+      toast.error("Esportazione non riuscita", { id: "plain-backup" });
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <div className="mt-4 rounded-2xl bg-surface-2/60 p-3" data-testid="plain-backup">
+      <h2 className="text-[15px]">Backup in chiaro del profilo</h2>
+      <p className="mt-1 text-[12px] text-muted-foreground">
+        Handle, bio, tag e tutte le risposte date e non nascoste dei due questionari. Il file è
+        creato su questo dispositivo e non viene inviato da nessuna parte; contiene dati in chiaro,
+        anche quelli protetti da password: conservalo con cura.
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {PLAIN_FORMATS.map((f) => (
+          <Button
+            key={f}
+            size="sm"
+            variant="secondary"
+            disabled={busy !== null || !state.identity}
+            onClick={() => void run(f)}
+          >
+            {busy === f ? "Creo…" : f.toUpperCase()}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function DiagnosticsPanel() {
@@ -218,6 +266,7 @@ export function DiagnosticsPanel() {
                 Termina diagnostica
               </Button>
             </div>
+            <PlainBackupSection />
           </section>
         )}
       </div>

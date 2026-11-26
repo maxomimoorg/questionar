@@ -38,6 +38,7 @@ import {
 import { protectSnapshot, withPassword, withoutPassword, type SectionPayload } from "./protection";
 import { idbUnlockStorage } from "./unlock-db";
 import { sanitizeHiddenCategories, toggleCategory } from "./visibility";
+import { clearAnswers } from "./answer-reset";
 import type { BackupPayload } from "./stego";
 import { emojisFromHandle } from "./handle";
 import { normalizeTheme } from "./theme";
@@ -59,6 +60,8 @@ type Ctx = {
   /** Adds a contact's custom question to my profile, keeping its type. */
   ensureQuestion: (id: string, text: string, type?: QuestionType) => void;
   removeCustomQuestion: (id: string) => void;
+  /** Brings these answers back to the never-answered state (long press on an eye button). */
+  clearAnswers: (ids: string[]) => void;
   /** `defaultOpen`: state of a drawer never toggled (main: open, Erotismo: closed). */
   toggleDrawer: (key: string, defaultOpen?: boolean) => void;
   setDrawers: (keys: string[], open: boolean) => void;
@@ -106,9 +109,7 @@ const LOAD_RETRY_DELAYS = [300, 1000];
  * Reads the saved state, retrying short transient IndexedDB failures. Resolves null only when
  * there really is no saved profile, and LOAD_FAILED when every attempt failed.
  */
-async function readSavedState(
-  alive: () => boolean,
-): Promise<AppState | null | typeof LOAD_FAILED> {
+async function readSavedState(alive: () => boolean): Promise<AppState | null | typeof LOAD_FAILED> {
   for (let attempt = 0; ; attempt++) {
     try {
       return await loadState<AppState>();
@@ -257,6 +258,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             ],
           };
         }),
+      clearAnswers: (ids) => setState((s) => ({ ...s, answers: clearAnswers(s.answers, ids) })),
       removeCustomQuestion: (id) =>
         setState((s) => {
           const answers = { ...s.answers };
