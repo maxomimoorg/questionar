@@ -1,7 +1,17 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "questionar",
   "private": true,
   "version": "1.0.0",
+  "description": "Zero-server, privacy-first P2P compatibility questionnaire app",
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "p2p",
+    "privacy",
+    "zero-server",
+    "webrtc",
+    "indexeddb",
+    "tanstack-start"
+  ],
   "sideEffects": false,
   "type": "module",
   "scripts": {

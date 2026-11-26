@@ -99,6 +99,9 @@ const legacyMeans = (averages: CategoryAverages | undefined) =>
 describe("trio: i profili", () => {
   it("usa solo domande esistenti e password valide", () => {
     expect(() => q("A", "Domanda che non esiste")).toThrow(/inesistente/);
+    expect(passwordProblem("abcd")).toMatch(/almeno 8/);
+    expect(passwordProblem("1234567")).toMatch(/almeno 8/);
+    expect(passwordProblem("12345678")).toBeNull();
     for (const name of TRIO_NAMES) {
       for (const pw of Object.values(TRIO_PASSWORDS[name])) expect(passwordProblem(pw)).toBeNull();
     }

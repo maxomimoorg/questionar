@@ -33,7 +33,7 @@ import {
   type ProfileSnapshot,
 } from "./types";
 
-export const MIN_PASSWORD_LENGTH = 4;
+export const MIN_PASSWORD_LENGTH = 8;
 export const MAX_PASSWORD_LENGTH = 128;
 
 /** Italian error text for an invalid new password, or null when it can be used. */
