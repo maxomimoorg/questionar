@@ -114,9 +114,13 @@ describe("two independent compartments (Generale / Erotismo)", () => {
       openSectionWithPassword(EROTIC_PW, snap.mainProtected!, "main"),
     ).rejects.toBeInstanceOf(WrongPasswordError);
 
-    // Clear means per category of each section.
-    expect(snap.mainAverages).toEqual({ I: 60 });
-    expect(snap.eroticAverages).toEqual({ XA: 90 });
+    // Clear aggregates per category; the encrypted answers themselves stay opaque.
+    expect(snap.mainAverages).toEqual({
+      I: { mean: 60, simMean: 60, giveMean: null, recvMean: null, stdDev: 20 },
+    });
+    expect(snap.eroticAverages).toEqual({
+      XA: { mean: 90, simMean: null, giveMean: 90, recvMean: 90, stdDev: 0 },
+    });
   });
 
   it("protecting only Generale leaves Erotismo travelling in clear", async () => {
@@ -155,7 +159,9 @@ describe("two independent compartments (Generale / Erotismo)", () => {
       [mainQ[1]!.id]: { value: 20, answered: true, hidden: true },
       [mainQ[2]!.id]: { value: 10, answered: false },
     };
-    expect(categoryAverages(answers, DEFAULT_QUESTIONS, [], "main")).toEqual({ I: 80 });
+    expect(categoryAverages(answers, DEFAULT_QUESTIONS, [], "main")).toEqual({
+      I: { mean: 80, simMean: 80, giveMean: null, recvMean: null, stdDev: 0 },
+    });
     expect(categoryAverages(answers, DEFAULT_QUESTIONS, ["I"], "main")).toEqual({});
   });
 });

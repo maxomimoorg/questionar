@@ -22,7 +22,7 @@ import {
 } from "@/lib/protection";
 import { WrongPasswordError } from "@/lib/password-crypto";
 import { ALL_CATEGORIES, DEFAULT_QUESTIONS, PROTECTED_SECTIONS, questionId } from "@/lib/questions";
-import { sanitizeSnapshot, type Question } from "@/lib/types";
+import { sanitizeSnapshot, type CategoryAverages, type Question } from "@/lib/types";
 import {
   TRIO_NAMES,
   TRIO_PASSWORDS,
@@ -86,6 +86,13 @@ async function received(name: "luna" | "sole", unlock = false): Promise<Particip
 }
 
 const only = (t: Table, keys: (keyof Table)[]) => Object.fromEntries(keys.map((k) => [k, t[k]]));
+const legacyMeans = (averages: CategoryAverages | undefined) =>
+  Object.fromEntries(
+    Object.entries(averages ?? {}).map(([category, value]) => [
+      category,
+      typeof value === "number" ? value : value.mean,
+    ]),
+  );
 
 // ---- the profiles themselves ------------------------------------------------------------------
 
@@ -367,23 +374,23 @@ describe("trio: viste sul dispositivo di Io", () => {
   it("Luna con il Generale bloccato: medie per categoria (≈), Erotismo esatto", async () => {
     const t = table("io", [trioParticipant("io"), await received("luna")]);
     expect(t).toEqual({
-      A: "≈100%",
-      B: "≈75%",
-      C: "≈98%",
-      D: "≈88%",
-      E: "≈55%",
+      A: "≈70% ±19",
+      B: "≈61% ±18",
+      C: "≈91% ±12",
+      D: "≈84% ±12",
+      E: "≈48% ±16",
       F: "–",
       G: "nasc.",
-      H: "≈100%",
-      I: "≈99%",
-      J: "≈80%",
+      H: "≈100% ±12",
+      I: "≈64% ±22",
+      J: "≈71% ±12",
       XA: "110%",
       XB: "97% ±17",
       XC: "–",
       XD: "-20%",
       XE: "–",
       XF: "9%",
-      TOT: "≈72% ±1",
+      TOT: "≈61% ±12",
     });
   });
 
@@ -403,10 +410,10 @@ describe("trio: viste sul dispositivo di Io", () => {
       XA: "nasc.",
       XB: "–",
       XC: "–",
-      XD: "≈0%",
+      XD: "≈0% ±12",
       XE: "–",
-      XF: "≈50%",
-      TOT: "≈53%",
+      XF: "≈36% ±25",
+      TOT: "≈52% ±4",
     });
   });
 
@@ -428,22 +435,22 @@ describe("trio: viste sul dispositivo di Io", () => {
     const full = clear("io", "luna", "sole");
     const main: Key[] = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
     expect(only(t, main)).toEqual(only(full, main));
-    expect(t.XD).toBe("≈27%");
-    expect(t.XF).toBe("≈44%");
+    expect(t.XD).toBe("≈27% ±8");
+    expect(t.XF).toBe("≈31% ±18");
   });
 
   it("a tre, entrambi bloccati: stime dove rispondono tutti e tre", async () => {
     const t = table("io", [trioParticipant("io"), await received("luna"), await received("sole")]);
     expect(only(t, ["A", "B", "C", "D", "G", "I", "XA", "XD", "XF"])).toEqual({
-      A: "≈103%",
-      B: "≈77%",
-      C: "≈32%",
-      D: "≈69%",
+      A: "≈83% ±13",
+      B: "≈61% ±14",
+      C: "≈30% ±8",
+      D: "≈63% ±10",
       G: "nasc.",
-      I: "≈69%",
+      I: "≈53% ±14",
       XA: "nasc.",
-      XD: "≈27%",
-      XF: "≈44%",
+      XD: "≈27% ±8",
+      XF: "≈31% ±18",
     });
   });
 
@@ -461,19 +468,58 @@ describe("trio: viste sul dispositivo di Io", () => {
 
   it("le medie in chiaro escludono le categorie nascoste e le risposte bloccate", async () => {
     const luna = sanitizeSnapshot(await trioSnapshot("luna"));
-    expect(luna.mainAverages).toEqual({ A: 72, B: 57, C: 93, D: 86, E: 38, H: 70, I: 51, J: 60 });
+    expect(legacyMeans(luna.mainAverages)).toEqual({
+      A: 72,
+      B: 57,
+      C: 93,
+      D: 86,
+      E: 38,
+      H: 70,
+      I: 51,
+      J: 60,
+    });
+    expect(luna.mainAverages?.["I"]).toEqual({
+      mean: 51,
+      simMean: 55,
+      giveMean: 25,
+      recvMean: 70,
+      stdDev: 28,
+    });
     expect(Object.keys(luna.answers).every((id) => id.startsWith("X"))).toBe(true);
     expect(luna.customQuestions).toEqual([]);
-    expect(sanitizeSnapshot(await trioSnapshot("io")).eroticAverages).toEqual({
+    expect(legacyMeans(sanitizeSnapshot(await trioSnapshot("io")).eroticAverages)).toEqual({
       XA: 71,
       XB: 53,
       XD: 0,
       XF: 100,
     });
-    expect(sanitizeSnapshot(await trioSnapshot("sole")).eroticAverages).toEqual({
+    expect(legacyMeans(sanitizeSnapshot(await trioSnapshot("sole")).eroticAverages)).toEqual({
       XD: 100,
       XF: 50,
     });
+  });
+
+  it("i vecchi snapshot con sole medie scalari mantengono il punteggio e guadagnano ±12%", async () => {
+    const legacy = sanitizeSnapshot({
+      ...(await trioSnapshot("luna")),
+      mainAverages: { I: 30 },
+    });
+    const participant = participantOf({
+      handle: "luna",
+      name: "luna",
+      mine: false,
+      ...resolveSnapshot(legacy),
+    });
+    const ids = DEFAULT_QUESTIONS.filter((question) => question.category === "I").map(
+      (question) => question.id,
+    );
+    // Media complessiva di Io in Finanze: 50; vecchio fallback: 100 − |50 − 30| = 80.
+    expect(averageCompatDetail(ids, [trioParticipant("io"), participant])).toMatchObject({
+      score: 80,
+      margin: 12,
+      estimated: true,
+    });
+    expect(legacy.mainAverages).toEqual({ I: 30 });
   });
 
   it("la password di un'altra persona non apre il box", async () => {

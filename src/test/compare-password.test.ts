@@ -110,11 +110,11 @@ describe("comparison with a password-protected questionnaire", () => {
     renderCompare("luna");
     const card = await screen.findByTestId("password-unlock-card");
     expect(card).toHaveTextContent("Risposte di Luna protette");
-    // Means: me (70+50)/2 = 60, Luna (80+60)/2 = 70 → 100 − 10 = 90, marked as estimate.
+    // Means 60/70, both with σ=10: expected gap √(10² + 2/π·(10²+10²)) ≈ 15 → ≈85% ±12%.
     expect(within(category()).getByRole("button", { name: /categoria Finanze/ })).toHaveTextContent(
-      "≈90%",
+      "≈85%±12%",
     );
-    expect(screen.getByTestId("total")).toHaveTextContent("≈90%");
+    expect(screen.getByTestId("total")).toHaveTextContent("≈85%");
     expect(category()).not.toHaveTextContent("commento di Luna");
     expect(category()).not.toHaveTextContent("Luna:");
   });
@@ -245,13 +245,14 @@ describe("three-way comparison with protected participants", () => {
     const me = { answers: myState([]).answers };
     const lockedLuna = { answers: {}, locked: ["main" as const], averages: luna.mainAverages! };
     const plainSole = { answers: sole.answers };
-    // Pairs: me–Luna means 60 vs 70 → 90; me–Sole exact (50+90)/2 = 70; Luna–Sole 70 vs 30 → 60.
+    // Me–Luna 85 (σ=10 each), me–Sole exact 70, Luna–Sole 58 (means 70/30, σ=10 each).
     const partial = averageCompatDetail(ids, [me, lockedLuna, plainSole]);
-    expect(partial).toMatchObject({ score: 73, estimated: true });
+    expect(partial).toMatchObject({ score: 71, margin: 8, estimated: true });
     const lockedSole = { answers: {}, locked: ["main" as const], averages: { I: 30 } };
-    // All means: 60/70 → 90, 60/30 → 70, 70/30 → 60.
+    // Sole's old scalar format keeps legacy scores: 85, 70 and 60; every estimate has ±12%.
     expect(averageCompatDetail(ids, [me, lockedLuna, lockedSole])).toMatchObject({
-      score: 73,
+      score: 72,
+      margin: 12,
       estimated: true,
     });
     // Nobody protected: unchanged exact maths.

@@ -37,4 +37,7 @@
 - [ ] Sincronizzazione multidispositivo (rimandata a data da destinarsi).
 - [x] Consolidate functional and technical documentation into docs/DOCUMENTAZIONE.md; update README links, source references, security limits and password cost descriptions.
 - [x] Trio di collaudo Io/Luna/Sole: punteggi verificati con la matematica reale (corretto Tempo di qualità Io–Luna: 74%, non 84%), matrice delle critiche a tre completata nel laboratorio (Altre dinamiche), test su punteggi, viste bloccate/sbloccate e confronto a tre (200 test passano), regola e capitolo test del manuale.
-- [ ] Decidere come trattare, nel confronto a tre con password, le categorie dove rispondono solo due persone (oggi stimate "≈", spariscono dopo lo sblocco) e il margine ± perso nelle stime (in attesa della scelta dell'autrice).
+- [ ] Decidere come trattare, nel confronto a tre con password, le categorie dove rispondono solo due persone (oggi stimate "≈", spariscono dopo lo sblocco; in attesa della scelta dell'autrice).
+- [x] Stime protette più realistiche: medie separate per tipo/ruolo, deviazione standard e margine d'errore (minimo ±12%), con fallback per i vecchi snapshot e test sul trio canonico.
+- [x] Corretto il "non-colore" della Bio su selezione e cursore collassato, verificato in Chromium; i 9 colori restano invariati.
+- [x] Rimossi i conteggi rigidi delle domande e rafforzata la migrazione di tutti i vecchi ID; 213 test passano con npm test, typecheck pulito.

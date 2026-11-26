@@ -362,15 +362,24 @@ proprietario a chi vuole. Lunghezza minima: 4 caratteri.
 
 ### Cosa vede chi confronta
 
-| Dato del questionario protetto                             | Senza password | Con la password |
-| ---------------------------------------------------------- | -------------- | --------------- |
-| Medie per categoria (e quindi istogramma e totale stimati) | sì, in chiaro  | sì              |
-| Risposte, commenti, domande critiche e nascoste            | no, cifrati    | sì              |
-| Domande personalizzate di quella sezione                   | no, cifrate    | sì              |
-| Categorie nascoste (`hiddenCategories`), bio, tag, nome    | sì, in chiaro  | sì              |
+| Dato del questionario protetto                          | Senza password | Con la password |
+| ------------------------------------------------------- | -------------- | --------------- |
+| Medie per ruolo e dispersione per categoria             | sì, in chiaro  | sì              |
+| Risposte, commenti, domande critiche e nascoste         | no, cifrati    | sì              |
+| Domande personalizzate di quella sezione                | no, cifrate    | sì              |
+| Categorie nascoste (`hiddenCategories`), bio, tag, nome | sì, in chiaro  | sì              |
 
-Senza password i punteggi sono **stime dalle medie**: per ogni categoria si confrontano le due
-medie (100 − distanza) e il risultato è contrassegnato con «≈». Le categorie con una sola domanda
+Senza password i punteggi sono **stime aggregate**, contrassegnate con «≈» e con un margine «±».
+Per le domande Normali si confrontano le medie `simMean`; per quelle Complementari si incrociano
+`giveMean` di una persona con `recvMean` dell'altra, nei due versi. La deviazione standard
+`stdDev` evita di supporre che tutte le risposte coincidano con la media: il divario atteso è
+`√(distanza² + 2/π · (σA² + σB²))`, limitato a 100, e il punteggio è 100 meno tale divario.
+Il margine minimo è **±12%**, oppure `√(σA² + σB²) / 2` se maggiore; un verso Complementare
+senza dati usa anche il proprio intervallo peggiore. Nei confronti a tre si mediano punteggi e
+margini delle coppie; nei totali ogni categoria conserva il proprio peso.
+
+I vecchi snapshot con una sola media numerica mantengono il precedente punteggio 100 − distanza,
+senza inventare una dispersione, e mostrano comunque ±12%. Le categorie con una sola domanda
 (es. XE) rivelano di fatto quella risposta tramite la media: è una scelta voluta, senza mitigazioni.
 
 <a id="password-crittografia"></a>
@@ -379,8 +388,13 @@ medie (100 − distanza) e il risultato è contrassegnato con «≈». Le catego
 
 Nel `ProfileSnapshot` (`src/lib/types.ts`) ogni sezione protetta occupa due campi:
 
-- Generale (categorie non `X`): `mainAverages` (medie in chiaro) e `mainProtected`.
-- Erotismo (categorie `X`): `eroticAverages` (medie in chiaro) e `eroticProtected`.
+- Generale (categorie non `X`): `mainAverages` (aggregati in chiaro) e `mainProtected`.
+- Erotismo (categorie `X`): `eroticAverages` (aggregati in chiaro) e `eroticProtected`.
+
+Ogni aggregato contiene `{ mean, simMean, giveMean, recvMean, stdDev }`. `mean` conserva la
+media storica di `value`; i valori per ruolo sono `null` quando non esistono risposte di quel
+tipo. `stdDev` è la deviazione standard della popolazione di tutti i voti visibili (Normali e
+singoli lati Fare/Ricevere). Sono esclusi risposte nascoste, senza risposta e categorie nascoste.
 
 Ogni box `{ salt, iv, ciphertext, keyVersion }` contiene `{ answers, customQuestions }` della
 sola sezione. I campi in chiaro (`answers`, `customQuestions`) non contengono mai dati di una
@@ -444,13 +458,13 @@ non una protezione contro chi prova password su una copia del box cifrato fuori 
 
 ### Confronto a due e a tre
 
-- **A due**: se il questionario dell'altro è protetto, istogramma e totale usano le medie (≈);
+- **A due**: se il questionario dell'altro è protetto, istogramma e totale usano gli aggregati (≈, ±);
   nell'elenco delle domande compare una card che chiede la password. Dopo lo sblocco appare il
   messaggio «Questionario sbloccato» e la card lascia il posto alle risposte normali.
 - **A tre** (`/confronto?b=…&c=…`): ogni partecipante è gestito da solo. Sbloccare B non sblocca
   C; se entrambi sono protetti compaiono due card distinte. Le risposte di chi è sbloccato o non
   protetto restano visibili accanto alle tue anche se il terzo è ancora bloccato; le coppie che
-  coinvolgono chi è bloccato sono stimate dalle medie.
+  coinvolgono chi è bloccato sono stimate dagli aggregati; le coppie entrambe leggibili restano esatte.
 
 <a id="password-interfaccia"></a>
 
@@ -478,7 +492,7 @@ non una protezione contro chi prova password su una copia del box cifrato fuori 
   titolo, paragrafo, link e il selettore colore. Il pulsante «Rimuovi colore» non è più nella barra:
   è l'ultimo cerchio della palette (icona divieto su sfondo neutro) e riporta la selezione al colore
   predefinito del tema (`inherit`). I 9 colori della palette (`src/lib/palette.ts`) sono invariati.
-- **Avatar**: generati sul dispositivo con la libreria DiceBear (stile *Critters*, CC0) in
+- **Avatar**: generati sul dispositivo con la libreria DiceBear (stile _Critters_, CC0) in
   `src/lib/avatar.ts`, identici a quelli del servizio online. Funzionano offline, anche nella
   scheda PNG di backup, e l'handle non viene mai inviato a terzi.
 - **Lettura dei dati salvati**: se IndexedDB non risponde all'avvio, l'app riprova due volte e poi
@@ -603,19 +617,20 @@ logo in `src/logo.png` (`scripts/generate-icons.mjs`).
 
 Test principali (`src/test/`):
 
-| File                                | Cosa verifica                                                                                  |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `password-crypto.test.ts`           | derivazione, cifratura/decifratura, password errata, scomparti indipendenti, nessuna password nello snapshot |
-| `password-protection-ui.test.tsx`   | pillola in `/` e `/erotismo`, modale, copia, modifica, rimozione                               |
-| `compare-password.test.ts`          | medie + card, sblocco, ritardo progressivo, persistenza e invalidazione per `keyVersion`, confronto a tre |
-| `reciprocal-compat.test.ts`         | calcolo Fare/Ricevere, risposte parziali e margine                                             |
-| `local-assets.test.ts`              | icone derivate dal logo QuestionAR (nessuna favicon del modello)                               |
-| `bio-sanitize.test.ts`              | filtraggio dell'HTML delle bio, dei link non sicuri e dei tag ricevuti |
-| `avatar-offline.test.ts`            | generazione locale degli avatar |
-| `store-load-safety.test.tsx`        | errori di lettura: niente salvataggio del profilo vuoto e possibilità di riprovare |
-| `favorites-privacy.test.ts`         | preferiti locali, esclusione dagli snapshot e migrazione dei vecchi consigliati |
-| `trio.test.ts`                      | punteggi del trio Io/Luna/Sole con la matematica reale: tabelle per categoria a due e a tre, matrici delle critiche, margini, viste bloccate/sbloccate, privacy |
-| `trio-compare-ui.test.tsx`          | schermata di confronto con il trio: scheda password, stime "≈", sblocco, commenti, confronto a tre |
+| File                              | Cosa verifica                                                                                                                                                   |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bio-color.test.ts`               | non-colore su cursore e selezione, testo normale, sanitizzazione di `inherit` e span vuoti                                                                      |
+| `password-crypto.test.ts`         | derivazione, cifratura/decifratura, password errata, scomparti indipendenti, nessuna password nello snapshot                                                    |
+| `password-protection-ui.test.tsx` | pillola in `/` e `/erotismo`, modale, copia, modifica, rimozione                                                                                                |
+| `compare-password.test.ts`        | medie + card, sblocco, ritardo progressivo, persistenza e invalidazione per `keyVersion`, confronto a tre                                                       |
+| `reciprocal-compat.test.ts`       | calcolo Fare/Ricevere, risposte parziali e margine                                                                                                              |
+| `local-assets.test.ts`            | icone derivate dal logo QuestionAR (nessuna favicon del modello)                                                                                                |
+| `bio-sanitize.test.ts`            | filtraggio dell'HTML delle bio, dei link non sicuri e dei tag ricevuti                                                                                          |
+| `avatar-offline.test.ts`          | generazione locale degli avatar                                                                                                                                 |
+| `store-load-safety.test.tsx`      | errori di lettura: niente salvataggio del profilo vuoto e possibilità di riprovare                                                                              |
+| `favorites-privacy.test.ts`       | preferiti locali, esclusione dagli snapshot e migrazione dei vecchi consigliati                                                                                 |
+| `trio.test.ts`                    | punteggi del trio Io/Luna/Sole con la matematica reale: tabelle per categoria a due e a tre, matrici delle critiche, margini, viste bloccate/sbloccate, privacy |
+| `trio-compare-ui.test.tsx`        | schermata di confronto con il trio: scheda password, stime "≈", sblocco, commenti, confronto a tre                                                              |
 
 <a id="trio-collaudo"></a>
 
@@ -647,20 +662,20 @@ test è di 20 secondi (`vitest.config.ts`).
 
 ### Mappa del codice
 
-| Area | Riferimenti |
-| ---- | ----------- |
-| Stato locale e caricamento | [db.ts](../src/lib/db.ts), [store.tsx](../src/lib/store.tsx) |
-| Snapshot e validazione | [types.ts](../src/lib/types.ts) |
-| Domande e visibilità | [questions.ts](../src/lib/questions.ts), [visibility.ts](../src/lib/visibility.ts) |
-| Compatibilità e grafico | [compat.ts](../src/lib/compat.ts), [compat-map.ts](../src/lib/compat-map.ts) |
-| Crittografia e scomparti | [password-crypto.ts](../src/lib/password-crypto.ts), [protection.ts](../src/lib/protection.ts) |
-| Sblocchi dei contatti | [unlock-manager.ts](../src/lib/unlock-manager.ts), [unlocks.tsx](../src/lib/unlocks.tsx) |
-| Bio e avatar offline | [bio.ts](../src/lib/bio.ts), [BioHtml.tsx](../src/components/BioHtml.tsx), [avatar.ts](../src/lib/avatar.ts) |
-| P2P, relay e inviti | [p2p.ts](../src/lib/p2p.ts), [relay](../relay/src/index.ts), [qr-invite.ts](../src/lib/qr-invite.ts) |
-| Scheda PNG | [backup-card.ts](../src/lib/backup-card.ts) |
-| Offline | [sw-register.ts](../src/lib/sw-register.ts), [sw.js](../public/sw.js) |
-| Tutorial e diagnostica | [demo](../src/components/tutorial/), [diagnostica](../src/lib/diagnostics/) |
-| Verifiche automatiche | [test](../src/test/) |
+| Area                       | Riferimenti                                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Stato locale e caricamento | [db.ts](../src/lib/db.ts), [store.tsx](../src/lib/store.tsx)                                                 |
+| Snapshot e validazione     | [types.ts](../src/lib/types.ts)                                                                              |
+| Domande e visibilità       | [questions.ts](../src/lib/questions.ts), [visibility.ts](../src/lib/visibility.ts)                           |
+| Compatibilità e grafico    | [compat.ts](../src/lib/compat.ts), [compat-map.ts](../src/lib/compat-map.ts)                                 |
+| Crittografia e scomparti   | [password-crypto.ts](../src/lib/password-crypto.ts), [protection.ts](../src/lib/protection.ts)               |
+| Sblocchi dei contatti      | [unlock-manager.ts](../src/lib/unlock-manager.ts), [unlocks.tsx](../src/lib/unlocks.tsx)                     |
+| Bio e avatar offline       | [bio.ts](../src/lib/bio.ts), [BioHtml.tsx](../src/components/BioHtml.tsx), [avatar.ts](../src/lib/avatar.ts) |
+| P2P, relay e inviti        | [p2p.ts](../src/lib/p2p.ts), [relay](../relay/src/index.ts), [qr-invite.ts](../src/lib/qr-invite.ts)         |
+| Scheda PNG                 | [backup-card.ts](../src/lib/backup-card.ts)                                                                  |
+| Offline                    | [sw-register.ts](../src/lib/sw-register.ts), [sw.js](../public/sw.js)                                        |
+| Tutorial e diagnostica     | [demo](../src/components/tutorial/), [diagnostica](../src/lib/diagnostics/)                                  |
+| Verifiche automatiche      | [test](../src/test/)                                                                                         |
 
 ---
 
@@ -670,14 +685,14 @@ test è di 20 secondi (`vitest.config.ts`).
 
 Tutti i campi aggiunti al `ProfileSnapshot` sono facoltativi: le versioni precedenti li ignorano.
 
-| Campo                                       | Assente o non valido significa                              |
-| ------------------------------------------- | ----------------------------------------------------------- |
-| `hiddenCategories`                          | nessuna categoria nascosta (resta in chiaro anche se protetto) |
-| `giveValue` / `receiveValue`                | entrambi assenti: risposta a valore singolo (`value`); un solo lato presente: risposta parziale |
-| `Question.type` (domande personalizzate)    | Normale (somiglianza)                                       |
-| `mainAverages` / `mainProtected`            | questionario generale non protetto                          |
-| `eroticAverages` / `eroticProtected`        | Erotismo non protetto                                       |
-| `recommends` (rimosso)                      | scartato sempre                                             |
+| Campo                                    | Assente o non valido significa                                                                  |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `hiddenCategories`                       | nessuna categoria nascosta (resta in chiaro anche se protetto)                                  |
+| `giveValue` / `receiveValue`             | entrambi assenti: risposta a valore singolo (`value`); un solo lato presente: risposta parziale |
+| `Question.type` (domande personalizzate) | Normale (somiglianza)                                                                           |
+| `mainAverages` / `mainProtected`         | questionario generale non protetto                                                              |
+| `eroticAverages` / `eroticProtected`     | Erotismo non protetto                                                                           |
+| `recommends` (rimosso)                   | scartato sempre                                                                                 |
 
 ---
 
